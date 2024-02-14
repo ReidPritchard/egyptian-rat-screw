@@ -2,7 +2,7 @@
   "extends": ["//"],
   "pipeline": {
     "build": {
-      "outputs": ["build/**", "public/build/**"]
+      "outputs": ["dist/**"]
     }
   }
 }

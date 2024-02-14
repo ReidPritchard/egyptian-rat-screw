@@ -1,9 +1,11 @@
 import { log } from "@repo/logger";
-import { createServer } from "./server";
+import app from "./server";
+import router from "./api";
 
 const port = process.env.PORT || 5001;
-const server = createServer();
 
-server.listen(port, () => {
-  log(`api running on ${port}`);
+app.use("/api", router);
+
+app.listen(port, () => {
+  log(`Server started on http://localhost:${port}/api`);
 });
