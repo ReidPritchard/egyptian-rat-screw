@@ -1,17 +1,19 @@
 "use client";
 
-import { log } from "console";
+import { debug } from "@repo/logger";
 import { useEffect } from "react";
 
-const webSocketUrl = process.env.WS_URL || `ws://localhost:5001/api`;
+const webSocketUrl = `ws://localhost:5001/api`;
 
 export const isBrowser = typeof window !== "undefined";
 
-export type WebSocketClientProps = {
+export interface WebSocketClientProps {
   onDataReceived: (data: string) => void;
-};
+}
 
-const WebSocketClient = ({ onDataReceived }: WebSocketClientProps) => {
+function WebSocketClient({
+  onDataReceived,
+}: WebSocketClientProps): JSX.Element | null {
   useEffect(() => {
     if (!isBrowser) {
       return;
@@ -20,15 +22,16 @@ const WebSocketClient = ({ onDataReceived }: WebSocketClientProps) => {
     const socket = new WebSocket(webSocketUrl);
 
     socket.onopen = () => {
-      log("WebSocket connected");
+      debug("WebSocket connected");
     };
 
-    socket.onmessage = (event) => {
-      onDataReceived(event.data);
+    socket.onmessage = (event: MessageEvent) => {
+      const data: string = event.data;
+      onDataReceived(data);
     };
 
     socket.onclose = () => {
-      log("WebSocket disconnected");
+      debug("WebSocket disconnected");
     };
 
     return () => {
@@ -37,6 +40,6 @@ const WebSocketClient = ({ onDataReceived }: WebSocketClientProps) => {
   }, [onDataReceived]);
 
   return null;
-};
+}
 
 export default WebSocketClient;
