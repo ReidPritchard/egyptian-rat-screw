@@ -1,6 +1,7 @@
 {
   "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
+    "jsx": "react",
     "lib": ["dom", "ES2015"],
     "types": ["jest", "node"]
   },
