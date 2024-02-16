@@ -150,3 +150,5 @@ export class EgyptianRatScrew {
     this.dealCards();
   }
 }
+
+export * from "./event";

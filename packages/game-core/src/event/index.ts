@@ -154,3 +154,12 @@ export interface PlayCardPayload extends BasePayload {
    */
   card: Card;
 }
+
+export type DataPayload =
+  | LobbyPayload
+  | JoinGamePayload
+  | PlayerJoinedPayload
+  | PlayerLeftPayload
+  | GameStartedPayload
+  | SlapPayload
+  | PlayCardPayload;

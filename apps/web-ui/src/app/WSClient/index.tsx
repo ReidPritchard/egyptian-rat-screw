@@ -3,32 +3,33 @@
 import { debug } from "@repo/utils";
 import { useEffect } from "react";
 
-const webSocketUrl = `ws://localhost:5001/api/game/123?name=player1`;
+const webSocketUrl = (gameId: string): string =>
+  `ws://localhost:5001/api/games/${gameId}`;
 
 export const isBrowser = typeof window !== "undefined";
 
 export interface WebSocketClientProps {
-  onDataReceived: (data: string) => void;
+  onDataReceived: (data: MessageEvent) => void;
+  gameId: string;
 }
 
 function WebSocketClient({
   onDataReceived,
+  gameId,
 }: WebSocketClientProps): JSX.Element | null {
   useEffect(() => {
     if (!isBrowser) {
       return;
     }
 
-    const socket = new WebSocket(webSocketUrl);
+    const socket = new WebSocket(webSocketUrl(gameId));
 
     socket.onopen = () => {
       debug("WebSocket connected");
     };
 
     socket.onmessage = (event: MessageEvent) => {
-      const data = JSON.parse(event.data);
-      const { message } = data;
-      onDataReceived(message);
+      onDataReceived(event);
     };
 
     socket.onclose = () => {
@@ -38,7 +39,7 @@ function WebSocketClient({
     return () => {
       socket.close();
     };
-  }, [onDataReceived]);
+  }, [gameId, onDataReceived]);
 
   return null;
 }
