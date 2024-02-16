@@ -6,4 +6,8 @@ export class Card {
     this.suit = suit;
     this.value = value;
   }
+
+  toString(): string {
+    return `${this.value} of ${this.suit}`;
+  }
 }

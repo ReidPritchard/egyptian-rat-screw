@@ -5,8 +5,8 @@ import { Player } from "../player";
  * Represents the effect of a slap rule.
  */
 export interface SlapEffect {
-  slapper: Player;
-  affectedPlayers: Player[];
+  slapper: Player["name"];
+  affectedPlayers: Player["name"][];
   pile: Card[];
   message?: string;
 }
@@ -69,8 +69,8 @@ export const defaultSuccessfulEffect = (
   slapper.hand.push(...pile);
   pile.length = 0;
   return {
-    slapper,
-    affectedPlayers: [slapper],
+    slapper: slapper.name,
+    affectedPlayers: [slapper.name],
     pile,
     message: "You slapped the pile for doubles!",
   };
@@ -90,8 +90,8 @@ export const defaultPenalty = (
     pile.unshift(card);
   }
   return {
-    slapper: slapper,
-    affectedPlayers: [slapper],
+    slapper: slapper.name,
+    affectedPlayers: [slapper.name],
     pile: pile,
     message: "Your slap failed! A card from your hand was added to the pile.",
   };
@@ -169,8 +169,8 @@ const slapEffectHandlers = {
       luckyPlayer.hand.push(...pile);
       pile.length = 0;
       return {
-        slapper,
-        affectedPlayers: [luckyPlayer],
+        slapper: slapper.name,
+        affectedPlayers: [luckyPlayer.name],
         pile,
         message: `${luckyPlayer.name} slapped the pile! They get all the cards!`,
       };
@@ -185,8 +185,8 @@ const slapEffectHandlers = {
         pile.unshift(card);
       }
       return {
-        slapper,
-        affectedPlayers: [unluckyPlayer],
+        slapper: slapper.name,
+        affectedPlayers: [unluckyPlayer.name],
         pile,
         message: `${slapper.name} slapped the pile! You must take a drink!`,
       };

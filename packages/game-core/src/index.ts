@@ -7,6 +7,7 @@ import { SlapRule, defaultSlapRules } from "./slap-rule";
  */
 export class EgyptianRatScrew {
   players: Player[];
+  currentPlayerIndex: number;
   score: Map<Player["name"], number>;
 
   deck: Card[];
@@ -16,6 +17,7 @@ export class EgyptianRatScrew {
 
   constructor(players: Player[]) {
     this.players = players;
+    this.currentPlayerIndex = Math.floor(Math.random() * players.length);
     this.score = new Map();
     for (let player of players) {
       this.score.set(player.name, 0);
@@ -139,7 +141,7 @@ export class EgyptianRatScrew {
     this.deck = this.createDeck();
 
     for (let player of this.players) {
-      player.hand.length = 0;
+      player.hand = [];
     }
   }
 
@@ -152,3 +154,6 @@ export class EgyptianRatScrew {
 }
 
 export * from "./event";
+export * from "./player";
+export * from "./card";
+export * from "./slap-rule";

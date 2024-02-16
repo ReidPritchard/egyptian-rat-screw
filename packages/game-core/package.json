@@ -1,5 +1,5 @@
 {
-  "name": "@repo/eg-rat-screw-game",
+  "name": "@repo/game-core",
   "version": "0.0.0",
   "private": true,
   "main": "./dist/index.js",
@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "watch": "tsup --watch",
+    "dev": "tsup --watch",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "jest"

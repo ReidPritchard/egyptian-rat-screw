@@ -155,6 +155,19 @@ export interface PlayCardPayload extends BasePayload {
   card: Card;
 }
 
+/**
+ * The payload for an error.
+ * This is sent to the client when an error occurs.
+ */
+export interface ErrorPayload extends BasePayload {
+  type: "error";
+
+  /**
+   * The error message.
+   */
+  message: string;
+}
+
 export type DataPayload =
   | LobbyPayload
   | JoinGamePayload
@@ -162,4 +175,5 @@ export type DataPayload =
   | PlayerLeftPayload
   | GameStartedPayload
   | SlapPayload
-  | PlayCardPayload;
+  | PlayCardPayload
+  | ErrorPayload;

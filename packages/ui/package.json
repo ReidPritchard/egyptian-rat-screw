@@ -22,7 +22,7 @@
     "preset": "@repo/jest-presets/jest/browser"
   },
   "devDependencies": {
-    "@repo/eg-rat-screw-game": "*",
+    "@repo/game-core": "*",
     "@repo/eslint-config": "*",
     "@repo/jest-presets": "*",
     "@repo/typescript-config": "*",

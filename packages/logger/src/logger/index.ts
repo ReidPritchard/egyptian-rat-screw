@@ -70,7 +70,7 @@ class Logger {
 }
 
 const logger = new Logger();
-logger.configure({ level: LogLevel.INFO, structured: false });
+logger.configure({ level: LogLevel.DEBUG, structured: false });
 
 export const log = logger.log.bind(logger);
 export const debug = logger.debug.bind(logger);
