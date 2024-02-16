@@ -110,7 +110,7 @@ export class EgyptianRatScrew {
     if (valid) {
       let rule = this.slapRules.find((rule) => rule.validSlap(this.pile));
       if (rule) {
-        rule.effect(player, this.players, this.pile);
+        rule.successfulEffect(player, this.players, this.pile);
       }
     } else {
       // Penalize the player for an invalid slap
@@ -128,6 +128,10 @@ export class EgyptianRatScrew {
     if (card) {
       this.pile.push(card);
     }
+  }
+
+  setSlapRules(rules: SlapRule[]) {
+    this.slapRules = rules;
   }
 
   reset() {

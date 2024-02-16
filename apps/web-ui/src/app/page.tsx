@@ -1,13 +1,13 @@
 "use client";
 
-import { info } from "@repo/logger";
+import { info } from "@repo/utils";
 import { useState } from "react";
 import WebSocketClient from "./websocket";
 
-export default function Store(): JSX.Element {
+export default function Home(): JSX.Element {
   const [data, setData] = useState<string[]>([]);
 
-  const handleDataReceived = (newData: string) => {
+  const handleDataReceived = (newData: string): void => {
     info("Data received", newData);
     setData((prevData) => [...prevData, newData]);
   };
@@ -21,7 +21,7 @@ export default function Store(): JSX.Element {
       <h2>WebSocket</h2>
       <ul>
         {data.map((message, i) => (
-          <li key={i}>{message}</li>
+          <li key={`message-${i}`}>{message}</li>
         ))}
       </ul>
 

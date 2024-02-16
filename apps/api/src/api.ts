@@ -1,14 +1,13 @@
-import { log } from "@repo/logger";
-import app from "./server";
-import express from "express";
 import expressWs from "express-ws";
 import { EgyptianRatScrew } from "@repo/eg-rat-screw-game";
+import { Router } from "express";
+import app from "./server";
 
 expressWs(app);
 
 const GameLobbies = new Map<string, EgyptianRatScrew>();
 
-const router = express.Router();
+const router = Router();
 
 // Setup base routes for the API
 router.get("/", (req, res) => {
@@ -35,12 +34,13 @@ router.post("/game", (req, res) => {
 // });
 
 // Setup a WebSocket server
-router.ws("/game/:id", (ws, req) => {
+router.ws("/game/:id", (ws: WebSocket, req) => {
   const gameId = req.params.id;
   const game = GameLobbies.get(gameId);
   if (!game) {
-    ws.send("Game not found");
-    ws.close();
+    const newGameId = Math.random().toString(36).substring(7);
+    GameLobbies.set(newGameId, new EgyptianRatScrew([]));
+    ws.send(newGameId);
     return;
   }
 
@@ -55,28 +55,30 @@ router.ws("/game/:id", (ws, req) => {
   // Add the player to the game
   game.players.push({ name, hand: [] });
 
-  const player = game.players.find((player) => player.name === name);
-  if (!player) {
+  const foundPlayer = game.players.find((p) => p.name === name);
+  if (!foundPlayer) {
     ws.send("Player not found");
     ws.close();
     return;
   }
 
   // Send the player's current client state
-  ws.send(game.playerStatus(player));
+  ws.send(JSON.stringify(game.playerStatus(foundPlayer)));
 
   // Setup the WebSocket event listeners
-  ws.on("slap", () => {
-    ws.emit("slap");
-    const didSlap = game.slapPile(player);
-    ws.send(didSlap ? "You slapped the pile!" : "You missed the pile!");
+  ws.addEventListener("message", (event: MessageEvent) => {
+    if (event.data === "slap") {
+      ws.send("You slapped the pile!");
+    }
   });
 
-  ws.on("playCard", () => {
-    game.playCard(player);
+  ws.addEventListener("message", (event: MessageEvent) => {
+    if (event.data === "playCard") {
+      game.playCard(foundPlayer);
+    }
   });
 
-  ws.on("disconnect", () => {
+  ws.addEventListener("close", () => {
     game.players = game.players.filter((p) => p.name !== name);
   });
 });

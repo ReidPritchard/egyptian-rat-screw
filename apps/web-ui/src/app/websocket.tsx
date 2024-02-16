@@ -1,9 +1,9 @@
 "use client";
 
-import { debug } from "@repo/logger";
+import { debug } from "@repo/utils";
 import { useEffect } from "react";
 
-const webSocketUrl = `ws://localhost:5001/api`;
+const webSocketUrl = `ws://localhost:5001/api/game/123?name=player1`;
 
 export const isBrowser = typeof window !== "undefined";
 
@@ -26,8 +26,9 @@ function WebSocketClient({
     };
 
     socket.onmessage = (event: MessageEvent) => {
-      const data: string = event.data;
-      onDataReceived(data);
+      const data = JSON.parse(event.data);
+      const { message } = data;
+      onDataReceived(message);
     };
 
     socket.onclose = () => {
