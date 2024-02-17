@@ -1,5 +1,9 @@
 import expressWs from "express-ws";
-import type { DataPayload, GameStartedPayload } from "@repo/game-core";
+import type {
+  DataPayload,
+  GameStartedPayload,
+  PlayCardPayload,
+} from "@repo/game-core";
 import { EgyptianRatScrew } from "@repo/game-core";
 import { Router } from "express";
 import { info } from "@repo/utils";
@@ -77,34 +81,6 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
     }
   }
 
-  // After 5 seconds, start the game
-  setTimeout(() => {
-    game?.startGame();
-
-    // Send the game state to all players
-    const players = game?.players.map((player) => player.name);
-    const scores = game?.score;
-    const pile = game?.pile;
-    const handSize = game?.players.find((player) => player.name === name)?.hand
-      .length;
-    const slapRules = game?.slapRules;
-    const currentPlayer = game?.players[game?.currentPlayerIndex].name;
-    const active = true;
-
-    ws.send(
-      JSON.stringify({
-        type: "game-started",
-        players,
-        scores,
-        pile,
-        handSize,
-        slapRules,
-        currentPlayer,
-        active,
-      } as GameStartedPayload)
-    );
-  }, 5000);
-
   ws.onmessage = (event) => {
     const payload = JSON.parse(event.data) as DataPayload;
     info("Data received", payload);
@@ -118,7 +94,7 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
           name,
           hand: [],
         });
-        break;
+        // falls through
       }
       case "game-started": {
         game?.startGame();
@@ -130,7 +106,7 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
         const handSize = game?.players.find((player) => player.name === name)
           ?.hand.length;
         const slapRules = game?.slapRules;
-        const currentPlayer = game?.players[game?.currentPlayerIndex].name;
+        const currentPlayer = game?.players[game.currentPlayerIndex].name;
         const active = true;
 
         ws.send(
@@ -148,8 +124,32 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
 
         break;
       }
+      case "play-card": {
+        // The card won't be in the payload as the client doesn't know their hand
+        const player = game?.players.find((p) => p.name === name);
+        const card = player?.hand[0];
+        if (player !== undefined) game?.playCard(player);
+        // Send the play-card event to all players
+        const response: PlayCardPayload = {
+          type: "play-card",
+          name,
+          card,
+        };
+        ws.send(JSON.stringify(response));
+        break;
+      }
       default:
         break;
+    }
+  };
+
+  ws.onclose = () => {
+    info("WebSocket disconnected");
+    if (game !== undefined) {
+      game.players = game.players.filter((player) => player.name !== name);
+      if (game.players.length === 0) {
+        GameLobbies.delete(gameId);
+      }
     }
   };
 });

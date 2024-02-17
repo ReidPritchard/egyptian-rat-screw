@@ -152,7 +152,7 @@ export interface PlayCardPayload extends BasePayload {
    * The client should not send this field as the server will
    * determine the card to play.
    */
-  card: Card;
+  card?: Card;
 }
 
 /**
@@ -177,3 +177,15 @@ export type DataPayload =
   | SlapPayload
   | PlayCardPayload
   | ErrorPayload;
+
+/**
+ * Function to determine if a payload a valid `DataPayload`.
+ */
+export function isDataPayload(payload: unknown): payload is DataPayload {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const { type } = payload as { type: unknown };
+  return typeof type === "string";
+}

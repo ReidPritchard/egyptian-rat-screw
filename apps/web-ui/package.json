@@ -11,12 +11,13 @@
     "start": "next start"
   },
   "dependencies": {
-    "@repo/utils": "*",
-    "@repo/ui": "*",
     "@repo/game-core": "*",
+    "@repo/ui": "*",
+    "@repo/utils": "*",
     "next": "^14.0.4",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-use-websocket": "3.0.0"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^14.0.4",

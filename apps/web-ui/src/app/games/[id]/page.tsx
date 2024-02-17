@@ -1,9 +1,16 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import type { Card, DataPayload, EgyptianRatScrew } from "@repo/game-core";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { isDataPayload } from "@repo/game-core";
+import type {
+  Card,
+  DataPayload,
+  EgyptianRatScrew,
+  JoinGamePayload,
+  PlayCardPayload,
+} from "@repo/game-core";
 import { info, debug } from "@repo/utils";
-import WebSocketClient from "../../WSClient";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 
 export interface GameProps {
   params: {
@@ -14,7 +21,9 @@ export interface GameProps {
 export default function Game({ params }: GameProps): JSX.Element {
   const { id } = params;
 
-  const ws = useRef<WebSocket | null>(null);
+  const [socketUrl, setSocketUrl] = useState(`ws://localhost:5001/games/${id}`);
+
+  const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl);
 
   // Setup client states here
   const [name, setName] = useState<string>("");
@@ -27,16 +36,21 @@ export default function Game({ params }: GameProps): JSX.Element {
   const [currentPlayer, setCurrentPlayer] = useState<string>("");
   const [active, setActive] = useState<boolean>(false);
 
-  const handleDataReceived = (event: MessageEvent<string>): void => {
-    let payload;
-    try {
-      payload = JSON.parse(event.data);
-      debug("Data received", payload);
-    } catch (error) {
-      debug("Error parsing data", event.data, error);
-      return;
+  useEffect(() => {
+    if (isDataPayload(lastMessage)) {
+      let payload;
+      try {
+        payload = JSON.parse(lastMessage.data);
+        debug("Data received", payload);
+        handleDataReceived(payload);
+      } catch (error) {
+        debug("Error parsing data", lastMessage.data, error);
+      }
     }
-    const { type } = payload as DataPayload;
+  }, [lastMessage]);
+
+  const handleDataReceived = (payload: DataPayload): void => {
+    const { type } = payload;
 
     switch (type) {
       case "lobby":
@@ -69,7 +83,7 @@ export default function Game({ params }: GameProps): JSX.Element {
 
         setHandSize(Number(gameHandSize));
         setPile([]);
-        setPlayers(gamePlayers as string[]);
+        setPlayers(gamePlayers);
         setCurrentPlayer(gamePlayers[0]);
 
         setScores(gameScores);
@@ -102,13 +116,23 @@ export default function Game({ params }: GameProps): JSX.Element {
       }
       case "play-card": {
         const { card, name: player } = payload;
-        info("Card played", card, player);
-        if (player === name) {
-          setMessage(`You played a ${card}`);
+        if (card !== undefined) {
+          info("Card played", card, player);
+          if (player === name) {
+            setMessage(`You played a ${card.toString()}`);
+          } else {
+            setMessage(`${player} played a card`);
+          }
+          setPile([...pile, card]);
+          // Next player's turn
+          const nextPlayerIndex =
+            (players.indexOf(currentPlayer) + 1) % players.length;
+          setCurrentPlayer(players[nextPlayerIndex]);
         } else {
-          setMessage(`${player} played a card`);
+          // This should never happen
+          debug("Card is undefined", payload);
+          throw new Error("Card is undefined");
         }
-        setPile([...pile, card]);
         break;
       }
       case "error": {
@@ -119,12 +143,42 @@ export default function Game({ params }: GameProps): JSX.Element {
       }
     }
   };
-  const safeHandleDataReceived = useCallback(handleDataReceived, [
-    message,
-    name,
-    pile,
-    players,
-  ]);
+
+  const handlePlayCard = useCallback(() => {
+    debug("Play Card button clicked");
+    const payload: PlayCardPayload = {
+      type: "play-card",
+      name,
+    };
+    // Send the payload to the server
+    sendMessage(JSON.stringify(payload));
+  }, [id, name, sendMessage]);
+
+  const handleJoinGame = useCallback(() => {
+    debug("Join Game button clicked");
+    if (name !== undefined && name !== "") {
+      debug("Joining game", id, name);
+      const payload: JoinGamePayload = {
+        type: "join-game",
+        name,
+        gameId: id,
+      };
+      // Send the payload to the server
+      sendMessage(JSON.stringify(payload));
+      // I think instead of sending a message to the server,
+      // we should change the webSocket url to the new game ID
+      // TODO: Only change the socketUrl if the game ID has changed
+      // setSocketUrl(`ws://localhost:5001/games/${id}`);
+    }
+  }, [id, name]);
+
+  const connectionStatus = {
+    [ReadyState.CONNECTING]: "Connecting",
+    [ReadyState.OPEN]: "Open",
+    [ReadyState.CLOSING]: "Closing",
+    [ReadyState.CLOSED]: "Closed",
+    [ReadyState.UNINSTANTIATED]: "Uninstantiated",
+  }[readyState];
 
   return (
     <div>
@@ -142,21 +196,15 @@ export default function Game({ params }: GameProps): JSX.Element {
                   .map(([player, score]) => `${player}: ${score}`)
                   .join(", ")}
               </p>
-              <p>Slap Rules: {JSON.stringify(slapRules)}</p>
-              <p>Pile: {pile.map((c) => c.toString()).join(", ")}</p>
+              <p>Slap Rules: {slapRules.map((rule) => rule.name).join(", ")}</p>
+              <p>
+                Pile: {pile.map((c) => `${c.value} of ${c.suit}`).join(", ")}
+              </p>
               <p>Message: {message}</p>
             </div>
             <button
-              onClick={() => {
-                debug("Play Card button clicked");
-                const payload: DataPayload = {
-                  type: "play-card",
-                  name,
-                  gameId: id,
-                };
-                // Send the payload to the server
-                ws.current?.send(JSON.stringify(payload));
-              }}
+              disabled={readyState !== ReadyState.OPEN}
+              onClick={handlePlayCard}
               type="button"
             >
               Play Card
@@ -173,19 +221,8 @@ export default function Game({ params }: GameProps): JSX.Element {
               value={name}
             />
             <button
-              onClick={() => {
-                debug("Join Game button clicked");
-                if (name) {
-                  debug("Joining game", id, name);
-                  const payload: DataPayload = {
-                    type: "join-game",
-                    name,
-                    gameId: id,
-                  };
-                  // Send the payload to the server
-                  ws.current?.send(JSON.stringify(payload));
-                }
-              }}
+              disabled={readyState !== ReadyState.OPEN}
+              onClick={handleJoinGame}
               type="button"
             >
               Join Game
@@ -193,15 +230,6 @@ export default function Game({ params }: GameProps): JSX.Element {
           </div>
         )}
       </div>
-
-      <WebSocketClient
-        gameId={id}
-        onDataReceived={safeHandleDataReceived}
-        onWebSocketConnected={(webSocket) => {
-          debug("WebSocket connected");
-          ws.current = webSocket;
-        }}
-      />
     </div>
   );
 }
