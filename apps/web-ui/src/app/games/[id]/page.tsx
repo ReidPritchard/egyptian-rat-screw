@@ -1,16 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isDataPayload } from "@repo/game-core";
+import { isDataPayload, PlayerGame } from "@repo/game-core";
 import type {
   Card,
   DataPayload,
   EgyptianRatScrew,
   JoinGamePayload,
   PlayCardPayload,
+  SlapRule,
+  PlayerGameOptions,
 } from "@repo/game-core";
 import { info, debug } from "@repo/utils";
-import { Card as CardElement } from "@repo/ui";
+import { GameCard } from "@repo/ui";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
 export interface GameProps {
@@ -21,157 +23,77 @@ export interface GameProps {
 
 export default function Game({ params }: GameProps): JSX.Element {
   const { id } = params;
-
   const [socketUrl, setSocketUrl] = useState(`ws://localhost:5001/games/${id}`);
-
   const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl);
+  const [name, setName] = useState<string>("");
 
   // Setup client states here
-  const [name, setName] = useState<string>("");
-  const [players, setPlayers] = useState<string[]>([]);
-  const [scores, setScores] = useState<Map<string, number>>(new Map());
-  const [pile, setPile] = useState<Card[]>([]);
-  const [handSize, setHandSize] = useState<number>(0);
-  const [message, setMessage] = useState<string>("");
-  const [slapRules, setSlapRules] = useState<EgyptianRatScrew["slapRules"]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<string>("");
-  const [active, setActive] = useState<boolean>(false);
+  const [playerState, setPlayerState] = useState<PlayerGame>(
+    new PlayerGame({ gameId: id, name } as PlayerGameOptions)
+  );
+
+  const {
+    players,
+    scores,
+    pile,
+    handSize,
+    message,
+    slapRules,
+    currentPlayer,
+    active,
+  } = playerState;
+
+  const handleDataReceived = useCallback((payload: DataPayload): void => {
+    setPlayerState((prevState: PlayerGame) => {
+      const updatedPlayerState = new PlayerGame(prevState);
+      updatedPlayerState.handleDataReceived(payload);
+      // If any of the properties of the playerState have changed, we need to update the state
+      // Check if any of the properties have changed
+      if (prevState.serialize() !== updatedPlayerState.serialize()) {
+        debug("Player state updated", updatedPlayerState);
+        return updatedPlayerState;
+      }
+      // If no properties have changed, return the previous state
+      return prevState;
+    });
+  }, []);
 
   useEffect(() => {
-    if (isDataPayload(lastMessage)) {
-      let payload;
+    if (lastMessage?.data && isDataPayload(lastMessage)) {
       try {
-        payload = JSON.parse(lastMessage.data);
+        const payload = JSON.parse(lastMessage.data);
         debug("Data received", payload);
-        handleDataReceived(payload);
+        handleDataReceived(payload as DataPayload);
       } catch (error) {
         debug("Error parsing data", lastMessage.data, error);
       }
     }
-  }, [lastMessage]);
-
-  const handleDataReceived = (payload: DataPayload): void => {
-    const { type } = payload;
-
-    switch (type) {
-      case "lobby":
-        break;
-      case "join-game": {
-        const { name: newPlayer } = payload;
-        setName(newPlayer);
-        setActive(true);
-        break;
-      }
-      case "player-joined": {
-        const { name: newPlayer } = payload;
-        setPlayers([...players, newPlayer]);
-        break;
-      }
-      case "player-left": {
-        const { name: gonePlayer } = payload;
-        setPlayers(players.filter((p) => p !== gonePlayer));
-        break;
-      }
-      case "game-started": {
-        const {
-          slapRules: gameSlapRules,
-          handSize: gameHandSize,
-          players: gamePlayers,
-          scores: gameScores,
-        } = payload;
-        setActive(true);
-        setSlapRules(gameSlapRules);
-
-        setHandSize(Number(gameHandSize));
-        setPile([]);
-        setPlayers(gamePlayers);
-        setCurrentPlayer(gamePlayers[0]);
-
-        setScores(gameScores);
-        break;
-      }
-      case "slap": {
-        const { successful, effect } = payload;
-        const {
-          slapper,
-          affectedPlayers,
-          pile: newPile,
-          message: newMessage,
-        } = effect;
-
-        info("Slap effect", effect);
-
-        setPile(newPile);
-
-        if (successful) {
-          setMessage(`${slapper} slapped the pile!`);
-        } else {
-          setMessage(`${slapper} slapped the pile, but it was invalid!`);
-        }
-
-        if (affectedPlayers.includes(name)) {
-          info("Affected players", affectedPlayers);
-          setMessage(`${message}\n${newMessage}`);
-        }
-        break;
-      }
-      case "play-card": {
-        const { card, name: player } = payload;
-        if (card !== undefined) {
-          info("Card played", card, player);
-          if (player === name) {
-            setMessage(`You played a ${card.toString()}`);
-          } else {
-            setMessage(`${player} played a card`);
-          }
-          setPile([...pile, card]);
-          // Next player's turn
-          const nextPlayerIndex =
-            (players.indexOf(currentPlayer) + 1) % players.length;
-          setCurrentPlayer(players[nextPlayerIndex]);
-        } else {
-          // This should never happen
-          debug("Card is undefined", payload);
-          throw new Error("Card is undefined");
-        }
-        break;
-      }
-      case "error": {
-        const { message: errorMessage } = payload;
-        info("Error", errorMessage);
-        setMessage(errorMessage);
-        break;
-      }
-    }
-  };
+  }, [handleDataReceived, lastMessage]);
 
   const handlePlayCard = useCallback(() => {
     debug("Play Card button clicked");
-    const payload: PlayCardPayload = {
-      type: "play-card",
-      name,
-    };
-    // Send the payload to the server
+    const payload = playerState.generatePayload("play-card");
     sendMessage(JSON.stringify(payload));
-  }, [id, name, sendMessage]);
+  }, [playerState, sendMessage]);
 
   const handleJoinGame = useCallback(() => {
-    debug("Join Game button clicked");
-    if (name !== undefined && name !== "") {
-      debug("Joining game", id, name);
-      const payload: JoinGamePayload = {
-        type: "join-game",
-        name,
-        gameId: id,
-      };
-      // Send the payload to the server
-      sendMessage(JSON.stringify(payload));
-      // I think instead of sending a message to the server,
-      // we should change the webSocket url to the new game ID
-      // TODO: Only change the socketUrl if the game ID has changed
-      // setSocketUrl(`ws://localhost:5001/games/${id}`);
+    if (!name.trim()) {
+      debug("Name is required to join the game");
+      return;
     }
-  }, [id, name]);
+
+    debug("Join Game button clicked", id, name);
+    playerState.name = name;
+    const payload = playerState.generatePayload("join-game");
+
+    // Send the payload to the server
+    sendMessage(JSON.stringify(payload));
+
+    // Only change the socketUrl if the game ID has changed
+    if (socketUrl !== `ws://localhost:5001/games/${id}`) {
+      setSocketUrl(`ws://localhost:5001/games/${id}`);
+    }
+  }, [id, name, playerState, sendMessage, socketUrl]);
 
   const connectionStatus = {
     [ReadyState.CONNECTING]: "Connecting",
@@ -185,6 +107,7 @@ export default function Game({ params }: GameProps): JSX.Element {
     <div>
       <div>
         <h1>Game {id}</h1>
+        <p>Connection Status: {connectionStatus}</p>
         {active ? (
           <div>
             <div>
@@ -202,9 +125,9 @@ export default function Game({ params }: GameProps): JSX.Element {
                 Pile: {pile.map((c) => `${c.value} of ${c.suit}`).join(", ")}
               </p>
               <div>
-                <CardElement card={{ suit: "hearts", value: "A" }} />
-                <CardElement card={{ suit: "spades", value: "2" }} />
-                <CardElement card={{ suit: "hearts", value: "3" }} />
+                <GameCard card={{ suit: "hearts", value: "A" }} />
+                <GameCard card={{ suit: "spades", value: "2" }} />
+                <GameCard card={{ suit: "hearts", value: "3" }} />
               </div>
               <p>Message: {message}</p>
             </div>

@@ -125,13 +125,13 @@ export interface SlapPayload extends BasePayload {
    * If the slap was successful.
    * The client should not send this field.
    */
-  successful: boolean;
+  successful?: boolean;
 
   /**
    * The effects of the slap.
    * The client should not send this field.
    */
-  effect: SlapEffect;
+  effect?: SlapEffect;
 }
 
 /**

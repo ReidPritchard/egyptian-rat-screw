@@ -7,7 +7,7 @@ export class Card {
     this.value = value;
   }
 
-  toString(): string {
+  l(): string {
     return `${this.value} of ${this.suit}`;
   }
 }

@@ -27,6 +27,8 @@ export interface SlapRule {
 
   /**
    * A function that determines whether a slap is valid based on the current pile of cards.
+   * A slap is valid even if it has negative consequences for the slapper! The consequences
+   * are handled by the `applySlapEffect` function.
    * @param pile The current pile of cards.
    * @returns A boolean indicating whether the slap is valid.
    */
@@ -38,19 +40,7 @@ export interface SlapRule {
    * @param players All players in the game.
    * @param pile The current pile of cards.
    */
-  successfulEffect: (
-    slapper: Player,
-    players: Player[],
-    pile: Card[]
-  ) => SlapEffect;
-
-  /**
-   * A function that applies the effect of an unsuccessful slap to the player and the pile of cards.
-   * @param slapper The player who performed the slap.
-   * @param players All players in the game.
-   * @param pile The current pile of cards.
-   */
-  unsuccessfulEffect?: (
+  applySlapEffect: (
     slapper: Player,
     players: Player[],
     pile: Card[]
@@ -98,8 +88,7 @@ export const defaultPenalty = (
 };
 
 const defaultSlapEffects = {
-  successfulEffect: defaultSuccessfulEffect,
-  unsuccessfulEffect: defaultPenalty,
+  applySlapEffect: defaultSuccessfulEffect,
 };
 
 /**
@@ -143,17 +132,17 @@ export const defaultSlapRules: SlapRule[] = [
 /**
  * Common valid slap functions for Egyptian Rat Screw and custom slap rules.
  */
-const validSlapFunctions = {
+export const validSlapFunctions = {
   value: (value: string): ((pile: Card[]) => boolean) => {
     return (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
-      return topCard.value === value;
+      return topCard?.value === value;
     };
   },
   suit: (suit: string): ((pile: Card[]) => boolean) => {
     return (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
-      return topCard.suit === suit;
+      return topCard?.suit === suit;
     };
   },
 };
@@ -161,7 +150,7 @@ const validSlapFunctions = {
 /**
  * Common successful slap effects for Egyptian Rat Screw custom rules.
  */
-const slapEffectHandlers = {
+export const slapEffectHandlers = {
   playerGetsPile: (
     luckyPlayer: Player
   ): ((slapper: Player, players: Player[], pile: Card[]) => SlapEffect) => {
@@ -180,48 +169,102 @@ const slapEffectHandlers = {
     unluckyPlayer: Player
   ): ((slapper: Player, players: Player[], pile: Card[]) => SlapEffect) => {
     return (slapper: Player, players: Player[], pile: Card[]) => {
-      const card = unluckyPlayer.hand.pop();
-      if (card) {
-        pile.unshift(card);
-      }
+      const slapperIsUnlucky = slapper.name === unluckyPlayer.name;
+      // If the slapper is the unlucky player, they must take two drinks
+      const drinks = slapperIsUnlucky ? 2 : 1;
+
       return {
         slapper: slapper.name,
         affectedPlayers: [unluckyPlayer.name],
         pile,
-        message: `${slapper.name} slapped the pile! You must take a drink!`,
+        message: `${slapper.name} slapped the pile! ${unluckyPlayer.name} takes ${drinks} drink${drinks > 1 ? "s" : ""}!`,
       };
     };
   },
 };
 
 /**
- * A factory function for creating custom slap rules.
- * @param name The name of the slap rule.
- * @param description A description of the slap rule.
- * @param validSlap A function that determines whether a slap is valid.
- * @param successfulEffect A function that applies the effect of a successful slap.
- * @param unsuccessfulEffect A function that applies the effect of an unsuccessful slap.
+ * Builder class for creating custom slap rules for Egyptian Rat Screw.
+ * This class is used to create custom slap rules for the game.
+ * @example
+ * ```typescript
+ * const slapRuleBuilder = new SlapRuleBuilder();
+ * const customSlapRule = slapRuleBuilder
+ *  .setName("custom")
+ *  .setDescription("Slap the pile if the top card is a 10.")
+ *  .setValidSlap(validSlapFunctions.value("10"))
+ *  .setSlapEffect(slapEffectHandlers.playerTakesDrink(players[0]))
+ *  .build();
+ * ```
  */
-export function createCustomSlapRule(
-  name: string,
-  description: string,
-  validSlap: (pile: Card[]) => boolean,
-  successfulEffect: (
+export class SlapRuleBuilder {
+  private _name: string = "";
+  private _description: string = "";
+  private _validSlap: (pile: Card[]) => boolean = () => false;
+  private _slapEffect: (
     slapper: Player,
     players: Player[],
     pile: Card[]
-  ) => SlapEffect,
-  unsuccessfulEffect: (
-    slapper: Player,
-    players: Player[],
-    pile: Card[]
-  ) => SlapEffect
-): SlapRule {
-  return {
-    name,
-    description,
-    validSlap,
-    successfulEffect,
-    unsuccessfulEffect,
+  ) => SlapEffect = () => {
+    return {
+      slapper: "",
+      affectedPlayers: [],
+      pile: [],
+    };
   };
+
+  /**
+   * Sets the name of the slap rule.
+   * @param name The name of the slap rule.
+   * @returns The builder instance.
+   */
+  setName(name: string): this {
+    this._name = name;
+    return this;
+  }
+
+  /**
+   * Sets the description of the slap rule.
+   * @param description The description of the slap rule.
+   * @returns The builder instance.
+   */
+  setDescription(description: string): this {
+    this._description = description;
+    return this;
+  }
+
+  /**
+   * Sets the valid slap function of the slap rule.
+   * @param validSlap The valid slap function of the slap rule.
+   * @returns The builder instance.
+   */
+  setValidSlap(validSlap: (pile: Card[]) => boolean): this {
+    this._validSlap = validSlap;
+    return this;
+  }
+
+  /**
+   * Sets the slap effect function of the slap rule.
+   * @param slapEffect The slap effect function of the slap rule.
+   * @returns The builder instance.
+   */
+  setSlapEffect(
+    slapEffect: (slapper: Player, players: Player[], pile: Card[]) => SlapEffect
+  ): this {
+    this._slapEffect = slapEffect;
+    return this;
+  }
+
+  /**
+   * Builds the slap rule with the provided properties.
+   * @returns The slap rule.
+   */
+  build(): SlapRule {
+    return {
+      name: this._name,
+      description: this._description,
+      validSlap: this._validSlap,
+      applySlapEffect: this._slapEffect,
+    };
+  }
 }

@@ -3,15 +3,17 @@ import type {
   DataPayload,
   GameStartedPayload,
   PlayCardPayload,
+  Player,
 } from "@repo/game-core";
 import { EgyptianRatScrew } from "@repo/game-core";
 import { Router } from "express";
-import { info } from "@repo/utils";
+import { info, debug } from "@repo/utils";
 import app from "./server";
 
 expressWs(app);
 
 const GameLobbies = new Map<string, EgyptianRatScrew>();
+const GameClients = new Map<string, WebSocket[]>();
 
 const router = Router();
 
@@ -48,37 +50,44 @@ router.ws("/games", (ws: WebSocket, req) => {
 });
 
 router.ws("/games/:id", (ws: WebSocket, req) => {
+  info("WebSocket connection opened for game", req.params.id);
   const gameId = req.params.id;
-  const game = GameLobbies.get(gameId);
-  const name = "Player 1";
+  let game = GameLobbies.get(gameId);
+  const playerName: string | undefined = req.query.playerName as
+    | string
+    | undefined;
+  const gameName: string | undefined = req.query.gameName as string | undefined;
 
-  if (gameId !== undefined && game === undefined) {
-    // Create a new game if the name has been provided
-    if (name !== undefined) {
-      GameLobbies.set(gameId, new EgyptianRatScrew([{ name, hand: [] }]));
-      ws.send(
-        JSON.stringify({
-          type: "join-game",
-          gameId,
-          name,
-        })
-      );
-    } else {
-      ws.send(
-        JSON.stringify({
-          type: "lobby",
-          games: Array.from(GameLobbies.keys()).map((id) => {
-            const game = GameLobbies.get(id);
-            return {
-              id,
-              name: `Game ${id}`,
-              playerCount: game?.players.length ?? 0,
-              maxPlayers: 4,
-            };
-          }),
-        })
-      );
-    }
+  if (!game && playerName) {
+    // Create a new game if the player name has been provided
+    GameLobbies.set(
+      gameId,
+      new EgyptianRatScrew([{ name: playerName, hand: [] }])
+    );
+    GameClients.set(gameId, [ws]);
+    ws.send(
+      JSON.stringify({
+        type: "join-game",
+        gameId,
+        gameName,
+        playerName,
+      })
+    );
+  } else if (!game) {
+    ws.send(
+      JSON.stringify({
+        type: "lobby",
+        games: Array.from(GameLobbies.keys()).map((id) => {
+          const aGame = GameLobbies.get(id);
+          return {
+            id,
+            name: `Game ${id}`,
+            playerCount: aGame?.players.length ?? 0,
+            maxPlayers: 4,
+          };
+        }),
+      })
+    );
   }
 
   ws.onmessage = (event) => {
@@ -90,52 +99,70 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
     switch (type) {
       case "join-game": {
         const { name } = payload;
-        game?.players.push({
-          name,
-          hand: [],
+
+        const alreadyJoined =
+          game?.players.find((player: Player) => player.name === name) !==
+          undefined;
+        if (alreadyJoined) {
+          const allPlayers = game.players.map((player: Player) => player.name);
+          debug("Player already joined", allPlayers.join(", "));
+          return;
+        }
+
+        game = createGame(gameId, name, ws, gameName);
+
+        debug("Sending player-joined event to all players except", name);
+        GameClients.get(gameId)?.forEach((client) => {
+          if (client !== ws) {
+            client.send(
+              JSON.stringify({
+                type: "player-joined",
+                name,
+              })
+            );
+          } else {
+            // Send the game state to the player who joined
+            const gameState = getGameState(game, name);
+            const response = JSON.stringify(gameState);
+            ws.send(response);
+          }
         });
-        // falls through
+        break;
       }
       case "game-started": {
-        game?.startGame();
+        debug("Game started by player", playerName);
+        if (playerName === undefined || game.active) {
+          debug(
+            playerName === undefined ? "No player name" : "Game already active"
+          );
+          return;
+        }
+
+        game.startGame();
 
         // Send the game state to all players
-        const players = game?.players.map((player) => player.name);
-        const scores = game?.score;
-        const pile = game?.pile;
-        const handSize = game?.players.find((player) => player.name === name)
-          ?.hand.length;
-        const slapRules = game?.slapRules;
-        const currentPlayer = game?.players[game.currentPlayerIndex].name;
-        const active = true;
-
-        ws.send(
-          JSON.stringify({
-            type: "game-started",
-            players,
-            scores,
-            pile,
-            handSize,
-            slapRules,
-            currentPlayer,
-            active,
-          } as GameStartedPayload)
-        );
-
+        const gameState = getGameState(game, playerName);
+        const response = JSON.stringify(gameState);
+        GameClients.get(gameId)?.forEach((client) => {
+          client.send(response);
+        });
         break;
       }
       case "play-card": {
         // The card won't be in the payload as the client doesn't know their hand
-        const player = game?.players.find((p) => p.name === name);
-        const card = player?.hand[0];
-        if (player !== undefined) game?.playCard(player);
-        // Send the play-card event to all players
-        const response: PlayCardPayload = {
-          type: "play-card",
-          name,
-          card,
-        };
-        ws.send(JSON.stringify(response));
+        const player = game.players.find((p: Player) => p.name === playerName);
+        if (player) {
+          const card = game.playCard(player);
+          // Send the play-card event to all players
+          const response: PlayCardPayload = {
+            type: "play-card",
+            playerName,
+            card,
+          };
+          GameClients.get(gameId)?.forEach((client) => {
+            client.send(JSON.stringify(response));
+          });
+        }
         break;
       }
       default:
@@ -145,13 +172,71 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
 
   ws.onclose = () => {
     info("WebSocket disconnected");
-    if (game !== undefined) {
-      game.players = game.players.filter((player) => player.name !== name);
+    if (game) {
+      game.players = game.players.filter(
+        (player: Player) => player.name !== playerName
+      );
+      GameClients.set(
+        gameId,
+        GameClients.get(gameId)?.filter((client) => client !== ws) ?? []
+      );
       if (game.players.length === 0) {
         GameLobbies.delete(gameId);
       }
     }
   };
 });
+
+/**
+ * If the game doesn't exist, create a new game with the provided player name.
+ * @param gameId - The ID of the game.
+ * @param playerName - The name of the player.
+ * @returns The game that was created.
+ */
+function createGame(
+  gameId: string,
+  playerName: string,
+  webSocket: WebSocket,
+  _gameName?: string // TODO: Improve support for game names
+): EgyptianRatScrew {
+  let game = GameLobbies.get(gameId);
+  if (!game) {
+    game = new EgyptianRatScrew([]);
+    GameLobbies.set(gameId, game);
+  }
+  // If the game already exists, track the new client
+  // if it doesn't already exist, create a new game and track the client
+  GameClients.set(gameId, [...(GameClients.get(gameId) ?? []), webSocket]);
+  game.players.push({
+    name: playerName,
+    hand: [],
+  });
+  return game;
+}
+
+function getGameState(
+  game: EgyptianRatScrew,
+  name: string
+): GameStartedPayload {
+  const players = game.players.map((player: Player) => player.name);
+  const scores = game.score;
+  const pile = game.pile;
+  const handSize = game.players.find((player: Player) => player.name === name)
+    ?.hand.length;
+  const slapRules = game.slapRules;
+  const currentPlayer = game.players[game.currentPlayerIndex].name;
+  const active = true;
+
+  return {
+    type: "game-started",
+    players,
+    scores,
+    pile,
+    handSize,
+    slapRules,
+    currentPlayer,
+    active,
+  };
+}
 
 export default router;
