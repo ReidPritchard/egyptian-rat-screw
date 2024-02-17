@@ -10,6 +10,7 @@ import type {
   PlayCardPayload,
 } from "@repo/game-core";
 import { info, debug } from "@repo/utils";
+import { Card as CardElement } from "@repo/ui";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
 export interface GameProps {
@@ -200,6 +201,11 @@ export default function Game({ params }: GameProps): JSX.Element {
               <p>
                 Pile: {pile.map((c) => `${c.value} of ${c.suit}`).join(", ")}
               </p>
+              <div>
+                <CardElement card={{ suit: "hearts", value: "A" }} />
+                <CardElement card={{ suit: "spades", value: "2" }} />
+                <CardElement card={{ suit: "hearts", value: "3" }} />
+              </div>
               <p>Message: {message}</p>
             </div>
             <button

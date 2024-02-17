@@ -22,8 +22,8 @@
     "preset": "@repo/jest-presets/jest/browser"
   },
   "devDependencies": {
-    "@repo/game-core": "*",
     "@repo/eslint-config": "*",
+    "@repo/game-core": "*",
     "@repo/jest-presets": "*",
     "@repo/typescript-config": "*",
     "@types/jest": "^29.5.11",
