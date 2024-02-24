@@ -1,6 +1,19 @@
 <script lang="ts">
   import logo from "./assets/logo.png";
+  import GameSession from "./lib/GameSession.svelte";
   import LobbyList from "./lib/LobbyList.svelte";
+
+  let hasJoinedLobby = false;
+  let playerName: string;
+  let lobbyId: string;
+
+  function joinLobby(
+    event: CustomEvent<{ lobbyId: string; playerName: string }>
+  ) {
+    playerName = event.detail.playerName;
+    lobbyId = event.detail.lobbyId;
+    hasJoinedLobby = true;
+  }
 </script>
 
 <main>
@@ -11,10 +24,19 @@
   </div>
   <h1>Egyptian Rat Screw</h1>
 
-  <div class="card">
-    <h2>Game Lobbies:</h2>
-    <LobbyList />
-  </div>
+  {#if !hasJoinedLobby}
+    <div class="card">
+      <h2>Game Lobbies:</h2>
+      <LobbyList on:join={joinLobby} />
+    </div>
+  {:else}
+    <div class="card">
+      <h2>Game Lobby:</h2>
+      <p>Player Name: {playerName}</p>
+      <p>Lobby ID: {lobbyId}</p>
+      <GameSession gameId={lobbyId} {playerName} />
+    </div>
+  {/if}
 </main>
 
 <style>

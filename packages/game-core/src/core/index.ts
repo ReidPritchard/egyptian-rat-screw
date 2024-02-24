@@ -16,6 +16,8 @@ export class ERSGame {
   gameActive: boolean = false;
 
   players: Player[];
+  maxPlayers: number = 4;
+
   currentPlayerIndex: number;
   score: Map<Player["name"], number>;
 

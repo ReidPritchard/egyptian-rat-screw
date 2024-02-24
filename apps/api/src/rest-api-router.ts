@@ -1,9 +1,5 @@
 import { Router } from "express";
-import { getGameManager } from "@oers/game-core";
-import { MODE } from "./server";
-
-const gameManager = getGameManager<WebSocket>(MODE);
-const GameLobbies = gameManager.gameSessions;
+import { gameManager } from "./server";
 
 const router = Router();
 
@@ -21,6 +17,18 @@ router.get("/games", (req, res) => {
  */
 router.post("/games", (req, res) => {
   const gameId = gameManager.createSession();
+  res.json({ gameId });
+});
+
+/**
+ * Join a game lobby
+ * @param gameId - The ID of the game lobby to join.
+ * @param playerName - The name of the player joining the game.
+ */
+router.post("/games/:gameId/join", (req, res) => {
+  const { gameId } = req.params;
+  const playerName = req.body.playerName;
+  gameManager.addPlayerToSession(playerName, gameId);
   res.json({ gameId });
 });
 

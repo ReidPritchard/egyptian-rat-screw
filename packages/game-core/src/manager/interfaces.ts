@@ -22,6 +22,11 @@ export interface ERSGameSession {
   players: string[];
 
   /**
+   * Max number of players allowed in the game session.
+   */
+  maxPlayers: number;
+
+  /**
    * Current state of the game session.
    */
   state: ERSGameSessionState;

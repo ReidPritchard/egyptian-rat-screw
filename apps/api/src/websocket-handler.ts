@@ -1,19 +1,11 @@
 import expressWs from "express-ws";
-import type {
-  DataPayload,
-  GameStartedPayload,
-  PlayCardPayload,
-  Player,
-} from "@oers/game-core";
+import type { DataPayload, GameStartedPayload, Player } from "@oers/game-core";
 import { ERSGame } from "@oers/game-core";
 import { info, debug } from "@oers/utils";
 import { Router } from "express";
-import app from "./server";
+import app, { gameManager } from "./server";
 
 expressWs(app);
-
-const GameLobbies = new Map<string, ERSGame>();
-const GameClients = new Map<string, WebSocket[]>();
 
 const router = Router();
 
@@ -21,15 +13,7 @@ router.ws("/games", (ws: WebSocket, _req) => {
   ws.send(
     JSON.stringify({
       type: "lobby",
-      games: Array.from(GameLobbies.keys()).map((id) => {
-        const game = GameLobbies.get(id);
-        return {
-          id,
-          name: `Game ${id}`,
-          playerCount: game?.players.length ?? 0,
-          maxPlayers: 4,
-        };
-      }),
+      games: gameManager.getGameSessions(),
     })
   );
 
@@ -40,136 +24,121 @@ router.ws("/games", (ws: WebSocket, _req) => {
 });
 
 router.ws("/games/:id", (ws: WebSocket, req) => {
-  info("WebSocket connection opened for game", req.params.id);
   const gameId = req.params.id;
-  let game = GameLobbies.get(gameId);
-  const playerName: string | undefined = req.query.playerName as
-    | string
-    | undefined;
-  const gameName: string | undefined = req.query.gameName as string | undefined;
+  const playerName: string = req.query.playerName as string;
 
-  if (!game && playerName) {
-    // Create a new game if the player name has been provided
-    GameLobbies.set(gameId, new ERSGame([{ name: playerName, hand: [] }]));
-    GameClients.set(gameId, [ws]);
-    ws.send(
-      JSON.stringify({
-        type: "join-game",
-        gameId,
-        gameName,
-        playerName,
-      })
-    );
-  } else if (!game) {
-    ws.send(
-      JSON.stringify({
-        type: "lobby",
-        games: Array.from(GameLobbies.keys()).map((id) => {
-          const aGame = GameLobbies.get(id);
-          return {
-            id,
-            name: `Game ${id}`,
-            playerCount: aGame?.players.length ?? 0,
-            maxPlayers: 4,
-          };
-        }),
-      })
-    );
+  info(`WebSocket connected to game ${gameId} as ${playerName}`);
+
+  const game = gameManager.setPlayer(playerName, ws, gameId);
+
+  if (!game) {
+    info("Game not found");
+    ws.send(JSON.stringify({ type: "error", message: "Game not found" }));
+    ws.close();
+    return;
   }
 
+  info("Game found");
+  const gameInitPayload: GameStartedPayload = getGameState(game, playerName);
+  debug("Sending game state to player", gameInitPayload);
+  ws.send(JSON.stringify(gameInitPayload));
+
   ws.onmessage = (event) => {
-    const payload = JSON.parse(event.data) as DataPayload;
-    info("Data received", payload);
+    let payload;
+    try {
+      payload = JSON.parse(event.data) as DataPayload;
+    } catch (error) {
+      info("Invalid payload", event.data);
+      return;
+    }
 
     const { type } = payload;
 
-    switch (type) {
-      case "join-game": {
-        const { name } = payload;
+    info("Payload type", type);
+    ws.send(JSON.stringify({ type: "error", message: "Invalid action" }));
 
-        const alreadyJoined =
-          game?.players.find((player: Player) => player.name === name) !==
-          undefined;
-        if (alreadyJoined) {
-          const allPlayers = game?.players.map((player: Player) => player.name);
-          debug("Player already joined", allPlayers?.join(", "));
-          return;
-        }
+    // switch (type) {
+    //   case "join-game": {
+    //     const { name } = payload;
 
-        game = createGame(gameId, name, ws, gameName);
+    //     const alreadyJoined =
+    //       game?.players.find((player: Player) => player.name === name) !==
+    //       undefined;
+    //     if (alreadyJoined) {
+    //       const allPlayers = game?.players.map((player: Player) => player.name);
+    //       debug("Player already joined", allPlayers?.join(", "));
+    //       return;
+    //     }
 
-        debug("Sending player-joined event to all players except", name);
-        GameClients.get(gameId)?.forEach((client) => {
-          if (client !== ws) {
-            client.send(
-              JSON.stringify({
-                type: "player-joined",
-                name,
-              })
-            );
-          } else {
-            // Send the game state to the player who joined
-            const gameState = game ? getGameState(game, name) : undefined;
-            const response = JSON.stringify(gameState);
-            ws.send(response);
-          }
-        });
-        break;
-      }
-      case "game-started": {
-        debug("Game started by player", playerName);
-        if (playerName === undefined || game?.gameActive) {
-          debug(
-            playerName === undefined ? "No player name" : "Game already active"
-          );
-          return;
-        }
+    //     game = createGame(gameId, name, ws, gameName);
 
-        game?.startGame();
+    //     debug("Sending player-joined event to all players except", name);
+    //     GameClients.get(gameId)?.forEach((client) => {
+    //       if (client !== ws) {
+    //         client.send(
+    //           JSON.stringify({
+    //             type: "player-joined",
+    //             name,
+    //           })
+    //         );
+    //       } else {
+    //         // Send the game state to the player who joined
+    //         const gameState = game ? getGameState(game, name) : undefined;
+    //         const response = JSON.stringify(gameState);
+    //         ws.send(response);
+    //       }
+    //     });
+    //     break;
+    //   }
+    //   case "game-started": {
+    //     debug("Game started by player", playerName);
+    //     if (playerName === undefined || game?.gameActive) {
+    //       debug(
+    //         playerName === undefined ? "No player name" : "Game already active"
+    //       );
+    //       return;
+    //     }
 
-        // Send the game state to all players
-        const gameState = game ? getGameState(game, playerName) : undefined;
-        const response = JSON.stringify(gameState);
-        GameClients.get(gameId)?.forEach((client) => {
-          client.send(response);
-        });
-        break;
-      }
-      case "play-card": {
-        // The card won't be in the payload as the client doesn't know their hand
-        const player = game?.players.find((p: Player) => p.name === playerName);
-        if (player) {
-          const card = game?.playCard(player);
-          // Send the play-card event to all players
-          const response: PlayCardPayload = {
-            type: "play-card",
-            name: playerName ?? "",
-            card,
-          };
-          GameClients.get(gameId)?.forEach((client) => {
-            client.send(JSON.stringify(response));
-          });
-        }
-        break;
-      }
-      default:
-        break;
-    }
+    //     game?.startGame();
+
+    //     // Send the game state to all players
+    //     const gameState = game ? getGameState(game, playerName) : undefined;
+    //     const response = JSON.stringify(gameState);
+    //     GameClients.get(gameId)?.forEach((client) => {
+    //       client.send(response);
+    //     });
+    //     break;
+    //   }
+    //   case "play-card": {
+    //     // The card won't be in the payload as the client doesn't know their hand
+    //     const player = game?.players.find((p: Player) => p.name === playerName);
+    //     if (player) {
+    //       const card = game?.playCard(player);
+    //       // Send the play-card event to all players
+    //       const response: PlayCardPayload = {
+    //         type: "play-card",
+    //         name: playerName ?? "",
+    //         card,
+    //       };
+    //       GameClients.get(gameId)?.forEach((client) => {
+    //         client.send(JSON.stringify(response));
+    //       });
+    //     }
+    //     break;
+    //   }
+    //   default:
+    //     break;
+    // }
+  };
+
+  ws.onerror = (error) => {
+    info("WebSocket error", error);
   };
 
   ws.onclose = () => {
     info("WebSocket disconnected");
     if (game) {
-      game.players = game.players.filter(
-        (player: Player) => player.name !== playerName
-      );
-      GameClients.set(
-        gameId,
-        GameClients.get(gameId)?.filter((client) => client !== ws) ?? []
-      );
-      if (game.players.length === 0) {
-        GameLobbies.delete(gameId);
-      }
+      gameManager.removePlayer(playerName, gameId);
     }
   };
 });

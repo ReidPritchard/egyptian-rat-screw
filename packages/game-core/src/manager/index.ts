@@ -1,3 +1,4 @@
+import { debug } from "@oers/utils";
 import { ERSGame } from "../core";
 import { ERSGameSession, ERSGameSessionState } from "./interfaces";
 
@@ -12,9 +13,9 @@ export type { ERSGameSession };
  * @public
  */
 class ERSGameManager<ConnType> {
-  private gameSessions: Map<string, ERSGame>;
-  private playerConnections: Map<string, ConnType>;
-  private playerSessionMap: Map<string, string>;
+  gameSessions: Map<string, ERSGame>;
+  playerConnections: Map<string, ConnType>;
+  playerSessionMap: Map<string, string>;
 
   constructor(MODE: "development" | "production" = "development") {
     this.gameSessions = new Map();
@@ -34,7 +35,7 @@ class ERSGameManager<ConnType> {
    * @param sessionId - The ID of the session.
    * @param gameSession - The game session to add.
    */
-  private createGameSession(sessionId: string, gameSession: ERSGame): void {
+  createGameSession(sessionId: string, gameSession: ERSGame): void {
     this.gameSessions.set(sessionId, gameSession);
   }
 
@@ -72,20 +73,29 @@ class ERSGameManager<ConnType> {
    * Gets all game sessions.
    * @returns A map of game session IDs to game session Names
    */
-  getGameSessions(): Map<string, ERSGameSession> {
-    const prettyGameSessions = new Map<string, ERSGameSession>();
+  getGameSessions(): ERSGameSession[] {
+    const prettyGameSessions: ERSGameSession[] = [];
     for (let [sessionId, gameSession] of this.gameSessions) {
-      prettyGameSessions.set(sessionId, {
-        players: gameSession.players.map(
-          (player: { name: any }) => player.name
-        ),
+      prettyGameSessions.push({
+        id: sessionId,
+        players: gameSession.players.map((player) => player.name),
+        maxPlayers: gameSession.maxPlayers,
         state: gameSession.gameActive
           ? ERSGameSessionState.InProgress
           : ERSGameSessionState.Waiting,
-        id: sessionId,
       });
     }
     return prettyGameSessions;
+  }
+
+  /**
+   * Gets a game session by its ID.
+   * @param sessionId - The ID of the game session to get.
+   * @returns The game session.
+   */
+  getGameSession(sessionId: string): ERSGame | undefined {
+    debug("Getting game session", sessionId, this.gameSessions.keys());
+    return this.gameSessions.get(sessionId);
   }
 
   /**
@@ -103,6 +113,18 @@ class ERSGameManager<ConnType> {
    */
   removePlayerConnection(playerId: string): void {
     this.playerConnections.delete(playerId);
+  }
+
+  /**
+   * Remove player from the game session and remove the player's connection.
+   * @param playerId - The ID of the player to remove.
+   * @param sessionId - The ID of the session to remove the player from.
+   * @returns The game session the player was removed from.
+   */
+  removePlayer(playerId: string, sessionId: string): ERSGame | undefined {
+    this.removePlayerFromSession(playerId);
+    this.removePlayerConnection(playerId);
+    return this.getGameSession(sessionId);
   }
 
   /**
@@ -129,6 +151,23 @@ class ERSGameManager<ConnType> {
   getPlayerSession(playerId: string): string | undefined {
     return this.playerSessionMap.get(playerId);
   }
+
+  /**
+   * Sets the player, player connection, and player session map.
+   * @param playerId - The ID of the player.
+   * @param playerConnection - The player's connection.
+   * @param sessionId - The ID of the session.
+   * @returns The session of the player.
+   */
+  setPlayer(
+    playerId: string,
+    playerConnection: ConnType,
+    sessionId: string
+  ): ERSGame | undefined {
+    this.addPlayerConnection(playerId, playerConnection);
+    this.addPlayerToSession(playerId, sessionId);
+    return this.getGameSession(sessionId);
+  }
 }
 
 /**
@@ -139,7 +178,7 @@ let instance: ERSGameManager<any> | null = null;
 export function getGameManager<ConnType>(
   MODE: "development" | "production" = "development"
 ): ERSGameManager<ConnType> {
-  if (instance === null || MODE === "development") {
+  if (instance === null) {
     instance = new ERSGameManager<ConnType>(MODE);
   }
   return instance as ERSGameManager<ConnType>;
