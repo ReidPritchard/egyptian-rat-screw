@@ -1,5 +1,5 @@
 {
-  "name": "@repo/ui",
+  "name": "@oers/ui",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
@@ -19,13 +19,13 @@
     "test": "jest"
   },
   "jest": {
-    "preset": "@repo/jest-presets/jest/browser"
+    "preset": "@oers/jest-presets/jest/browser"
   },
   "devDependencies": {
-    "@repo/eslint-config": "*",
-    "@repo/game-core": "*",
-    "@repo/jest-presets": "*",
-    "@repo/typescript-config": "*",
+    "@oers/eslint-config": "*",
+    "@oers/game-core": "*",
+    "@oers/jest-presets": "*",
+    "@oers/typescript-config": "*",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",

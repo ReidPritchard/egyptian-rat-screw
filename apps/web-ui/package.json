@@ -2,18 +2,11 @@
   "name": "web-ui",
   "version": "0.0.0",
   "private": true,
-  "scripts": {
-    "build": "next build",
-    "clean": "rm -rf .next",
-    "dev": "next dev -p 3002",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "start": "next start"
-  },
+  "scripts": {},
   "dependencies": {
-    "@repo/game-core": "*",
-    "@repo/ui": "*",
-    "@repo/utils": "*",
+    "@oers/game-core": "*",
+    "@oers/ui": "*",
+    "@oers/utils": "*",
     "next": "^14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -21,8 +14,8 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^14.0.4",
-    "@repo/eslint-config": "*",
-    "@repo/typescript-config": "*",
+    "@oers/eslint-config": "*",
+    "@oers/typescript-config": "*",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",

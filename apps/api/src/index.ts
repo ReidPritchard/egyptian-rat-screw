@@ -1,10 +1,10 @@
-import { info } from "@repo/utils";
+import { info } from "@oers/utils";
 import app from "./server";
-import router from "./api";
+import setupMiddleware from "./middleware";
 
 const port = process.env.PORT || 5001;
 
-app.use("/", router);
+setupMiddleware(app);
 
 app.listen(port, () => {
   info(`Server started on http://localhost:${port}/`);

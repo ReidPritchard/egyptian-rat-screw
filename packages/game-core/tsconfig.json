@@ -1,10 +1,11 @@
 {
-  "extends": "@repo/typescript-config/base.json",
+  "extends": "@oers/typescript-config/base.json",
   "compilerOptions": {
-    "lib": ["ES2015"],
+    "lib": ["esnext"],
     "outDir": "./dist",
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "downlevelIteration": true
   },
   "include": ["."],
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isDataPayload, PlayerGame } from "@repo/game-core";
+import { isDataPayload, PlayerGame } from "@oers/game-core";
 import type {
   Card,
   DataPayload,
@@ -10,9 +10,9 @@ import type {
   PlayCardPayload,
   SlapRule,
   PlayerGameOptions,
-} from "@repo/game-core";
-import { info, debug } from "@repo/utils";
-import { GameCard } from "@repo/ui";
+} from "@oers/game-core";
+import { info, debug } from "@oers/utils";
+import { GameCard } from "@oers/ui";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
 export interface GameProps {

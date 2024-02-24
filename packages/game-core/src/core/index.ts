@@ -7,12 +7,12 @@ import {
   defaultPenalty,
   defaultSlapRules,
 } from "../slap-rule";
-import { debug, info } from "@repo/utils";
+import { debug, info } from "@oers/utils";
 
 /**
  * Represents a game of Egyptian Rat Screw.
  */
-export class EgyptianRatScrew {
+export class ERSGame {
   gameActive: boolean = false;
 
   players: Player[];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { debug, error } from "@repo/utils";
+import { debug, error } from "@oers/utils";
 import { useRouter } from "next/navigation";
 
 export default function Home(): JSX.Element {
