@@ -11,7 +11,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "clean": "rm -rf dist && rm -rf node_modules"
+    "clean": "rm -rf dist && rm -rf node_modules",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@oers/game-core": "*",
@@ -19,10 +21,20 @@
   },
   "devDependencies": {
     "@oers/eslint-config": "*",
-    "@oers/typescript-config": "*",
     "@oers/jest-presets": "*",
+    "@oers/typescript-config": "*",
+    "@storybook/addon-essentials": "^7.6.17",
+    "@storybook/addon-interactions": "^7.6.17",
+    "@storybook/addon-links": "^7.6.17",
+    "@storybook/blocks": "^7.6.17",
+    "@storybook/svelte": "^7.6.17",
+    "@storybook/svelte-vite": "^7.6.17",
+    "@storybook/test": "^7.6.17",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
     "@tsconfig/svelte": "^5.0.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "storybook": "^7.6.17",
     "svelte": "^4.2.11",
     "svelte-check": "^3.6.4",
     "tslib": "^2.6.2",

@@ -7,7 +7,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "storybook": "turbo run storybook",
+    "storybook:build": "turbo run build-storybook"
   },
   "devDependencies": {
     "eslint": "^8.0.1",
