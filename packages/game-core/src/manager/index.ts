@@ -53,7 +53,7 @@ class ERSGameManager<ConnType> {
    * Generates a unique session ID.
    * @returns A unique session ID.
    */
-  private generateUniqueSessionId(): string {
+  generateUniqueSessionId(): string {
     let sessionId;
     do {
       sessionId = Math.random().toString(36).substring(7);

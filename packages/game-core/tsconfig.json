@@ -1,11 +1,3 @@
 {
-  "extends": "@oers/typescript-config/base.json",
-  "compilerOptions": {
-    "lib": ["esnext"],
-    "outDir": "./dist",
-    "types": ["jest", "node"],
-    "downlevelIteration": true
-  },
-  "include": ["."],
-  "exclude": ["node_modules", "dist"]
+  "extends": "@oers/typescript-config/internal.json"
 }

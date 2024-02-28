@@ -1,16 +1,19 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, createEventDispatcher } from "svelte";
   import { socketStore } from "../stores/socketStore";
   import {
     gameSessionStore,
     type GameSession,
   } from "../stores/gameSessionStore";
-  import Rules from "./Rules.svelte";
+  import Rules from "./GameComponents/Rules.svelte";
+  import CardPile from "./GameComponents/CardPile.svelte";
 
   export let gameId: string;
   export let playerName: string;
 
   let cancelSocketSubscription: () => void = () => {};
+
+  const dispatch = createEventDispatcher();
 
   let loading = true;
   let gameSession: GameSession;
@@ -40,6 +43,13 @@
           return;
         }
         console.log("Received message:", data);
+
+        if (data.type === "error") {
+          console.error("Received error message:", data);
+          leaveGame();
+          return;
+        }
+
         gameSessionStore.handlePayload(data);
       }
     });
@@ -58,6 +68,12 @@
     socketStore.disconnect();
   });
 
+  function leaveGame() {
+    console.log("Leaving game");
+    socketStore.send(JSON.stringify({ type: "leave" }));
+    dispatch("leave");
+  }
+
   function sendMsg() {
     console.log("Sending message to server");
     socketStore.send(JSON.stringify({ type: "test", data: "Hello, world!" }));
@@ -66,25 +82,43 @@
 
 <div class="game-session">
   {#if loading}
-    <div class="loading">Loading...</div>
+    <div class="loading fadeIn">Loading...</div>
   {:else if gameSession}
-    <div class="game-session-details">
-      <h2>Game Session Details</h2>
-      {#if gameSession.currentPlayer}<p>
-          Current Player: {gameSession.currentPlayer}
-        </p>{/if}
-      {#if gameSession.score}<p>Score: {gameSession.score}</p>{/if}
-      {#if gameSession.status}<p>Status: {gameSession.status}</p>{/if}
-      {#if gameSession.cardPile}<p>Card Pile: {gameSession.cardPile}</p>{/if}
-      {#if gameSession.numCardsInHand}<p>
-          Number of Cards in Hand: {gameSession.numCardsInHand}
-        </p>{/if}
-      {#if gameSession.slapRules}<Rules
-          slapRules={gameSession.slapRules}
-        />{/if}
-      {#if gameSession.notify}<p>Notification: {gameSession.notify}</p>{/if}
+    <div class="game-session-details fadeIn">
+      <div id="left-col">
+        <h2>Game Session</h2>
+        <p>Game ID: {gameId}</p>
+        <p>Player Name: {playerName}</p>
+      </div>
+
+      <div id="middle-col">
+        <h2>Details</h2>
+        {#if gameSession.currentPlayer}<p>
+            Current Player: {gameSession.currentPlayer}
+          </p>{/if}
+        {#if gameSession.score}<p>Score: {gameSession.score}</p>{/if}
+        {#if gameSession.status}<p>Status: {gameSession.status}</p>{/if}
+
+        {#if gameSession.cardPile}
+          <CardPile pile={gameSession.cardPile} />
+        {/if}
+      </div>
+
+      <div id="right-col">
+        {#if gameSession.numCardsInHand}<p>
+            Number of Cards in Hand: {gameSession.numCardsInHand}
+          </p>{/if}
+        {#if gameSession.slapRules}<Rules
+            slapRules={gameSession.slapRules}
+          />{/if}
+        {#if gameSession.notify}<p>Notification: {gameSession.notify}</p>{/if}
+      </div>
     </div>
-    <button class="send-button" on:click={sendMsg}>Send Test Message</button>
+
+    <footer class="fadeIn">
+      <button class="send-button" on:click={leaveGame}>Leave Game</button>
+      <button class="send-button" on:click={sendMsg}>Send Test Message</button>
+    </footer>
   {/if}
 </div>
 
@@ -94,15 +128,58 @@
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+
+    height: 100%;
   }
   .game-session-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr;
+
+    grid-template-areas: "left middle right" "left middle right" "left middle right";
+
+    gap: 1rem;
+    padding: 1rem;
+
+    height: 100%;
   }
   .game-session-details p {
     color: var(--secondary-color);
   }
+
+  #left-col {
+    grid-area: left;
+
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  #middle-col {
+    grid-area: middle;
+
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  #right-col {
+    grid-area: right;
+
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  footer {
+    position: absolute;
+    bottom: 0;
+
+    display: flex;
+    gap: 1rem;
+
+    padding: 5rem;
+  }
+
   .send-button {
     padding: 0.5rem 1rem;
     color: var(--light-color);
@@ -111,6 +188,11 @@
     border-radius: 0.25rem;
     cursor: pointer;
   }
+
+  .send-button:hover {
+    background-color: var(--accent-color-dark);
+  }
+
   .loading {
     font-size: 1.5rem;
     color: var(--accent-color);

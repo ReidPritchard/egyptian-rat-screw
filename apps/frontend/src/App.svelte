@@ -1,42 +1,36 @@
 <script lang="ts">
-  import logo from "./assets/logo.png";
-  import GameSession from "./lib/GameSession.svelte";
-  import LobbyList from "./lib/LobbyList.svelte";
+  import logo from "./assets/logo-v01.webp";
+  import AppContainer from "./lib/AppContainer.svelte";
+  import { sessionStorageStore } from "./stores/storable";
 
-  let hasJoinedLobby = false;
-  let playerName: string;
-  let lobbyId: string;
+  let hasJoinedLobby =
+    !!sessionStorageStore.getItem("playerName") &&
+    !!sessionStorageStore.getItem("lobbyId");
 
-  function joinLobby(
-    event: CustomEvent<{ lobbyId: string; playerName: string }>
-  ) {
-    playerName = event.detail.playerName;
-    lobbyId = event.detail.lobbyId;
-    hasJoinedLobby = true;
-  }
+  // Subscribe to changes in session storage
+  sessionStorageStore.subscribe((value) => {
+    console.log("sessionStorageStore changed:", value);
+    hasJoinedLobby =
+      !!sessionStorageStore.getItem("playerName") &&
+      !!sessionStorageStore.getItem("lobbyId");
+  });
 </script>
 
 <main>
-  <div>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={logo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Egyptian Rat Screw</h1>
-
   {#if !hasJoinedLobby}
-    <div class="card">
-      <h2>Game Lobbies:</h2>
-      <LobbyList on:join={joinLobby} />
+    <div class="fadeIn">
+      <a href="https://svelte.dev" target="_blank" rel="noreferrer">
+        <img src={logo} class="logo svelte" alt="Svelte Logo" />
+      </a>
     </div>
+    <h1>Egyptian Rat Screw</h1>
   {:else}
-    <div class="card">
-      <h2>Game Lobby:</h2>
-      <p>Player Name: {playerName}</p>
-      <p>Lobby ID: {lobbyId}</p>
-      <GameSession gameId={lobbyId} {playerName} />
-    </div>
+    <header class="fadeIn">
+      <h1>Egyptian Rat Screw</h1>
+    </header>
   {/if}
+
+  <AppContainer />
 </main>
 
 <style>
@@ -51,5 +45,19 @@
   }
   .logo.svelte:hover {
     filter: drop-shadow(0 0 2em #ff3e00aa);
+  }
+
+  header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    gap: 1rem;
+
+    padding: 1rem 5rem;
   }
 </style>

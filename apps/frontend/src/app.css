@@ -20,6 +20,60 @@
   --light-color: #284b63;
 }
 
+/* Default CSS Animations */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.fadeIn {
+  animation: fadeIn 1s ease-in-out;
+}
+
+.fadeOut {
+  animation: fadeOut 1s ease-in-out;
+}
+
+.slideIn {
+  animation: slideIn 1s ease-in-out;
+}
+
+.slideOut {
+  animation: slideOut 1s ease-in-out;
+}
+
 a {
   font-weight: 500;
   color: var(--accent-color);
@@ -50,7 +104,8 @@ h1 {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
-  text-align: center;
+
+  min-height: 70vh;
 }
 
 button {

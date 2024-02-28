@@ -1,8 +1,10 @@
 {
-  "extends": ["//"],
+  "extends": [
+    "//"
+  ],
   "pipeline": {
     "build": {
-      "outputs": ["dist/**"]
+      // There are no build steps for this project
     }
   }
 }

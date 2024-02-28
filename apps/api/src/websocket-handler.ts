@@ -43,7 +43,7 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
   debug("Sending game state to player", gameInitPayload);
   ws.send(JSON.stringify(gameInitPayload));
 
-  ws.onmessage = (event) => {
+  ws.onmessage = (event: MessageEvent<string>) => {
     let payload;
     try {
       payload = JSON.parse(event.data) as DataPayload;
@@ -57,78 +57,11 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
     info("Payload type", type);
     ws.send(JSON.stringify({ type: "error", message: "Invalid action" }));
 
-    // switch (type) {
-    //   case "join-game": {
-    //     const { name } = payload;
-
-    //     const alreadyJoined =
-    //       game?.players.find((player: Player) => player.name === name) !==
-    //       undefined;
-    //     if (alreadyJoined) {
-    //       const allPlayers = game?.players.map((player: Player) => player.name);
-    //       debug("Player already joined", allPlayers?.join(", "));
-    //       return;
-    //     }
-
-    //     game = createGame(gameId, name, ws, gameName);
-
-    //     debug("Sending player-joined event to all players except", name);
-    //     GameClients.get(gameId)?.forEach((client) => {
-    //       if (client !== ws) {
-    //         client.send(
-    //           JSON.stringify({
-    //             type: "player-joined",
-    //             name,
-    //           })
-    //         );
-    //       } else {
-    //         // Send the game state to the player who joined
-    //         const gameState = game ? getGameState(game, name) : undefined;
-    //         const response = JSON.stringify(gameState);
-    //         ws.send(response);
-    //       }
-    //     });
-    //     break;
-    //   }
-    //   case "game-started": {
-    //     debug("Game started by player", playerName);
-    //     if (playerName === undefined || game?.gameActive) {
-    //       debug(
-    //         playerName === undefined ? "No player name" : "Game already active"
-    //       );
-    //       return;
-    //     }
-
-    //     game?.startGame();
-
-    //     // Send the game state to all players
-    //     const gameState = game ? getGameState(game, playerName) : undefined;
-    //     const response = JSON.stringify(gameState);
-    //     GameClients.get(gameId)?.forEach((client) => {
-    //       client.send(response);
-    //     });
-    //     break;
-    //   }
-    //   case "play-card": {
-    //     // The card won't be in the payload as the client doesn't know their hand
-    //     const player = game?.players.find((p: Player) => p.name === playerName);
-    //     if (player) {
-    //       const card = game?.playCard(player);
-    //       // Send the play-card event to all players
-    //       const response: PlayCardPayload = {
-    //         type: "play-card",
-    //         name: playerName ?? "",
-    //         card,
-    //       };
-    //       GameClients.get(gameId)?.forEach((client) => {
-    //         client.send(JSON.stringify(response));
-    //       });
-    //     }
-    //     break;
-    //   }
-    //   default:
-    //     break;
-    // }
+    switch (type) {
+      case "play-card":
+        game.playCard(playerName);
+        break;
+    }
   };
 
   ws.onerror = (error) => {
