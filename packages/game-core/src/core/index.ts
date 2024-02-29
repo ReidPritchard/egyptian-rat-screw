@@ -161,9 +161,12 @@ export class ERSGame {
    * @returns The new current player index
    */
   nextPlayer() {
-    this.currentPlayerIndex =
-      (this.currentPlayerIndex + 1) % this.players.length;
-    return this.currentPlayerIndex;
+    this.currentPlayerIndex = this.activeCardRule.isCardRuleActive
+      ? this.players.indexOf(
+          this.activeCardRule.activeRuleContext?.targetPlayer ||
+            this.players[this.currentPlayerIndex]
+        )
+      : (this.currentPlayerIndex + 1) % this.players.length;
   }
 
   slapPile(player: Player): boolean {
@@ -193,11 +196,49 @@ export class ERSGame {
     const card = player.hand.shift();
     if (card) {
       this.pile.push(card);
-
-      if (this.activeCardRule.isCardRuleActive) {
-      }
+      this.processCardRules(card, player);
     }
     return card;
+  }
+
+  processCardRules(card: Card, actingPlayer: Player) {
+    if (this.activeCardRule.isCardRuleActive === false) {
+      this.activeCardRule.shouldActivate(
+        card,
+        actingPlayer,
+        this.determineNextPlayer()
+      );
+    } else {
+      if (this.activeCardRule.activeRuleContext)
+        this.activeCardRule.activeRuleContext.cardsPlayed++;
+      const ruleDeactiviated = this.activeCardRule.shouldDeactivate(card, this);
+      if (ruleDeactiviated) {
+        this.activeCardRule.shouldActivate(
+          card,
+          actingPlayer,
+          this.determineNextPlayer()
+        );
+      }
+    }
+    // Update the current player index
+    this.nextPlayer();
+  }
+
+  determineNextPlayer() {
+    if (
+      this.activeCardRule.isCardRuleActive &&
+      this.activeCardRule.activeRuleContext?.targetPlayer !== undefined
+    ) {
+      return this.activeCardRule.activeRuleContext.targetPlayer;
+    } else {
+      // If no target player is set, use the next player
+      return this.players[(this.currentPlayerIndex + 1) % this.players.length];
+    }
+  }
+
+  givePileToPlayer(player: Player) {
+    player.hand.push(...this.pile);
+    this.pile = [];
   }
 
   setSlapRules(rules: SlapRule[]) {
