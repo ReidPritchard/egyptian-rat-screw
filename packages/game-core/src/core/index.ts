@@ -252,9 +252,9 @@ export class ERSGame {
   }
 
   startGame() {
-    if (this.players.length < 2) {
-      throw new Error("Not enough players to start the game");
-    }
+    // if (this.players.length < 2) {
+    //   throw new Error("Not enough players to start the game");
+    // }
 
     this.reset();
     this.gameActive = GameStates.InProgress;

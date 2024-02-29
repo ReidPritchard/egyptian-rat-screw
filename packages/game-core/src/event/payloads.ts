@@ -1,6 +1,7 @@
 import { Card } from "../card";
 import { Player } from "../player";
 import { SlapEffect, SlapRule } from "../rule/slap-rule";
+import { ErrorCodes } from "./errors";
 
 /**
  * Payloads are the data passed between the client and server.
@@ -186,7 +187,7 @@ export interface ErrorPayload extends BasePayload {
    * This can be used to determine the type of error
    * and how it's handled on the client.
    */
-  errorCode: string;
+  errorCode: (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
   /**
    * Additional details about the error.

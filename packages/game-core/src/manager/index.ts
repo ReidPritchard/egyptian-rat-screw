@@ -1,6 +1,7 @@
-import { debug } from "@oers/utils";
+import { debug, info } from "@oers/utils";
 import { ERSGame } from "../core";
 import { ERSGameSession, ERSGameSessionState } from "./interfaces";
+import { GameStatusPayload } from "../event";
 
 export { ERSGameSessionState };
 export type { ERSGameSession };
@@ -50,6 +51,48 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
   }
 
   /**
+   * Generates a "GameStatusPayload" for a specific player.
+   * @param playerName - The name of the player to get the state for.
+   * @returns The game state for the player.
+   */
+  getGameState(playerName: string): GameStatusPayload {
+    const sessionId = this.getPlayerSession(playerName);
+    if (!sessionId) {
+      throw new Error("Player not found in any session");
+    }
+    const gameSession = this.getGameSession(sessionId);
+    if (!gameSession) {
+      throw new Error("Game session not found");
+    }
+    const players = gameSession.players.map((player) => player.name);
+    const scores = gameSession.players.reduce(
+      (scoreMap, player) => {
+        scoreMap[player.name] = 0; // Assuming initial score is 0 for all players
+        return scoreMap;
+      },
+      {} as Record<string, number>
+    );
+    const player = gameSession.players.find(
+      (player) => player.name === playerName
+    );
+    const handSize = player?.hand.length ?? 0;
+    const slapRules = gameSession.slapRules;
+    const pile = gameSession.pile;
+    const currentPlayer =
+      gameSession.players[gameSession.currentPlayerIndex].name;
+
+    return {
+      type: "game-status",
+      players,
+      scores,
+      handSize,
+      slapRules,
+      pile: pile,
+      currentPlayer,
+    };
+  }
+
+  /**
    * Broadcasts a message to all players in a session.
    * @param sessionId - The ID of the session to broadcast to.
    * @param message - The message to broadcast.
@@ -62,6 +105,25 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
         const playerConnection = this.playerConnections.get(player.name);
         if (playerConnection) {
           playerConnection.send(message);
+        }
+      }
+    }
+    return gameSession;
+  }
+
+  /**
+   * Broadcasts player specific game state to each player in the session.
+   * @param sessionId - The ID of the session to broadcast to.
+   * @returns The game session the message was broadcast to.
+   */
+  broadcastGameStateToSession(sessionId: string): ERSGame | undefined {
+    const gameSession = this.getGameSession(sessionId);
+    if (gameSession) {
+      for (let player of gameSession.players) {
+        const playerConnection = this.playerConnections.get(player.name);
+        if (playerConnection) {
+          const gameState = this.getGameState(player.name);
+          playerConnection.send(JSON.stringify(gameState));
         }
       }
     }
@@ -195,7 +257,20 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
   ): ERSGame | undefined {
     this.addPlayerConnection(playerId, playerConnection);
     this.addPlayerToSession(playerId, sessionId);
-    return this.getGameSession(sessionId);
+
+    // Send the game state to the player (if there is one)
+    const gameSession = this.getGameSession(sessionId);
+    if (gameSession) {
+      info("Sending game state to new player", playerId);
+      const gameSessionPayload = this.getGameState(playerId);
+      playerConnection.send(JSON.stringify(gameSessionPayload));
+
+      // Broadcast the new game state to all players
+      // TODO: just broadcast a "player-joined" event
+      this.broadcastGameStateToSession(sessionId);
+    }
+
+    return gameSession;
   }
 }
 
@@ -204,7 +279,9 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
  * return the existing instance.
  */
 let instance: ERSGameManager<any> | null = null;
-export function getGameManager<ConnType>(
+export function getGameManager<
+  ConnType extends { send: (message: string) => void },
+>(
   MODE: "development" | "production" = "development"
 ): ERSGameManager<ConnType> {
   if (instance === null) {

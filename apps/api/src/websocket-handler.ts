@@ -1,14 +1,6 @@
 import expressWs from "express-ws";
-import { isClientPayload, isDataPayload } from "@oers/game-core";
-import type {
-  ServerPayload,
-  type DataPayload,
-  type GameStartedPayload,
-  type Player,
-  type ERSGame,
-  type ClientPayload,
-  GameStatusPayload,
-} from "@oers/game-core";
+import { ErrorCodes, isClientPayload, isDataPayload } from "@oers/game-core";
+import type { ServerPayload, ClientPayload } from "@oers/game-core";
 import { info, debug } from "@oers/utils";
 import { Router } from "express";
 import app, { gameManager } from "./server";
@@ -47,17 +39,16 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
   }
 
   info("Game found");
-  const gameInitPayload: GameStatusPayload = getGameState(game, playerName);
-  debug("Sending game state to player", gameInitPayload);
-  ws.send(JSON.stringify(gameInitPayload));
 
   ws.onmessage = (event: MessageEvent<string>) => {
     let payload: ClientPayload;
+    let response: ServerPayload;
+
     try {
       payload = JSON.parse(event.data);
     } catch (error) {
       info("Invalid payload", event.data);
-      ws.send(JSON.stringify({ type: "error", message: "Invalid payload" }));
+      sendError(ws, "Invalid payload", ErrorCodes.INVALID_INPUT);
       return;
     }
 
@@ -65,8 +56,6 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
       const { type } = payload;
 
       info("Received payload type", type);
-
-      let response: ServerPayload;
       switch (type) {
         case "player-ready":
           try {
@@ -76,15 +65,10 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
               startTime: new Date().toISOString(),
             };
             gameManager.broadcastToSession(gameId, JSON.stringify(response));
-            gameManager.broadcastToSession(
-              gameId,
-              JSON.stringify(getGameState(game, playerName))
-            );
+            gameManager.broadcastGameStateToSession(gameId);
           } catch (error) {
             info("Error starting game", error);
-            ws.send(
-              JSON.stringify({ type: "error", message: "Error starting game" })
-            );
+            sendError(ws, "Error starting game", ErrorCodes.GAME_START_FAILED);
           }
           break;
         case "play-card-attempt":
@@ -100,13 +84,16 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
             }
           } catch (error) {
             info("Error playing card", error);
-            ws.send(
-              JSON.stringify({ type: "error", message: "Error playing card" })
+            sendError(
+              ws,
+              "Error playing card",
+              ErrorCodes.PLAY_CARD_ACTION_FAILED
             );
           }
           break;
         default:
-          ws.send(JSON.stringify({ type: "error", message: "Invalid action" }));
+          debug("Invalid action", type);
+          sendError(ws, "Invalid action", ErrorCodes.UNSUPPORTED_ACTION);
       }
     }
   };
@@ -114,35 +101,23 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
   ws.onerror = (error) => {
     info("WebSocket error", error);
   };
-
   ws.onclose = () => {
-    info("WebSocket disconnected");
-    if (game) {
-      gameManager.removePlayer(playerName, gameId);
-    }
+    handleDisconnect(playerName, gameId);
   };
 });
 
-function getGameState(game: ERSGame, name: string): GameStatusPayload {
-  const players = game.players.map((player: Player) => player.name);
-  const scores = game.score;
-  // const pile = game.pile;
-  const handSize =
-    game.players.find((player: Player) => player.name === name)?.hand.length ||
-    0;
-  const slapRules = game.slapRules;
-  const currentPlayer = game.players[game.currentPlayerIndex].name;
-  //   const active = true;
-
-  return {
-    type: "game-status",
-    players,
-    scores: Object.fromEntries(scores),
-    handSize,
-    slapRules,
-    pile: [],
-    currentPlayer,
+function sendError(ws: WebSocket, message: string, errorCode: ErrorCodes) {
+  const response: ServerPayload = {
+    type: "error",
+    message,
+    errorCode,
   };
+  ws.send(JSON.stringify(response));
+}
+
+function handleDisconnect(playerName: string, gameId: string) {
+  info(`WebSocket disconnected for player ${playerName} in game ${gameId}`);
+  gameManager.removePlayer(playerName, gameId);
 }
 
 export default router;
