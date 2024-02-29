@@ -12,7 +12,7 @@ export type { ERSGameSession };
  * @param MODE - The mode of the server (development or production).
  * @public
  */
-class ERSGameManager<ConnType> {
+class ERSGameManager<ConnType extends { send: (message: string) => void }> {
   gameSessions: Map<string, ERSGame>;
   playerConnections: Map<string, ConnType>;
   playerSessionMap: Map<string, string>;
@@ -47,6 +47,25 @@ class ERSGameManager<ConnType> {
     const sessionId = this.generateUniqueSessionId();
     this.createGameSession(sessionId, new ERSGame([]));
     return sessionId;
+  }
+
+  /**
+   * Broadcasts a message to all players in a session.
+   * @param sessionId - The ID of the session to broadcast to.
+   * @param message - The message to broadcast.
+   * @returns The game session the message was broadcast to.
+   */
+  broadcastToSession(sessionId: string, message: string): ERSGame | undefined {
+    const gameSession = this.getGameSession(sessionId);
+    if (gameSession) {
+      for (let player of gameSession.players) {
+        const playerConnection = this.playerConnections.get(player.name);
+        if (playerConnection) {
+          playerConnection.send(message);
+        }
+      }
+    }
+    return gameSession;
   }
 
   /**
@@ -94,7 +113,7 @@ class ERSGameManager<ConnType> {
    * @returns The game session.
    */
   getGameSession(sessionId: string): ERSGame | undefined {
-    debug("Getting game session", sessionId, this.gameSessions.keys());
+    // debug("Getting game session", sessionId, this.gameSessions.keys());
     return this.gameSessions.get(sessionId);
   }
 
@@ -134,6 +153,11 @@ class ERSGameManager<ConnType> {
    */
   addPlayerToSession(playerId: string, sessionId: string): void {
     this.playerSessionMap.set(playerId, sessionId);
+
+    const gameSession = this.getGameSession(sessionId);
+    if (gameSession) {
+      gameSession.addPlayer(playerId);
+    }
   }
 
   /**
@@ -142,6 +166,11 @@ class ERSGameManager<ConnType> {
    */
   removePlayerFromSession(playerId: string): void {
     this.playerSessionMap.delete(playerId);
+
+    const gameSession = this.getGameSession(playerId);
+    if (gameSession) {
+      gameSession.removePlayer(playerId);
+    }
   }
 
   /**

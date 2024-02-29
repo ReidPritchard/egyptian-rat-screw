@@ -1,6 +1,14 @@
 import expressWs from "express-ws";
-import type { DataPayload, GameStartedPayload, Player } from "@oers/game-core";
-import { ERSGame } from "@oers/game-core";
+import { isClientPayload, isDataPayload } from "@oers/game-core";
+import type {
+  ServerPayload,
+  type DataPayload,
+  type GameStartedPayload,
+  type Player,
+  type ERSGame,
+  type ClientPayload,
+  GameStatusPayload,
+} from "@oers/game-core";
 import { info, debug } from "@oers/utils";
 import { Router } from "express";
 import app, { gameManager } from "./server";
@@ -39,28 +47,67 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
   }
 
   info("Game found");
-  const gameInitPayload: GameStartedPayload = getGameState(game, playerName);
+  const gameInitPayload: GameStatusPayload = getGameState(game, playerName);
   debug("Sending game state to player", gameInitPayload);
   ws.send(JSON.stringify(gameInitPayload));
 
   ws.onmessage = (event: MessageEvent<string>) => {
-    let payload;
+    let payload: ClientPayload;
     try {
-      payload = JSON.parse(event.data) as DataPayload;
+      payload = JSON.parse(event.data);
     } catch (error) {
       info("Invalid payload", event.data);
+      ws.send(JSON.stringify({ type: "error", message: "Invalid payload" }));
       return;
     }
 
-    const { type } = payload;
+    if (isDataPayload(payload) && isClientPayload(payload)) {
+      const { type } = payload;
 
-    info("Payload type", type);
-    ws.send(JSON.stringify({ type: "error", message: "Invalid action" }));
+      info("Received payload type", type);
 
-    switch (type) {
-      case "play-card":
-        game.playCard(playerName);
-        break;
+      let response: ServerPayload;
+      switch (type) {
+        case "player-ready":
+          try {
+            game.startGame();
+            response = {
+              type: "game-started",
+              startTime: new Date().toISOString(),
+            };
+            gameManager.broadcastToSession(gameId, JSON.stringify(response));
+            gameManager.broadcastToSession(
+              gameId,
+              JSON.stringify(getGameState(game, playerName))
+            );
+          } catch (error) {
+            info("Error starting game", error);
+            ws.send(
+              JSON.stringify({ type: "error", message: "Error starting game" })
+            );
+          }
+          break;
+        case "play-card-attempt":
+          try {
+            const card = game.playCard(game.getPlayer(playerName));
+            if (card) {
+              response = {
+                type: "play-card-result",
+                name: playerName,
+                card,
+              };
+              gameManager.broadcastToSession(gameId, JSON.stringify(response));
+            }
+          } catch (error) {
+            info("Error playing card", error);
+            ws.send(
+              JSON.stringify({ type: "error", message: "Error playing card" })
+            );
+          }
+          break;
+        default:
+          ws.send(JSON.stringify({ type: "error", message: "Invalid action" }));
+      }
     }
   };
 
@@ -76,50 +123,25 @@ router.ws("/games/:id", (ws: WebSocket, req) => {
   };
 });
 
-/**
- * If the game doesn't exist, create a new game with the provided player name.
- * @param gameId - The ID of the game.
- * @param playerName - The name of the player.
- * @returns The game that was created.
- */
-function createGame(
-  gameId: string,
-  playerName: string,
-  webSocket: WebSocket,
-  _gameName?: string // TODO: Improve support for game names
-): ERSGame {
-  let game = GameLobbies.get(gameId);
-  if (!game) {
-    game = new ERSGame([]);
-    GameLobbies.set(gameId, game);
-  }
-  // If the game already exists, track the new client
-  // if it doesn't already exist, create a new game and track the client
-  GameClients.set(gameId, [...(GameClients.get(gameId) ?? []), webSocket]);
-  game.players.push({
-    name: playerName,
-    hand: [],
-  });
-  return game;
-}
-
-function getGameState(game: ERSGame, name: string): GameStartedPayload {
+function getGameState(game: ERSGame, name: string): GameStatusPayload {
   const players = game.players.map((player: Player) => player.name);
   const scores = game.score;
-  //   const pile = game.pile;
+  // const pile = game.pile;
   const handSize =
     game.players.find((player: Player) => player.name === name)?.hand.length ||
     0;
   const slapRules = game.slapRules;
-  //   const currentPlayer = game.players[game.currentPlayerIndex].name;
+  const currentPlayer = game.players[game.currentPlayerIndex].name;
   //   const active = true;
 
   return {
-    type: "game-started",
+    type: "game-status",
     players,
-    scores,
+    scores: Object.fromEntries(scores),
     handSize,
     slapRules,
+    pile: [],
+    currentPlayer,
   };
 }
 

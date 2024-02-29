@@ -18,6 +18,8 @@
   --accent-color: #f78764;
   --dark-color: #153243;
   --light-color: #284b63;
+  --danger-color: #ff4d4d;
+  --success-color: #00cc66;
 }
 
 /* Default CSS Animations */
@@ -28,15 +30,6 @@
   }
   100% {
     opacity: 1;
-  }
-}
-
-@keyframes fadeOut {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
   }
 }
 
@@ -60,10 +53,6 @@
 
 .fadeIn {
   animation: fadeIn 1s ease-in-out;
-}
-
-.fadeOut {
-  animation: fadeOut 1s ease-in-out;
 }
 
 .slideIn {

@@ -1,70 +1,94 @@
-import { Card } from "../card";
+import { Card, createDeck } from "../card";
 import { DataPayload } from "../event";
 import { Player } from "../player";
+import { ActiveRule, Rule, RuleContext } from "../rule";
+import { RuleBuilder, RuleBuilderHelpers, createRule } from "../rule/factory";
 import {
   SlapEffect,
   SlapRule,
   defaultPenalty,
   defaultSlapRules,
-} from "../slap-rule";
+} from "../rule/slap-rule";
 import { debug, info } from "@oers/utils";
+import { GameStates, Score } from "./interfaces";
+
+/**
+ * The default rules for Egyptian Rat Screw
+ */
+const defaultRules: Rule<RuleContext>[] = [
+  // Slap Rules:
+  createRule("doubles")
+    .setTags(["slap"])
+    .setCalculatePriority(RuleBuilderHelpers.calculatePriority.constant(1))
+    .setEvaluate(
+      RuleBuilderHelpers.evaluate.metadataMatchesGame(
+        "playedCard.value",
+        "hand[-1].value"
+      )
+    )
+    .setExecute(RuleBuilderHelpers.execute.givePileToActingPlayer())
+    .build(),
+  createRule("sandwich")
+    .setTags(["slap"])
+    .setCalculatePriority(RuleBuilderHelpers.calculatePriority.constant(2))
+    .setEvaluate(
+      RuleBuilderHelpers.evaluate.metadataMatchesGame(
+        "playedCard.value",
+        "hand[-2].value"
+      )
+    )
+    .setExecute(RuleBuilderHelpers.execute.givePileToActingPlayer())
+    .build(),
+  createRule("top-bottom")
+    .setTags(["slap"])
+    .setCalculatePriority(RuleBuilderHelpers.calculatePriority.constant(3))
+    .setEvaluate(
+      RuleBuilderHelpers.evaluate.metadataMatchesGame(
+        "playedCard.value",
+        "hand[0].value"
+      )
+    )
+    .setExecute(RuleBuilderHelpers.execute.givePileToActingPlayer())
+    .build(),
+  // Play Card Rules:
+  // TODO: It would be cool to have all the rules defined in the same or simlar format
+  // However, supporting rules for different events (e.g. card play, slap) makes
+  // this difficult to do in a clean way.
+];
 
 /**
  * Represents a game of Egyptian Rat Screw.
  */
 export class ERSGame {
-  gameActive: boolean = false;
+  gameActive: GameStates = GameStates.NotStarted;
 
-  players: Player[];
   maxPlayers: number = 4;
-
+  players: Player[];
   currentPlayerIndex: number;
-  score: Map<Player["name"], number>;
+
+  score: Score[];
 
   deck: Card[];
   pile: Card[];
 
   slapRules: SlapRule[];
 
+  activeCardRule: ActiveRule = new ActiveRule();
+
   constructor(players: Player[]) {
+    if (players.length > this.maxPlayers) {
+      throw new Error("Too many players for the game");
+    }
+
     this.players = players;
     this.currentPlayerIndex = Math.floor(Math.random() * players.length);
-    this.score = new Map();
-    for (let player of players) {
-      this.score.set(player.name, 0);
-    }
-
-    this.deck = this.createDeck();
+    this.score = this.players.map((player) => ({
+      playerName: player.name,
+      score: 0,
+    }));
+    this.deck = createDeck();
     this.pile = [];
     this.slapRules = defaultSlapRules;
-  }
-
-  createDeck(): Card[] {
-    let suits = ["hearts", "diamonds", "clubs", "spades"];
-    let values = [
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "10",
-      "J",
-      "Q",
-      "K",
-      "A",
-    ];
-    let deck = [];
-
-    for (let suit of suits) {
-      for (let value of values) {
-        deck.push(new Card(suit, value));
-      }
-    }
-
-    return this.shuffleDeck(deck);
   }
 
   shuffleDeck(deck: Card[]): Card[] {
@@ -87,13 +111,36 @@ export class ERSGame {
     }
   }
 
-  status() {
-    let status = "";
-    for (let player of this.players) {
-      status += `${player.name}: ${player.hand.length} cards\n`;
+  getPlayer(name: string): Player {
+    const player = this.players.find((player) => player.name === name);
+    if (!player) {
+      throw new Error(`Player ${name} not found`);
     }
-    status += `Pile: ${this.pile.length} cards\n`;
-    return status;
+    return player;
+  }
+
+  addPlayer(playerName: string): void {
+    if (this.players.some((p) => p.name === playerName)) {
+      throw new Error("Player already exists");
+    }
+
+    if (this.players.length >= this.maxPlayers) {
+      throw new Error("Game is full");
+    }
+
+    const newPlayer: Player = { name: playerName, hand: [] };
+    this.players.push(newPlayer);
+    this.score.push({ playerName, score: 0 });
+  }
+
+  removePlayer(playerName: string): void {
+    const index = this.players.findIndex((p) => p.name === playerName);
+    if (index !== -1) {
+      this.players.splice(index, 1);
+      this.score.splice(index, 1);
+    } else {
+      throw new Error(`Player ${playerName} not found`);
+    }
   }
 
   /**
@@ -105,29 +152,50 @@ export class ERSGame {
     return {
       hand: player.hand,
       pile: this.pile.length,
-      score: this.score.get(player.name),
+      score: this.score.find((s) => s.playerName === player.name)?.score,
     };
   }
 
-  slapPile(player: Player) {
-    if (!this.gameActive) {
+  /**
+   * Method used to update the current player index
+   * @returns The new current player index
+   */
+  nextPlayer() {
+    this.currentPlayerIndex =
+      (this.currentPlayerIndex + 1) % this.players.length;
+    return this.currentPlayerIndex;
+  }
+
+  slapPile(player: Player): boolean {
+    if (this.gameActive !== GameStates.InProgress) {
       throw new Error("Game is not active");
     }
+
     const rule = this.slapRules.find((rule) => rule.validSlap(this.pile));
     const valid = rule !== undefined;
     valid
       ? rule.applySlapEffect(player, this.players, this.pile)
       : defaultPenalty(player, this.players, this.pile);
+
+    if (valid) {
+      info(`Player ${player.name} slapped the pile`);
+      this.activeCardRule.reset();
+    }
+
     return valid;
   }
 
-  playCard(player: Player) {
-    if (!this.gameActive) {
+  playCard(player: Player): Card | undefined {
+    if (this.gameActive !== GameStates.InProgress) {
       throw new Error("Game is not active");
     }
+
     const card = player.hand.shift();
     if (card) {
       this.pile.push(card);
+
+      if (this.activeCardRule.isCardRuleActive) {
+      }
     }
     return card;
   }
@@ -138,210 +206,22 @@ export class ERSGame {
 
   reset() {
     this.pile.length = 0;
-    this.deck = this.createDeck();
-
-    for (let player of this.players) {
-      player.hand = [];
-    }
+    this.deck = createDeck();
+    this.players.forEach((player) => (player.hand = []));
   }
 
   startGame() {
-    this.reset();
-    this.gameActive = true;
+    if (this.players.length < 2) {
+      throw new Error("Not enough players to start the game");
+    }
 
+    this.reset();
+    this.gameActive = GameStates.InProgress;
     this.deck = this.shuffleDeck(this.deck);
     this.dealCards();
   }
 
   endGame() {
-    this.gameActive = false;
-  }
-}
-
-export interface PlayerGameOptions {
-  gameId?: string;
-  name?: string;
-  handSize?: number;
-  pile?: Card[];
-  slapRules?: SlapRule[];
-  currentPlayer?: string;
-  players?: string[];
-  scores?: Map<string, number>;
-  active?: boolean;
-}
-
-/**
- * Represents the game from the perspective of a player's client
- * This is the information that will be sent to the player and used to update the client
- */
-export class PlayerGame {
-  gameId: string;
-  name: string;
-
-  handSize: number;
-  pile: Card[];
-  slapRules: SlapRule[];
-  currentPlayer: string;
-  players: string[];
-  scores: Map<string, number>;
-  active: boolean;
-
-  message: string = "";
-
-  constructor(options: PlayerGameOptions = {}) {
-    this.gameId = options.gameId || "";
-    this.name = options.name || "";
-    this.handSize = options.handSize || 0;
-    this.pile = options.pile || [];
-    this.slapRules = options.slapRules || [];
-    this.currentPlayer = options.currentPlayer || "";
-    this.players = options.players || [];
-    this.scores = options.scores || new Map();
-    this.active = options.active || false;
-  }
-
-  nextTurn() {
-    const nextPlayerIndex =
-      (this.players.indexOf(this.currentPlayer) + 1) % this.players.length;
-    this.currentPlayer = this.players[nextPlayerIndex];
-  }
-
-  handleDataReceived(payload: DataPayload) {
-    const { type } = payload;
-
-    switch (type) {
-      case "lobby":
-        break;
-      case "join-game": {
-        const { name: newPlayer } = payload;
-        this.name = newPlayer;
-        this.active = true;
-        break;
-      }
-      case "player-joined": {
-        const { name: newPlayer } = payload;
-        this.players = [...this.players, newPlayer];
-        break;
-      }
-      case "player-left": {
-        const { name: gonePlayer } = payload;
-        this.players = this.players.filter((p) => p !== gonePlayer);
-        break;
-      }
-      case "game-started": {
-        const {
-          slapRules: gameSlapRules,
-          handSize: gameHandSize,
-          players: gamePlayers,
-          scores: gameScores,
-        } = payload;
-        this.active = true;
-        this.slapRules = gameSlapRules;
-
-        this.handSize = Number(gameHandSize);
-        this.pile = [];
-        this.players = gamePlayers;
-        this.scores = gameScores;
-        break;
-      }
-      case "slap": {
-        const { successful, effect } = payload;
-        const {
-          slapper,
-          affectedPlayers,
-          pile: newPile,
-          message: newMessage,
-        } = effect as Partial<SlapEffect>;
-
-        if (!slapper || !affectedPlayers || !newPile || !newMessage) {
-          throw new Error("Invalid slap effect");
-        }
-
-        info("Slap effect", effect);
-
-        this.pile = newPile;
-        this.message = `${slapper} slapped the pile${successful ? "!" : ", but it was invalid!"}`;
-
-        if (affectedPlayers.includes(this.name)) {
-          info("Affected players", affectedPlayers);
-          this.message += `\n${newMessage}`;
-        }
-        break;
-      }
-      case "play-card": {
-        const { card, name: player } = payload;
-        if (card !== undefined) {
-          info("Card played", card, player);
-
-          if (player === this.name) {
-            this.message = `You played a ${card.toString()}`;
-          } else {
-            this.message = `${player} played a card`;
-          }
-          this.pile = [...this.pile, card];
-
-          // Next player's turn
-          this.nextTurn();
-        } else {
-          // This should never happen
-          debug("Card is undefined", payload);
-          throw new Error("Card is undefined");
-        }
-        break;
-      }
-      case "error": {
-        const { message: errorMessage } = payload;
-        info("Error", errorMessage);
-        this.message = errorMessage;
-        break;
-      }
-    }
-  }
-
-  /**
-   * Method to generate the payload to send to the server
-   * @param action The action to perform
-   * @returns The payload to send to the server
-   */
-  generatePayload(action: DataPayload["type"]): DataPayload {
-    switch (action) {
-      case "join-game":
-        return {
-          type: "join-game",
-          name: this.name,
-          gameId: this.gameId,
-        };
-      case "slap":
-        return {
-          type: "slap",
-          name: this.name,
-        };
-      case "play-card":
-        return {
-          type: "play-card",
-          name: this.name,
-        };
-      default:
-        throw new Error("Invalid action");
-    }
-  }
-
-  /**
-   * Method to serialize the player game to a JSON string
-   * This allows for easy comparison of the previous and updated player game states
-   * @returns The serialized player game
-   */
-  serialize(): string {
-    return JSON.stringify({
-      gameId: this.gameId,
-      name: this.name,
-      handSize: this.handSize,
-      pile: this.pile,
-      slapRules: this.slapRules,
-      currentPlayer: this.currentPlayer,
-      players: this.players,
-      scores: this.scores,
-      active: this.active,
-    });
+    this.gameActive = GameStates.Ended;
   }
 }

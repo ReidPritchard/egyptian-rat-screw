@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { debug } from "@oers/utils";
 import { gameManager } from "./server";
 
 const router = Router();
@@ -28,7 +29,8 @@ router.post("/games", (req, res) => {
 router.post("/games/:gameId/join", (req, res) => {
   const { gameId } = req.params;
   const playerName = req.body.playerName;
-  gameManager.addPlayerToSession(playerName, gameId);
+  debug("DEPRECIATED - Use WebSocket to join game", gameId, playerName);
+  // gameManager.addPlayerToSession(playerName, gameId);
   res.json({ gameId });
 });
 

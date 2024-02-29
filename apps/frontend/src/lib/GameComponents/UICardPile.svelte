@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Card from "./Card.svelte";
+  import Card from "./UICard.svelte";
 
   export let pile: any[];
 </script>

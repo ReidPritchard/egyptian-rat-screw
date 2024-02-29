@@ -101,7 +101,7 @@ export const defaultSlapRules: SlapRule[] = [
     validSlap: (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
       const secondCard = pile[pile.length - 2];
-      return topCard.value === secondCard.value;
+      return topCard.rank === secondCard.rank;
     },
     ...defaultSlapEffects,
   },
@@ -112,7 +112,7 @@ export const defaultSlapRules: SlapRule[] = [
     validSlap: (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
       const thirdCard = pile[pile.length - 3];
-      return topCard.value === thirdCard.value;
+      return topCard.rank === thirdCard.rank;
     },
     ...defaultSlapEffects,
   },
@@ -123,7 +123,7 @@ export const defaultSlapRules: SlapRule[] = [
     validSlap: (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
       const bottomCard = pile[0];
-      return topCard.value === bottomCard.value;
+      return topCard.rank === bottomCard.rank;
     },
     ...defaultSlapEffects,
   },
@@ -136,7 +136,7 @@ export const validSlapFunctions = {
   value: (value: string): ((pile: Card[]) => boolean) => {
     return (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
-      return topCard?.value === value;
+      return topCard?.rank === value;
     };
   },
   suit: (suit: string): ((pile: Card[]) => boolean) => {

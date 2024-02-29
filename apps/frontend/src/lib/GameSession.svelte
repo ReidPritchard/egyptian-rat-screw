@@ -5,8 +5,9 @@
     gameSessionStore,
     type GameSession,
   } from "../stores/gameSessionStore";
-  import Rules from "./GameComponents/Rules.svelte";
-  import CardPile from "./GameComponents/CardPile.svelte";
+  import Rules from "./GameComponents/UIRules.svelte";
+  import CardPile from "./GameComponents/UICardPile.svelte";
+  import UiButton from "./UIBlocks/UIButton.svelte";
 
   export let gameId: string;
   export let playerName: string;
@@ -50,7 +51,7 @@
           return;
         }
 
-        gameSessionStore.handlePayload(data);
+        gameSessionStore.handlePayload(data, playerName);
       }
     });
 
@@ -76,7 +77,24 @@
 
   function sendMsg() {
     console.log("Sending message to server");
-    socketStore.send(JSON.stringify({ type: "test", data: "Hello, world!" }));
+
+    // If the game is paused, send a "start-game" message
+    if (gameSession.status === "paused") {
+      const msg = gameSessionStore.generatePayload(
+        "player-ready",
+        playerName,
+        gameId
+      );
+      socketStore.send(JSON.stringify(msg));
+      return;
+    }
+
+    const msg = gameSessionStore.generatePayload(
+      "play-card-attempt",
+      playerName,
+      gameId
+    );
+    socketStore.send(JSON.stringify(msg));
   }
 </script>
 
@@ -116,8 +134,17 @@
     </div>
 
     <footer class="fadeIn">
-      <button class="send-button" on:click={leaveGame}>Leave Game</button>
-      <button class="send-button" on:click={sendMsg}>Send Test Message</button>
+      {#if gameSession.status === "paused"}
+        <p>Game is paused</p>
+        <UiButton variant="primary" onClick={sendMsg}>Start Game</UiButton>
+      {:else if gameSession.status === "ended"}
+        <p>Game has ended</p>
+        <UiButton variant="primary" onClick={sendMsg}>Start Game</UiButton>
+      {:else}
+        <p>Game is active</p>
+        <UiButton variant="primary" onClick={sendMsg}>Play Card</UiButton>
+      {/if}
+      <UiButton variant="danger" onClick={leaveGame}>Leave Game</UiButton>
     </footer>
   {/if}
 </div>
