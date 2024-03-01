@@ -8,6 +8,7 @@
   import Rules from "./GameComponents/UIRules.svelte";
   import CardPile from "./GameComponents/UICardPile.svelte";
   import UiButton from "./UIBlocks/UIButton.svelte";
+  import UiPlayerState from "./GameComponents/UIPlayerState.svelte";
 
   export let gameId: string;
   export let playerName: string;
@@ -114,8 +115,6 @@
         {#if gameSession.currentPlayer}<p>
             Current Player: {gameSession.currentPlayer}
           </p>{/if}
-        {#if gameSession.score}<p>Score: {gameSession.score}</p>{/if}
-        {#if gameSession.status}<p>Status: {gameSession.status}</p>{/if}
 
         {#if gameSession.cardPile}
           <CardPile pile={gameSession.cardPile} />
@@ -126,6 +125,8 @@
         {#if gameSession.numCardsInHand}<p>
             Number of Cards in Hand: {gameSession.numCardsInHand}
           </p>{/if}
+        {#if gameSession.score}<p>Score: {gameSession.score}</p>{/if}
+        {#if gameSession.status}<p>Status: {gameSession.status}</p>{/if}
         {#if gameSession.slapRules}<Rules
             slapRules={gameSession.slapRules}
           />{/if}
@@ -134,16 +135,15 @@
     </div>
 
     <footer class="fadeIn">
-      {#if gameSession.status === "paused"}
+      {#if gameSession.status === "paused" || gameSession.status === "ended"}
         <p>Game is paused</p>
         <UiButton variant="primary" onClick={sendMsg}>Start Game</UiButton>
-      {:else if gameSession.status === "ended"}
-        <p>Game has ended</p>
-        <UiButton variant="primary" onClick={sendMsg}>Start Game</UiButton>
+        <UiPlayerState />
       {:else}
         <p>Game is active</p>
         <UiButton variant="primary" onClick={sendMsg}>Play Card</UiButton>
       {/if}
+
       <UiButton variant="danger" onClick={leaveGame}>Leave Game</UiButton>
     </footer>
   {/if}
@@ -157,10 +157,13 @@
     gap: 1rem;
 
     height: 100%;
+    width: 100%;
   }
+
   .game-session-details {
     display: grid;
-    grid-template-columns: 1fr 3fr 1fr;
+    grid-template-columns: 1fr 4fr 1fr;
+    grid-template-rows: auto;
 
     grid-template-areas: "left middle right" "left middle right" "left middle right";
 
@@ -186,6 +189,9 @@
 
     display: flex;
     flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+
     gap: 1rem;
   }
 

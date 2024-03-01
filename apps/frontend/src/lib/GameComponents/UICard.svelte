@@ -1,22 +1,114 @@
 <script lang="ts">
   import type { Card } from "@oers/game-core";
+  import { elasticOut } from "svelte/easing";
 
-  export let card: Card;
+  export let card: Card | undefined;
+  export let rotation: number = 0;
+
+  // Reactive statement for dynamic style including rotation
+  $: transformedStyle = `transform: rotate(${rotation}deg);`;
+
+  /**
+   * Transition function to animate the card being added to the pile, including rotation
+   * @param {HTMLElement} node
+   * @param {{ delay?: number, duration?: number, easing?: (t: number) => number }} params
+   */
+  function playCardTransition(
+    node: HTMLElement,
+    { delay = 0, duration = 400, easing = elasticOut } = {}
+  ) {
+    const existingTransform =
+      getComputedStyle(node).transform === "none"
+        ? ""
+        : getComputedStyle(node).transform;
+
+    return {
+      delay,
+      duration,
+      easing,
+      css: (t: number) =>
+        `${existingTransform} scale(${t}) translateZ(0); transform: ${transformedStyle} scale(${t}) translateZ(0);`,
+    };
+  }
+
+  const displayValue = (): string => card?.rank || "Unknown";
+  const displaySuit = (): string => card?.suit || "Unknown";
+
+  const suitToSymbol = (suit: string): string => {
+    switch (suit) {
+      case "hearts":
+        return "♥";
+      case "diamonds":
+        return "♦";
+      case "clubs":
+        return "♣";
+      case "spades":
+        return "♠";
+      default:
+        return "?";
+    }
+  };
 </script>
 
-<div class="card">
-  <div class="card-value">{card.value}</div>
-  <div class="card-suit">{card.suit}</div>
-</div>
+{#if card}
+  <div
+    class="card"
+    in:playCardTransition={{ duration: 600 }}
+    style={transformedStyle}
+    role="img"
+    aria-label="{card.rank} of {card.suit}"
+  >
+    <div class="card-content">
+      <div class="card-value {card.rank}">{displayValue()}</div>
+      <div class="card-suit {card.suit}">{suitToSymbol(displaySuit())}</div>
+    </div>
+  </div>
+{/if}
 
 <style>
-  .card {
-    border: 1px solid black;
-    padding: 10px;
-    margin: 10px;
+  :root {
+    --card-width: 50%;
+    --card-aspect-ratio: 2.5 / 3.5;
+    --card-border-radius: 20px;
+    --card-padding: 10px;
+    --card-margin: 10px;
+    --card-color: white;
+    --card-border-color: black;
+    --card-text-color: black;
+    --card-heart-diamond-color: red;
   }
+
+  .card {
+    position: absolute; /* Changed from absolute to relative for better layout handling */
+    width: var(--card-width);
+    aspect-ratio: var(--card-aspect-ratio);
+    border: 2px solid var(--card-border-color);
+    border-radius: var(--card-border-radius);
+    padding: var(--card-padding);
+    margin: var(--card-margin);
+    background-color: var(--card-color);
+    transition: transform 0.3s ease;
+    display: flex; /* Using flex for better control of content alignment */
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card:hover {
+    transform: scale(1.05);
+  }
+
   .card-value,
   .card-suit {
     text-align: center;
+    color: var(
+      --card-text-color
+    ); /* Using a variable for text color for easier theme changes */
+  }
+
+  .hearts,
+  .diamonds {
+    color: var(
+      --card-heart-diamond-color
+    ); /* Differentiates heart and diamond suits by color */
   }
 </style>

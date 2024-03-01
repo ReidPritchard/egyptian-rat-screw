@@ -2,12 +2,14 @@ import type {
   Card,
   ClientPayload,
   DataPayload,
+  Player,
   SlapRule,
 } from "@oers/game-core";
 import { readonly, writable } from "svelte/store";
 
 export interface GameSession {
   currentPlayer: string;
+  players: Player[];
   score: number;
   status: "playing" | "paused" | "ended";
   cardPile: Card[];
@@ -19,6 +21,7 @@ export interface GameSession {
 const createGameSessionStore = () => {
   const { subscribe, set, update } = writable<GameSession>({
     currentPlayer: "",
+    players: [],
     score: 0,
     status: "paused",
     cardPile: [],
@@ -108,6 +111,7 @@ const createGameSessionStore = () => {
     reset: () =>
       set({
         currentPlayer: "",
+        players: [],
         score: 0,
         status: "paused",
         cardPile: [],

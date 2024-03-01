@@ -35,7 +35,7 @@
       <LobbyList on:join={joinLobby} />
     </div>
   {:else}
-    <div class="card">
+    <div class="card game-session">
       <GameSession gameId={lobbyId} {playerName} on:leave={leaveLobby} />
     </div>
   {/if}
@@ -49,9 +49,14 @@
     height: 100vh;
   }
 
+  .card.game-session {
+    /* Make this a lot bigger to accomidate all the game related UI */
+    width: 80%;
+    height: 80%;
+  }
+
   .card {
     padding: 1rem;
     border-radius: 0.5rem;
-    box-shadow: 0 0 1rem 0.5rem #00000022;
   }
 </style>
