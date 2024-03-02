@@ -1,39 +1,36 @@
-# Turborepo kitchen sink starter
+# Online Egyptian Rat Screw
 
-This is an official starter Turborepo with multiple meta-frameworks all working in harmony and sharing packages.
+![Current UI](./docs/images/current-ui.png)
 
-This example also shows how to use [Workspace Configurations](https://turbo.build/repo/docs/core-concepts/monorepos/configuring-workspaces).
+## Project Structure
 
-## Using this example
+This project is organized as follows:
 
-Run the following command:
+### Packages
 
-```sh
-npx create-turbo@latest -e kitchen-sink
-```
+- `game-core`: Contains the core game logic and rules.
+- `logger`: Contains the logger utility (used for debugging, but honestly not that useful).
+- `config-eslint/typescript`: Contains shared ESLint and Typescript configuration files.
+- `jest-preset`: Contains shared Jest configuration files (not currently used).
 
-## What's inside?
+### Apps
 
-This Turborepo includes the following packages and apps:
+- `api`: Contains the server-side code for both REST and WebSocket APIs.
+- `frontend`: Contains the client-side code for the game written in Svelte.
 
-### Apps and Packages
+## Installation
 
-- `api`: an [Express](https://expressjs.com/) server
-- `storefront`: a [Next.js](https://nextjs.org/) app
-- `admin`: a [Vite](https://vitejs.dev/) single page app
-- `blog`: a [Remix](https://remix.run/) blog
-- `@oers/utils`: isomorphic logger (a small wrapper around console.log)
-- `@oers/ui`: a dummy React UI library (which contains a single `<CounterButton>` component)
-- `scripts`: Jest and ESLint configurations
-- `@oers/typescript-config`: tsconfig.json's used throughout the monorepo
+To install the game, follow these steps:
 
-Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
+1. Clone the repository to your local machine.
+2. Navigate to the project directory.
+3. Run `yarn` to install the dependencies.
+4. Run `yarn dev` to start both the server and client. The urls for the server and client will be displayed in the terminal.
 
-### Utilities
+## Contributing
 
-This Turborepo has some additional tools already setup for you:
+Contributions are welcome!
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Jest](https://jestjs.io) test runner for all things JavaScript
-- [Prettier](https://prettier.io) for code formatting
+## License
+
+This project is licensed under the MIT License.
