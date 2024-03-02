@@ -19,8 +19,8 @@
   },
   "devDependencies": {
     "@oers/eslint-config": "*",
-    "@oers/typescript-config": "*",
     "@oers/jest-presets": "*",
+    "@oers/typescript-config": "*",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
     "@tsconfig/svelte": "^5.0.2",
     "svelte": "^4.2.11",
