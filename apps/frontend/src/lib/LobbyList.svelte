@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { createEventDispatcher } from "svelte";
-  import type { ERSGameSession } from "@oers/game-core";
+  import { onMount } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
+  import type { ERSGameSession } from '@oers/game-core';
 
   const dispatch = createEventDispatcher();
 
@@ -15,7 +15,7 @@
 
   async function loadLobbies() {
     try {
-      const response = await fetch("/api/games");
+      const response = await fetch('/api/games');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -30,7 +30,7 @@
 
   async function createLobby() {
     try {
-      const response = await fetch("/api/games", { method: "POST" });
+      const response = await fetch('/api/games', { method: 'POST' });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -43,16 +43,16 @@
 
   async function joinLobby(lobbyId: string) {
     // Get the player's name
-    const playerName = prompt("Enter your name");
+    const playerName = prompt('Enter your name');
     try {
       const response = await fetch(`/api/games/${lobbyId}/join`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ playerName }),
       });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      dispatch("join", { lobbyId, playerName });
+      dispatch('join', { lobbyId, playerName });
     } catch (e) {
       // @ts-ignore
       error = e.message;

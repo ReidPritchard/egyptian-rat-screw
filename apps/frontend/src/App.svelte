@@ -1,26 +1,34 @@
 <script lang="ts">
-  import logo from "./assets/logo-v01.webp";
-  import AppContainer from "./lib/AppContainer.svelte";
-  import { sessionStorageStore } from "./stores/storable";
+  import logo from './assets/logo-v01.webp';
+  import AppContainer from './lib/AppContainer.svelte';
+  import { sessionStorageStore } from './stores/storable';
 
   let hasJoinedLobby =
-    !!sessionStorageStore.getItem("playerName") &&
-    !!sessionStorageStore.getItem("lobbyId");
+    !!sessionStorageStore.getItem('playerName') &&
+    !!sessionStorageStore.getItem('lobbyId');
 
   // Subscribe to changes in session storage
   sessionStorageStore.subscribe((value) => {
-    console.log("sessionStorageStore changed:", value);
+    console.log('sessionStorageStore changed:', value);
     hasJoinedLobby =
-      !!sessionStorageStore.getItem("playerName") &&
-      !!sessionStorageStore.getItem("lobbyId");
+      !!sessionStorageStore.getItem('playerName') &&
+      !!sessionStorageStore.getItem('lobbyId');
   });
 </script>
 
 <main>
   {#if !hasJoinedLobby}
     <div class="fadeIn">
-      <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-        <img src={logo} class="logo svelte" alt="Svelte Logo" />
+      <a
+        href="https://svelte.dev"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <img
+          src={logo}
+          class="logo svelte"
+          alt="Svelte Logo"
+        />
       </a>
     </div>
     <h1>Egyptian Rat Screw</h1>

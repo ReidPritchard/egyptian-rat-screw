@@ -4,14 +4,14 @@ import type {
   DataPayload,
   Player,
   SlapRule,
-} from "@oers/game-core";
-import { readonly, writable } from "svelte/store";
+} from '@oers/game-core';
+import { readonly, writable } from 'svelte/store';
 
 export interface GameSession {
   currentPlayer: string;
   players: Player[];
   score: number;
-  status: "playing" | "paused" | "ended";
+  status: 'playing' | 'paused' | 'ended';
   cardPile: Card[];
   numCardsInHand: number;
   slapRules: SlapRule[];
@@ -20,10 +20,10 @@ export interface GameSession {
 
 const createGameSessionStore = () => {
   const { subscribe, set, update } = writable<GameSession>({
-    currentPlayer: "",
+    currentPlayer: '',
     players: [],
     score: 0,
-    status: "paused",
+    status: 'paused',
     cardPile: [],
     numCardsInHand: 0,
     slapRules: [],
@@ -35,7 +35,7 @@ const createGameSessionStore = () => {
       update((state) => ({ ...state, currentPlayer: name })),
     addScore: (points: number) =>
       update((state) => ({ ...state, score: state.score + points })),
-    setStatus: (status: "playing" | "paused" | "ended") =>
+    setStatus: (status: 'playing' | 'paused' | 'ended') =>
       update((state) => ({ ...state, status })),
     setPile: (pile: Card[]) =>
       update((state) => ({ ...state, cardPile: pile })),
@@ -48,10 +48,10 @@ const createGameSessionStore = () => {
     handlePayload: (payload: DataPayload, name: string) => {
       const { type } = payload;
       switch (type) {
-        case "game-started":
-          update((state) => ({ ...state, status: "playing" }));
+        case 'game-started':
+          update((state) => ({ ...state, status: 'playing' }));
           break;
-        case "game-status":
+        case 'game-status':
           const { players, scores, handSize, slapRules, pile, currentPlayer } =
             payload;
           update((state) => ({
@@ -63,7 +63,7 @@ const createGameSessionStore = () => {
             cardPile: pile,
           }));
           break;
-        case "play-card-result":
+        case 'play-card-result':
           // Add the card to the pile, if this player played the card, reduce the number of cards in hand
           update((state) => ({
             ...state,
@@ -77,43 +77,43 @@ const createGameSessionStore = () => {
       }
     },
     generatePayload: (
-      actionType: ClientPayload["type"],
+      actionType: ClientPayload['type'],
       name: string,
       gameId?: string
     ): ClientPayload => {
       switch (actionType) {
-        case "player-ready":
+        case 'player-ready':
           return {
-            type: "player-ready",
+            type: 'player-ready',
             name: name,
             isReady: true,
           };
-        case "join-game":
+        case 'join-game':
           return {
-            type: "join-game",
+            type: 'join-game',
             name: name,
             gameId: gameId!,
           };
-        case "slap-attempt":
+        case 'slap-attempt':
           return {
-            type: "slap-attempt",
+            type: 'slap-attempt',
             name: name,
           };
-        case "play-card-attempt":
+        case 'play-card-attempt':
           return {
-            type: "play-card-attempt",
+            type: 'play-card-attempt',
             name: name,
           };
         default:
-          throw new Error("Invalid action");
+          throw new Error('Invalid action');
       }
     },
     reset: () =>
       set({
-        currentPlayer: "",
+        currentPlayer: '',
         players: [],
         score: 0,
-        status: "paused",
+        status: 'paused',
         cardPile: [],
         slapRules: [],
         numCardsInHand: 0,

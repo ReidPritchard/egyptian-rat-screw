@@ -1,7 +1,7 @@
-import { Card } from "../card";
-import { Player } from "../player";
-import { SlapEffect, SlapRule } from "../rule/slap-rule";
-import { ErrorCodes } from "./errors";
+import { Card } from '../card';
+import { Player } from '../player';
+import { SlapEffect, SlapRule } from '../rule/slap-rule';
+import { ErrorCodes } from './errors';
 
 /**
  * Payloads are the data passed between the client and server.
@@ -19,7 +19,7 @@ export interface BasePayload {
  * This is used to display the lobby screen.
  */
 export interface LobbyPayload extends BasePayload {
-  type: "lobby";
+  type: 'lobby';
 
   /**
    * The list of games that the user can join.
@@ -41,7 +41,7 @@ export interface LobbyPayload extends BasePayload {
  * The client should also provide a `name` query parameter to join the game.
  */
 export interface JoinGamePayload extends BasePayload {
-  type: "join-game";
+  type: 'join-game';
 
   /**
    * The id of the game to join.
@@ -59,7 +59,7 @@ export interface JoinGamePayload extends BasePayload {
  * This payload is sent to all players in the game when a new player joins.
  */
 export interface PlayerJoinedPayload extends BasePayload {
-  type: "player-joined";
+  type: 'player-joined';
 
   /**
    * The name of the player that joined the game.
@@ -72,7 +72,7 @@ export interface PlayerJoinedPayload extends BasePayload {
  * This payload is sent to all players in the game when a player leaves.
  */
 export interface PlayerLeftPayload extends BasePayload {
-  type: "player-left";
+  type: 'player-left';
 
   /**
    * The name of the player that left the game.
@@ -81,20 +81,20 @@ export interface PlayerLeftPayload extends BasePayload {
 }
 
 export interface PlayerReadyPayload extends BasePayload {
-  type: "player-ready";
+  type: 'player-ready';
   name: string;
   isReady: boolean;
 }
 
 export interface GameStartedPayload extends BasePayload {
-  type: "game-started";
+  type: 'game-started';
   startTime: string;
 }
 
 export interface GameStatusPayload extends BasePayload {
-  type: "game-status";
+  type: 'game-status';
 
-  players: Player["name"][];
+  players: Player['name'][];
   scores: { [playerName: string]: number };
   currentPlayer: string;
   handSize: number;
@@ -107,7 +107,7 @@ export interface GameStatusPayload extends BasePayload {
  * The player sends this to the server.
  */
 export interface SlapAttemptPayload extends BasePayload {
-  type: "slap-attempt";
+  type: 'slap-attempt';
 
   /**
    * The name of the player that attempted to slap the pile.
@@ -121,7 +121,7 @@ export interface SlapAttemptPayload extends BasePayload {
  * and if the slap was successful.
  */
 export interface SlapResultPayload extends BasePayload {
-  type: "slap-result";
+  type: 'slap-result';
 
   /**
    * The name of the player that slapped the pile.
@@ -144,7 +144,7 @@ export interface SlapResultPayload extends BasePayload {
  * The player sends this to the server.
  */
 export interface PlayCardAttemptPayload extends BasePayload {
-  type: "play-card-attempt";
+  type: 'play-card-attempt';
 
   /**
    * The name of the player that wants to play the card.
@@ -157,7 +157,7 @@ export interface PlayCardAttemptPayload extends BasePayload {
  * The server sends this to all players with the name of the player and the card played.
  */
 export interface PlayCardResultPayload extends BasePayload {
-  type: "play-card-result";
+  type: 'play-card-result';
 
   /**
    * The name of the player that played the card.
@@ -175,7 +175,7 @@ export interface PlayCardResultPayload extends BasePayload {
  * This is sent to the client when an error occurs.
  */
 export interface ErrorPayload extends BasePayload {
-  type: "error";
+  type: 'error';
 
   /**
    * The error message.
@@ -217,12 +217,12 @@ export type DataPayload = ClientPayload | ServerPayload;
  * Function to determine if a payload a valid `DataPayload`.
  */
 export function isDataPayload(payload: unknown): payload is DataPayload {
-  if (typeof payload !== "object" || payload === null) {
+  if (typeof payload !== 'object' || payload === null) {
     return false;
   }
 
   const { type } = payload as { type: unknown };
-  return typeof type === "string";
+  return typeof type === 'string';
 }
 
 /**
@@ -233,10 +233,10 @@ export function isClientPayload(payload: unknown): payload is ClientPayload {
     return false;
   }
   return (
-    payload.type === "join-game" ||
-    payload.type === "slap-attempt" ||
-    payload.type === "player-ready" ||
-    payload.type === "play-card-attempt"
+    payload.type === 'join-game' ||
+    payload.type === 'slap-attempt' ||
+    payload.type === 'player-ready' ||
+    payload.type === 'play-card-attempt'
   );
 }
 
@@ -248,13 +248,13 @@ export function isServerPayload(payload: unknown): payload is ServerPayload {
     return false;
   }
   return (
-    payload.type === "lobby" ||
-    payload.type === "player-joined" ||
-    payload.type === "player-left" ||
-    payload.type === "game-started" ||
-    payload.type === "game-status" ||
-    payload.type === "slap-result" ||
-    payload.type === "play-card-result" ||
-    payload.type === "error"
+    payload.type === 'lobby' ||
+    payload.type === 'player-joined' ||
+    payload.type === 'player-left' ||
+    payload.type === 'game-started' ||
+    payload.type === 'game-status' ||
+    payload.type === 'slap-result' ||
+    payload.type === 'play-card-result' ||
+    payload.type === 'error'
   );
 }

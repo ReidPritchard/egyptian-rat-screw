@@ -1,21 +1,30 @@
 <script lang="ts">
-  import type { Rule } from "@oers/game-core";
+  import type { Rule } from '@oers/game-core';
 
   export let rule: Rule;
 
   // Dispatch a custom event to signal rule removal
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
 
   function handleRemove() {
-    dispatch("remove", rule.id);
+    dispatch('remove', rule.id);
   }
 </script>
 
 <div class="rule">
-  <input bind:value={rule.name} placeholder="Rule Name" />
-  <textarea bind:value={rule.condition} placeholder="Condition"></textarea>
-  <textarea bind:value={rule.action} placeholder="Action"></textarea>
+  <input
+    bind:value={rule.name}
+    placeholder="Rule Name"
+  />
+  <textarea
+    bind:value={rule.condition}
+    placeholder="Condition"
+  ></textarea>
+  <textarea
+    bind:value={rule.action}
+    placeholder="Action"
+  ></textarea>
   <button on:click={handleRemove}>Remove</button>
 </div>
 

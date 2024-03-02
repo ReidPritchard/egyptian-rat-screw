@@ -1,4 +1,4 @@
-import { writable } from "svelte/store";
+import { writable } from 'svelte/store';
 
 function createStorageStore(storage: Storage) {
   const { subscribe, set, update } = writable<Record<string, any>>({});
@@ -38,7 +38,7 @@ function createStorageStore(storage: Storage) {
         storage.clear();
         set({});
       } catch (e) {
-        console.error("Error clearing storage", e);
+        console.error('Error clearing storage', e);
       }
     },
   };

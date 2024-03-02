@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Card from "./UICard.svelte";
+  import Card from './UICard.svelte';
 
   export let pile: any[];
 
@@ -19,7 +19,10 @@
 
 <div class="card-pile">
   {#each pile as card, index}
-    <Card {card} rotation={getRotation(index)} />
+    <Card
+      {card}
+      rotation={getRotation(index)}
+    />
   {/each}
 </div>
 

@@ -1,4 +1,4 @@
-import { writable } from "svelte/store";
+import { writable } from 'svelte/store';
 
 interface SocketStore {
   subscribe: (run: (value: WebSocket | null) => void) => () => void;
@@ -23,9 +23,9 @@ function createSocketStore(): SocketStore {
     subscribe,
     connect(url: string) {
       const socket = new WebSocket(url);
-      console.log("Connecting to socket", url);
+      console.log('Connecting to socket', url);
       socket.onopen = () => set(socket);
-      socket.onerror = (error) => console.error("Socket error:", error);
+      socket.onerror = (error) => console.error('Socket error:', error);
       socket.onmessage = setMessage;
       socket.onclose = () => {
         set(null);
@@ -53,7 +53,7 @@ function createSocketStore(): SocketStore {
           try {
             socket.send(data);
           } catch (error) {
-            console.error("Failed to send data: ", error);
+            console.error('Failed to send data: ', error);
           }
         }
       })();

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { sessionStorageStore } from "../stores/storable";
-  import GameSession from "./GameSession.svelte";
-  import LobbyList from "./LobbyList.svelte";
+  import { sessionStorageStore } from '../stores/storable';
+  import GameSession from './GameSession.svelte';
+  import LobbyList from './LobbyList.svelte';
 
-  let playerName: string = sessionStorageStore.getItem("playerName") || "";
-  let lobbyId: string = sessionStorageStore.getItem("lobbyId") || "";
+  let playerName: string = sessionStorageStore.getItem('playerName') || '';
+  let lobbyId: string = sessionStorageStore.getItem('lobbyId') || '';
   let hasJoinedLobby = !!playerName && !!lobbyId; // TODO: Check if lobbyId is valid
 
   function joinLobby(
@@ -14,17 +14,17 @@
     lobbyId = event.detail.lobbyId;
     hasJoinedLobby = true;
 
-    sessionStorageStore.setItem("playerName", playerName);
-    sessionStorageStore.setItem("lobbyId", lobbyId);
+    sessionStorageStore.setItem('playerName', playerName);
+    sessionStorageStore.setItem('lobbyId', lobbyId);
   }
 
   function leaveLobby() {
-    playerName = "";
-    lobbyId = "";
+    playerName = '';
+    lobbyId = '';
     hasJoinedLobby = false;
 
-    sessionStorageStore.removeItem("playerName");
-    sessionStorageStore.removeItem("lobbyId");
+    sessionStorageStore.removeItem('playerName');
+    sessionStorageStore.removeItem('lobbyId');
   }
 </script>
 
@@ -36,7 +36,11 @@
     </div>
   {:else}
     <div class="card game-session">
-      <GameSession gameId={lobbyId} {playerName} on:leave={leaveLobby} />
+      <GameSession
+        gameId={lobbyId}
+        {playerName}
+        on:leave={leaveLobby}
+      />
     </div>
   {/if}
 </main>

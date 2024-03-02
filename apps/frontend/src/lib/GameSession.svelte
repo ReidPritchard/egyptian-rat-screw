@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { onMount, onDestroy, createEventDispatcher } from "svelte";
-  import { socketStore } from "../stores/socketStore";
+  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+  import { socketStore } from '../stores/socketStore';
   import {
     gameSessionStore,
     type GameSession,
-  } from "../stores/gameSessionStore";
-  import Rules from "./GameComponents/UIRules.svelte";
-  import CardPile from "./GameComponents/UICardPile.svelte";
-  import UiButton from "./UIBlocks/UIButton.svelte";
-  import UiPlayerState from "./GameComponents/UIPlayerState.svelte";
+  } from '../stores/gameSessionStore';
+  import Rules from './GameComponents/UIRules.svelte';
+  import CardPile from './GameComponents/UICardPile.svelte';
+  import UiButton from './UIBlocks/UIButton.svelte';
+  import UiPlayerState from './GameComponents/UIPlayerState.svelte';
 
   export let gameId: string;
   export let playerName: string;
@@ -22,7 +22,7 @@
 
   onMount(async () => {
     if (!gameId || !playerName) {
-      console.error("Invalid gameId or playerName");
+      console.error('Invalid gameId or playerName');
       return;
     }
 
@@ -31,7 +31,7 @@
         `ws://localhost:5001/ws/games/${gameId}?playerName=${encodeURIComponent(playerName)}`
       );
     } catch (error) {
-      console.error("Failed to connect to WebSocket", error);
+      console.error('Failed to connect to WebSocket', error);
       return;
     }
 
@@ -41,13 +41,13 @@
         try {
           data = JSON.parse(message?.data);
         } catch (error) {
-          console.error("Failed to parse message data", error);
+          console.error('Failed to parse message data', error);
           return;
         }
-        console.log("Received message:", data);
+        console.log('Received message:', data);
 
-        if (data.type === "error") {
-          console.error("Received error message:", data);
+        if (data.type === 'error') {
+          console.error('Received error message:', data);
           leaveGame();
           return;
         }
@@ -57,32 +57,32 @@
     });
 
     gameSessionStore.subscribe((state: GameSession) => {
-      console.log("GameSession Updated:", state);
+      console.log('GameSession Updated:', state);
       gameSession = state;
       loading = false;
     });
   });
 
   onDestroy(() => {
-    if (typeof cancelSocketSubscription === "function") {
+    if (typeof cancelSocketSubscription === 'function') {
       cancelSocketSubscription();
     }
     socketStore.disconnect();
   });
 
   function leaveGame() {
-    console.log("Leaving game");
-    socketStore.send(JSON.stringify({ type: "leave" }));
-    dispatch("leave");
+    console.log('Leaving game');
+    socketStore.send(JSON.stringify({ type: 'leave' }));
+    dispatch('leave');
   }
 
   function sendMsg() {
-    console.log("Sending message to server");
+    console.log('Sending message to server');
 
     // If the game is paused, send a "start-game" message
-    if (gameSession.status === "paused") {
+    if (gameSession.status === 'paused') {
       const msg = gameSessionStore.generatePayload(
-        "player-ready",
+        'player-ready',
         playerName,
         gameId
       );
@@ -91,7 +91,7 @@
     }
 
     const msg = gameSessionStore.generatePayload(
-      "play-card-attempt",
+      'play-card-attempt',
       playerName,
       gameId
     );
@@ -135,16 +135,25 @@
     </div>
 
     <footer class="fadeIn">
-      {#if gameSession.status === "paused" || gameSession.status === "ended"}
+      {#if gameSession.status === 'paused' || gameSession.status === 'ended'}
         <p>Game is paused</p>
-        <UiButton variant="primary" onClick={sendMsg}>Start Game</UiButton>
+        <UiButton
+          variant="primary"
+          onClick={sendMsg}>Start Game</UiButton
+        >
         <UiPlayerState />
       {:else}
         <p>Game is active</p>
-        <UiButton variant="primary" onClick={sendMsg}>Play Card</UiButton>
+        <UiButton
+          variant="primary"
+          onClick={sendMsg}>Play Card</UiButton
+        >
       {/if}
 
-      <UiButton variant="danger" onClick={leaveGame}>Leave Game</UiButton>
+      <UiButton
+        variant="danger"
+        onClick={leaveGame}>Leave Game</UiButton
+      >
     </footer>
   {/if}
 </div>
@@ -165,7 +174,7 @@
     grid-template-columns: 1fr 4fr 1fr;
     grid-template-rows: auto;
 
-    grid-template-areas: "left middle right" "left middle right" "left middle right";
+    grid-template-areas: 'left middle right' 'left middle right' 'left middle right';
 
     gap: 1rem;
     padding: 1rem;

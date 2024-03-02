@@ -2,9 +2,9 @@
  * Enum for game session states.
  */
 export enum ERSGameSessionState {
-  Waiting = "waiting",
-  InProgress = "in-progress",
-  Ended = "ended",
+  Waiting = 'waiting',
+  InProgress = 'in-progress',
+  Ended = 'ended',
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Rule, RuleContext } from ".";
+import { Rule, RuleContext } from '.';
 
 export class RuleEngine<TContext extends RuleContext> {
   private rules: Array<Rule<TContext>> = [];

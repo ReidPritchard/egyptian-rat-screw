@@ -1,14 +1,14 @@
 <script>
-  import Rule from "../EditorRule.svelte";
+  import Rule from '../EditorRule.svelte';
 
-  export let rules = [{ id: 1, name: "Rule 1", condition: "", action: "" }];
+  export let rules = [{ id: 1, name: 'Rule 1', condition: '', action: '' }];
 
   function addRule() {
     const newRule = {
       id: rules.length + 1,
       name: `Rule ${rules.length + 1}`,
-      condition: "",
-      action: "",
+      condition: '',
+      action: '',
     };
     rules = [...rules, newRule];
   }
@@ -22,7 +22,10 @@
   <h1>Rule Editor</h1>
   <button on:click={addRule}>Add Rule</button>
   {#each rules as rule (rule.id)}
-    <Rule {rule} on:remove={removeRule} />
+    <Rule
+      {rule}
+      on:remove={removeRule}
+    />
   {/each}
 </main>
 

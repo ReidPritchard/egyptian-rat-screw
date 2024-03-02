@@ -1,5 +1,5 @@
-import { info } from "@oers/utils";
-import { RuleContext, Rule } from ".";
+import { info } from '@oers/utils';
+import { RuleContext, Rule } from '.';
 
 export class RuleBuilder<TContext extends RuleContext> {
   private readonly rule: Partial<Rule<TContext>> = {};
@@ -52,7 +52,7 @@ export class RuleBuilder<TContext extends RuleContext> {
       !this.rule.execute
     ) {
       throw new Error(
-        "Missing required methods: calculatePriority, evaluate, or execute"
+        'Missing required methods: calculatePriority, evaluate, or execute'
       );
     }
     // As TypeScript cannot ensure non-nullability through builder methods,
@@ -73,9 +73,9 @@ export function createRule<TContext extends RuleContext>(
 }
 
 const getNestedValue = (path: string, obj: Record<string, any>): any => {
-  const segments = path.replace(/\[(\w+|\-\d+)\]/g, ".$1").split(".");
+  const segments = path.replace(/\[(\w+|\-\d+)\]/g, '.$1').split('.');
   return segments.reduce((acc: any, segment: string) => {
-    if (acc && typeof acc === "object" && segment in acc) {
+    if (acc && typeof acc === 'object' && segment in acc) {
       return acc[segment];
     } else if (Array.isArray(acc)) {
       const index = Number(segment);
@@ -156,7 +156,7 @@ export const RuleBuilderHelpers = {
      */
     doNothing() {
       return () => {
-        info("Rule executed, but no action was taken");
+        info('Rule executed, but no action was taken');
       };
     },
     /**

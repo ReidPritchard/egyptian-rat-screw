@@ -1,10 +1,14 @@
 <script>
-  export let variant = "primary";
+  export let variant = 'primary';
   export let disabled = false;
   export let onClick = () => {};
 </script>
 
-<button class="button {variant}" {disabled} on:click={onClick}>
+<button
+  class="button {variant}"
+  {disabled}
+  on:click={onClick}
+>
   <slot />
 </button>
 

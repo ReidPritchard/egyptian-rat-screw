@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SlapRule } from "@oers/game-core";
+  import type { SlapRule } from '@oers/game-core';
 
   // The slap rules for the game
   export let slapRules: SlapRule[] = [];
@@ -32,7 +32,7 @@
 <div id="rules">
   <h3>Rules</h3>
   <button on:click={toggleRules}>
-    {showRules ? "Hide" : "Show"} Rules
+    {showRules ? 'Hide' : 'Show'} Rules
   </button>
   {#if showRules}
     <ul>
@@ -42,8 +42,11 @@
         <li>
           <strong>{index + 1}.</strong>
           {name}
-          <button class="small" on:click={() => toggleRuleDescription(index)}>
-            {showRulesDescription[index] ? "Hide" : "Show"} Description
+          <button
+            class="small"
+            on:click={() => toggleRuleDescription(index)}
+          >
+            {showRulesDescription[index] ? 'Hide' : 'Show'} Description
           </button>
           {#if showRulesDescription[index]}
             <p>{slapRules[index].description}</p>

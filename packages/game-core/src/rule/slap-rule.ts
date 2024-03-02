@@ -1,12 +1,12 @@
-import { Card } from "../card";
-import { Player } from "../player";
+import { Card } from '../card';
+import { Player } from '../player';
 
 /**
  * Represents the effect of a slap rule.
  */
 export interface SlapEffect {
-  slapper: Player["name"];
-  affectedPlayers: Player["name"][];
+  slapper: Player['name'];
+  affectedPlayers: Player['name'][];
   pile: Card[];
   message?: string;
 }
@@ -62,7 +62,7 @@ export const defaultSuccessfulEffect = (
     slapper: slapper.name,
     affectedPlayers: [slapper.name],
     pile,
-    message: "You slapped the pile for doubles!",
+    message: 'You slapped the pile for doubles!',
   };
 };
 
@@ -83,7 +83,7 @@ export const defaultPenalty = (
     slapper: slapper.name,
     affectedPlayers: [slapper.name],
     pile: pile,
-    message: "Your slap failed! A card from your hand was added to the pile.",
+    message: 'Your slap failed! A card from your hand was added to the pile.',
   };
 };
 
@@ -96,8 +96,8 @@ const defaultSlapEffects = {
  */
 export const defaultSlapRules: SlapRule[] = [
   {
-    name: "doubles",
-    description: "Slap the pile if the top two cards are the same.",
+    name: 'doubles',
+    description: 'Slap the pile if the top two cards are the same.',
     validSlap: (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
       const secondCard = pile[pile.length - 2];
@@ -106,9 +106,9 @@ export const defaultSlapRules: SlapRule[] = [
     ...defaultSlapEffects,
   },
   {
-    name: "sandwiches",
+    name: 'sandwiches',
     description:
-      "Slap the pile if the top card and the card two cards down are the same.",
+      'Slap the pile if the top card and the card two cards down are the same.',
     validSlap: (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
       const thirdCard = pile[pile.length - 3];
@@ -117,9 +117,9 @@ export const defaultSlapRules: SlapRule[] = [
     ...defaultSlapEffects,
   },
   {
-    name: "top-bottom",
+    name: 'top-bottom',
     description:
-      "Slap the pile if the top card and the bottom card are the same.",
+      'Slap the pile if the top card and the bottom card are the same.',
     validSlap: (pile: Card[]) => {
       const topCard = pile[pile.length - 1];
       const bottomCard = pile[0];
@@ -177,7 +177,7 @@ export const slapEffectHandlers = {
         slapper: slapper.name,
         affectedPlayers: [unluckyPlayer.name],
         pile,
-        message: `${slapper.name} slapped the pile! ${unluckyPlayer.name} takes ${drinks} drink${drinks > 1 ? "s" : ""}!`,
+        message: `${slapper.name} slapped the pile! ${unluckyPlayer.name} takes ${drinks} drink${drinks > 1 ? 's' : ''}!`,
       };
     };
   },
@@ -198,8 +198,8 @@ export const slapEffectHandlers = {
  * ```
  */
 export class SlapRuleBuilder {
-  private _name: string = "";
-  private _description: string = "";
+  private _name: string = '';
+  private _description: string = '';
   private _validSlap: (pile: Card[]) => boolean = () => false;
   private _slapEffect: (
     slapper: Player,
@@ -207,7 +207,7 @@ export class SlapRuleBuilder {
     pile: Card[]
   ) => SlapEffect = () => {
     return {
-      slapper: "",
+      slapper: '',
       affectedPlayers: [],
       pile: [],
     };

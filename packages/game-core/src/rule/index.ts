@@ -1,9 +1,9 @@
-import { ERSGame, ServerPayload } from "..";
-import { Card } from "../card";
-import { Player } from "../player";
+import { ERSGame, ServerPayload } from '..';
+import { Card } from '../card';
+import { Player } from '../player';
 
-export * from "./card-rule";
-export * from "./slap-rule";
+export * from './card-rule';
+export * from './slap-rule';
 
 /**
  * Metadata for the game state

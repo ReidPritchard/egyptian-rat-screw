@@ -1,6 +1,6 @@
-import { info } from "@oers/utils";
-import app from "./server";
-import setupMiddleware from "./middleware";
+import { info } from '@oers/utils';
+import app from './server';
+import setupMiddleware from './middleware';
 
 const port = process.env.PORT || 5001;
 

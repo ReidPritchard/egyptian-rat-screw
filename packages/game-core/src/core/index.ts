@@ -1,51 +1,51 @@
-import { Card, createDeck } from "../card";
-import { DataPayload } from "../event";
-import { Player } from "../player";
-import { ActiveRule, Rule, RuleContext } from "../rule";
-import { RuleBuilder, RuleBuilderHelpers, createRule } from "../rule/factory";
+import { Card, createDeck } from '../card';
+import { DataPayload } from '../event';
+import { Player } from '../player';
+import { ActiveRule, Rule, RuleContext } from '../rule';
+import { RuleBuilder, RuleBuilderHelpers, createRule } from '../rule/factory';
 import {
   SlapEffect,
   SlapRule,
   defaultPenalty,
   defaultSlapRules,
-} from "../rule/slap-rule";
-import { debug, info } from "@oers/utils";
-import { GameStates, Score } from "./interfaces";
+} from '../rule/slap-rule';
+import { debug, info } from '@oers/utils';
+import { GameStates, Score } from './interfaces';
 
 /**
  * The default rules for Egyptian Rat Screw
  */
 const defaultRules: Rule<RuleContext>[] = [
   // Slap Rules:
-  createRule("doubles")
-    .setTags(["slap"])
+  createRule('doubles')
+    .setTags(['slap'])
     .setCalculatePriority(RuleBuilderHelpers.calculatePriority.constant(1))
     .setEvaluate(
       RuleBuilderHelpers.evaluate.metadataMatchesGame(
-        "playedCard.value",
-        "hand[-1].value"
+        'playedCard.value',
+        'hand[-1].value'
       )
     )
     .setExecute(RuleBuilderHelpers.execute.givePileToActingPlayer())
     .build(),
-  createRule("sandwich")
-    .setTags(["slap"])
+  createRule('sandwich')
+    .setTags(['slap'])
     .setCalculatePriority(RuleBuilderHelpers.calculatePriority.constant(2))
     .setEvaluate(
       RuleBuilderHelpers.evaluate.metadataMatchesGame(
-        "playedCard.value",
-        "hand[-2].value"
+        'playedCard.value',
+        'hand[-2].value'
       )
     )
     .setExecute(RuleBuilderHelpers.execute.givePileToActingPlayer())
     .build(),
-  createRule("top-bottom")
-    .setTags(["slap"])
+  createRule('top-bottom')
+    .setTags(['slap'])
     .setCalculatePriority(RuleBuilderHelpers.calculatePriority.constant(3))
     .setEvaluate(
       RuleBuilderHelpers.evaluate.metadataMatchesGame(
-        "playedCard.value",
-        "hand[0].value"
+        'playedCard.value',
+        'hand[0].value'
       )
     )
     .setExecute(RuleBuilderHelpers.execute.givePileToActingPlayer())
@@ -77,7 +77,7 @@ export class ERSGame {
 
   constructor(players: Player[]) {
     if (players.length > this.maxPlayers) {
-      throw new Error("Too many players for the game");
+      throw new Error('Too many players for the game');
     }
 
     this.players = players;
@@ -121,11 +121,11 @@ export class ERSGame {
 
   addPlayer(playerName: string): void {
     if (this.players.some((p) => p.name === playerName)) {
-      throw new Error("Player already exists");
+      throw new Error('Player already exists');
     }
 
     if (this.players.length >= this.maxPlayers) {
-      throw new Error("Game is full");
+      throw new Error('Game is full');
     }
 
     const newPlayer: Player = { name: playerName, hand: [] };
@@ -171,7 +171,7 @@ export class ERSGame {
 
   slapPile(player: Player): boolean {
     if (this.gameActive !== GameStates.InProgress) {
-      throw new Error("Game is not active");
+      throw new Error('Game is not active');
     }
 
     const rule = this.slapRules.find((rule) => rule.validSlap(this.pile));
@@ -190,7 +190,7 @@ export class ERSGame {
 
   playCard(player: Player): Card | undefined {
     if (this.gameActive !== GameStates.InProgress) {
-      throw new Error("Game is not active");
+      throw new Error('Game is not active');
     }
 
     const card = player.hand.shift();

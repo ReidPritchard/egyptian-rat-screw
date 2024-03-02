@@ -1,7 +1,7 @@
-import { debug, info } from "@oers/utils";
-import { ERSGame } from "../core";
-import { ERSGameSession, ERSGameSessionState } from "./interfaces";
-import { GameStatusPayload } from "../event";
+import { debug, info } from '@oers/utils';
+import { ERSGame } from '../core';
+import { ERSGameSession, ERSGameSessionState } from './interfaces';
+import { GameStatusPayload } from '../event';
 
 export { ERSGameSessionState };
 export type { ERSGameSession };
@@ -18,13 +18,13 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
   playerConnections: Map<string, ConnType>;
   playerSessionMap: Map<string, string>;
 
-  constructor(MODE: "development" | "production" = "development") {
+  constructor(MODE: 'development' | 'production' = 'development') {
     this.gameSessions = new Map();
     this.playerConnections = new Map();
     this.playerSessionMap = new Map();
 
     // Add some mock data for development
-    if (MODE === "development") {
+    if (MODE === 'development') {
       this.createSession();
       this.createSession();
       this.createSession();
@@ -58,11 +58,11 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
   getGameState(playerName: string): GameStatusPayload {
     const sessionId = this.getPlayerSession(playerName);
     if (!sessionId) {
-      throw new Error("Player not found in any session");
+      throw new Error('Player not found in any session');
     }
     const gameSession = this.getGameSession(sessionId);
     if (!gameSession) {
-      throw new Error("Game session not found");
+      throw new Error('Game session not found');
     }
     const players = gameSession.players.map((player) => player.name);
     const scores = gameSession.players.reduce(
@@ -82,7 +82,7 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
       gameSession.players[gameSession.currentPlayerIndex].name;
 
     return {
-      type: "game-status",
+      type: 'game-status',
       players,
       scores,
       handSize,
@@ -261,7 +261,7 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
     // Send the game state to the player (if there is one)
     const gameSession = this.getGameSession(sessionId);
     if (gameSession) {
-      info("Sending game state to new player", playerId);
+      info('Sending game state to new player', playerId);
       const gameSessionPayload = this.getGameState(playerId);
       playerConnection.send(JSON.stringify(gameSessionPayload));
 
@@ -282,7 +282,7 @@ let instance: ERSGameManager<any> | null = null;
 export function getGameManager<
   ConnType extends { send: (message: string) => void },
 >(
-  MODE: "development" | "production" = "development"
+  MODE: 'development' | 'production' = 'development'
 ): ERSGameManager<ConnType> {
   if (instance === null) {
     instance = new ERSGameManager<ConnType>(MODE);

@@ -1,6 +1,6 @@
-import { Card, FaceCard, isFaceCard } from "../card";
-import { ERSGame } from "../core";
-import { Player } from "../player";
+import { Card, FaceCard, isFaceCard } from '../card';
+import { ERSGame } from '../core';
+import { Player } from '../player';
 
 interface DeactivateConditions {
   faceCardPlayed: boolean;
@@ -76,19 +76,19 @@ const faceCardDeactivateConditions: {
 };
 
 const jackCardRule: CardRule = {
-  shouldActivate: (card: Card) => card.rank === "J",
+  shouldActivate: (card: Card) => card.rank === 'J',
   shouldDeactivate: (context: ActiveRuleContext, card: Card): boolean => {
-    const conditions = faceCardDeactivateConditions["J"];
+    const conditions = faceCardDeactivateConditions['J'];
     return (
       (conditions.faceCardPlayed && isFaceCard(card)) ||
-      (conditions.tenPlayed && card.rank === "10") ||
+      (conditions.tenPlayed && card.rank === '10') ||
       (Boolean(conditions.xCardsPlayed) &&
         context.cardsPlayed >= conditions.xCardsPlayed)
     );
   },
   onDeactivation: (context: ActiveRuleContext, game: ERSGame) => {
     const { actingPlayer, cardsPlayed } = context;
-    const conditions = faceCardDeactivateConditions["J"];
+    const conditions = faceCardDeactivateConditions['J'];
     if (conditions.xCardsPlayed && cardsPlayed === conditions.xCardsPlayed) {
       game.givePileToPlayer(actingPlayer);
     }
@@ -96,19 +96,19 @@ const jackCardRule: CardRule = {
 };
 
 const queenCardRule: CardRule = {
-  shouldActivate: (card: Card) => card.rank === "Q",
+  shouldActivate: (card: Card) => card.rank === 'Q',
   shouldDeactivate: (context: ActiveRuleContext, card: Card): boolean => {
-    const conditions = faceCardDeactivateConditions["Q"];
+    const conditions = faceCardDeactivateConditions['Q'];
     return (
       (conditions.faceCardPlayed && isFaceCard(card)) ||
-      (conditions.tenPlayed && card.rank === "10") ||
+      (conditions.tenPlayed && card.rank === '10') ||
       (Boolean(conditions.xCardsPlayed) &&
         context.cardsPlayed >= conditions.xCardsPlayed)
     );
   },
   onDeactivation: (context: ActiveRuleContext, game: ERSGame) => {
     const { actingPlayer, cardsPlayed } = context;
-    const conditions = faceCardDeactivateConditions["Q"];
+    const conditions = faceCardDeactivateConditions['Q'];
     if (conditions.xCardsPlayed && cardsPlayed === conditions.xCardsPlayed) {
       game.givePileToPlayer(actingPlayer);
     }
@@ -116,19 +116,19 @@ const queenCardRule: CardRule = {
 };
 
 const kingCardRule: CardRule = {
-  shouldActivate: (card: Card) => card.rank === "K",
+  shouldActivate: (card: Card) => card.rank === 'K',
   shouldDeactivate: (context: ActiveRuleContext, card: Card): boolean => {
-    const conditions = faceCardDeactivateConditions["K"];
+    const conditions = faceCardDeactivateConditions['K'];
     return (
       (conditions.faceCardPlayed && isFaceCard(card)) ||
-      (conditions.tenPlayed && card.rank === "10") ||
+      (conditions.tenPlayed && card.rank === '10') ||
       (Boolean(conditions.xCardsPlayed) &&
         context.cardsPlayed >= conditions.xCardsPlayed)
     );
   },
   onDeactivation: (context: ActiveRuleContext, game: ERSGame) => {
     const { actingPlayer, cardsPlayed } = context;
-    const conditions = faceCardDeactivateConditions["K"];
+    const conditions = faceCardDeactivateConditions['K'];
     if (conditions.xCardsPlayed && cardsPlayed === conditions.xCardsPlayed) {
       game.givePileToPlayer(actingPlayer);
     }
@@ -136,19 +136,19 @@ const kingCardRule: CardRule = {
 };
 
 const aceCardRule: CardRule = {
-  shouldActivate: (card: Card) => card.rank === "A",
+  shouldActivate: (card: Card) => card.rank === 'A',
   shouldDeactivate: (context: ActiveRuleContext, card: Card): boolean => {
-    const conditions = faceCardDeactivateConditions["A"];
+    const conditions = faceCardDeactivateConditions['A'];
     return (
       (conditions.faceCardPlayed && isFaceCard(card)) ||
-      (conditions.tenPlayed && card.rank === "10") ||
+      (conditions.tenPlayed && card.rank === '10') ||
       (Boolean(conditions.xCardsPlayed) &&
         context.cardsPlayed >= conditions.xCardsPlayed)
     );
   },
   onDeactivation: (context: ActiveRuleContext, game: ERSGame) => {
     const { actingPlayer, cardsPlayed } = context;
-    const conditions = faceCardDeactivateConditions["A"];
+    const conditions = faceCardDeactivateConditions['A'];
     if (conditions.xCardsPlayed && cardsPlayed === conditions.xCardsPlayed) {
       game.givePileToPlayer(actingPlayer);
     }

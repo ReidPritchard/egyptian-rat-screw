@@ -1,6 +1,6 @@
-import type { Express } from "express";
-import restApiRouter from "./rest-api-router";
-import websocketRouter from "./websocket-handler";
+import type { Express } from 'express';
+import restApiRouter from './rest-api-router';
+import websocketRouter from './websocket-handler';
 
 /**
  * Sets up the middleware for the Express app.
@@ -15,6 +15,6 @@ export default function setupMiddleware(app: Express): void {
   // });
 
   // Setup REST API and Websocket Routes
-  app.use("/api", restApiRouter);
-  app.use("/ws", websocketRouter);
+  app.use('/api', restApiRouter);
+  app.use('/ws', websocketRouter);
 }

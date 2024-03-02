@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Card } from "@oers/game-core";
-  import { elasticOut } from "svelte/easing";
+  import type { Card } from '@oers/game-core';
+  import { elasticOut } from 'svelte/easing';
 
   export let card: Card | undefined;
   export let rotation: number = 0;
@@ -18,8 +18,8 @@
     { delay = 0, duration = 400, easing = elasticOut } = {}
   ) {
     const existingTransform =
-      getComputedStyle(node).transform === "none"
-        ? ""
+      getComputedStyle(node).transform === 'none'
+        ? ''
         : getComputedStyle(node).transform;
 
     return {
@@ -31,21 +31,21 @@
     };
   }
 
-  const displayValue = (): string => card?.rank || "Unknown";
-  const displaySuit = (): string => card?.suit || "Unknown";
+  const displayValue = (): string => card?.rank || 'Unknown';
+  const displaySuit = (): string => card?.suit || 'Unknown';
 
   const suitToSymbol = (suit: string): string => {
     switch (suit) {
-      case "hearts":
-        return "♥";
-      case "diamonds":
-        return "♦";
-      case "clubs":
-        return "♣";
-      case "spades":
-        return "♠";
+      case 'hearts':
+        return '♥';
+      case 'diamonds':
+        return '♦';
+      case 'clubs':
+        return '♣';
+      case 'spades':
+        return '♠';
       default:
-        return "?";
+        return '?';
     }
   };
 </script>
