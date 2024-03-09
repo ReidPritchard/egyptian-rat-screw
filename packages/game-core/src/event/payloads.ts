@@ -94,7 +94,7 @@ export interface GameStartedPayload extends BasePayload {
 export interface GameStatusPayload extends BasePayload {
   type: 'game-status';
 
-  players: Player['name'][];
+  players: Partial<Player>[];
   scores: { [playerName: string]: number };
   currentPlayer: string;
   handSize: number;

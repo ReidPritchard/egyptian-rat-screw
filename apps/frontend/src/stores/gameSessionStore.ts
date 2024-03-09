@@ -9,7 +9,7 @@ import { readonly, writable } from 'svelte/store';
 
 export interface GameSession {
   currentPlayer: string;
-  players: Player[];
+  players: Partial<Player>[];
   score: number;
   status: 'playing' | 'paused' | 'ended';
   cardPile: Card[];
@@ -57,6 +57,7 @@ const createGameSessionStore = () => {
           update((state) => ({
             ...state,
             currentPlayer,
+            players: players,
             score: scores[state.currentPlayer],
             numCardsInHand: handSize,
             slapRules,

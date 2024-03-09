@@ -9,6 +9,8 @@
   import CardPile from './GameComponents/UICardPile.svelte';
   import UiButton from './UIBlocks/UIButton.svelte';
   import UiPlayerState from './GameComponents/UIPlayerState.svelte';
+  import UiCurrentPlayer from './GameComponents/UICurrentPlayer.svelte';
+  import UiPreGameDashboard from './GameComponents/UIPreGameDashboard.svelte';
 
   export let gameId: string;
   export let playerName: string;
@@ -111,14 +113,16 @@
       </div>
 
       <div id="middle-col">
-        <h2>Details</h2>
-        {#if gameSession.currentPlayer}<p>
-            Current Player: {gameSession.currentPlayer}
-          </p>{/if}
+        <UiCurrentPlayer playerName={gameSession.currentPlayer} />
 
-        {#if gameSession.cardPile}
+        {#if gameSession.cardPile && gameSession.status !== 'paused' && gameSession.status !== 'ended'}
           <CardPile pile={gameSession.cardPile} />
         {/if}
+
+        <UiPreGameDashboard
+          playerName={playerName}
+          playerStates={gameSession.players}
+        />
       </div>
 
       <div id="right-col">
@@ -141,7 +145,6 @@
           variant="primary"
           onClick={sendMsg}>Start Game</UiButton
         >
-        <UiPlayerState />
       {:else}
         <p>Game is active</p>
         <UiButton

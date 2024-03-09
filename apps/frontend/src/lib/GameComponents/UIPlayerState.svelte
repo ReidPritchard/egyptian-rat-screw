@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PlayerStatus } from '@oers/game-core';
   import { draw, fade } from 'svelte/transition';
+  import UiButton from '../UIBlocks/UIButton.svelte';
 
   export let state: PlayerStatus = 'unknown';
   export let isCurrentPlayer = true;
@@ -46,8 +47,12 @@
 
 {#if isCurrentPlayer}
   <div>
-    <button on:click={() => (state = 'ready')}>Ready</button>
-    <button on:click={() => (state = 'waiting')}>Not Ready</button>
+    <UiButton onClick={() => (state = 'ready')} variant="primary">
+      Ready
+    </UiButton>
+    <UiButton onClick={() => (state = 'waiting')} variant="transparent">
+      Not Ready
+    </UiButton>
   </div>
 {/if}
 

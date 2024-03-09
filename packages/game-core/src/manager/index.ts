@@ -64,7 +64,13 @@ class ERSGameManager<ConnType extends { send: (message: string) => void }> {
     if (!gameSession) {
       throw new Error('Game session not found');
     }
-    const players = gameSession.players.map((player) => player.name);
+    // Remove the 'hand' property from each player instance
+    const players = gameSession.players.map((player) => {
+      return {
+        name: player.name,
+        status: player.status,
+      };
+    });
     const scores = gameSession.players.reduce(
       (scoreMap, player) => {
         scoreMap[player.name] = 0; // Assuming initial score is 0 for all players
