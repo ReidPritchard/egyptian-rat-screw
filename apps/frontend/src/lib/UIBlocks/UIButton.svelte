@@ -1,13 +1,20 @@
-<script>
-  export let variant = 'primary';
+<script lang="ts">
+  export let variant:
+    | 'primary'
+    | 'secondary'
+    | 'success'
+    | 'danger'
+    | 'warning'
+    | 'info'
+    | 'transparent' = 'primary';
+  export let size: 'small' | 'medium' | 'large' = 'medium';
   export let disabled = false;
-  export let onClick = () => {};
 </script>
 
 <button
-  class="button {variant}"
+  class="button {variant} {size}"
   {disabled}
-  on:click={onClick}
+  on:click
 >
   <slot />
 </button>
@@ -72,6 +79,16 @@
   .button:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+  }
+
+  .small {
+    padding: 0.4em 0.8em;
+    font-size: 0.8em;
+  }
+
+  .large {
+    padding: 0.8em 1.6em;
+    font-size: 1.2em;
   }
 
   /* TODO: Additional styles for hover states could be added here, e.g., */

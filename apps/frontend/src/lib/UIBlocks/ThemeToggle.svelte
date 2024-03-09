@@ -1,7 +1,7 @@
 <script lang="ts">
   import sun from '../../assets/sun.svg';
   import moon from '../../assets/moon.svg';
-  import { sessionStorageStore } from '../../stores/storable';
+  import { localStorageStore } from '../../stores/storable';
   import UiButton from './UIButton.svelte';
 
   // This function toggles the class on the body
@@ -12,7 +12,7 @@
 
   // Initial check for system preference or previously set preference
   let darkMode =
-    sessionStorageStore.getItem('darkMode') ||
+    localStorageStore.getItem('darkMode') ??
     window.matchMedia('(prefers-color-scheme: dark)').matches;
   // Listen for changes in system theme preference
   window
@@ -27,12 +27,12 @@
   // Function to manually toggle dark mode
   function switchTheme() {
     darkMode = !darkMode;
-    sessionStorageStore.setItem('darkMode', darkMode);
+    localStorageStore.setItem('darkMode', darkMode);
   }
 </script>
 
 <UiButton
-  onClick={switchTheme}
+  on:click={switchTheme}
   variant="transparent"
 >
   <div class="icon">

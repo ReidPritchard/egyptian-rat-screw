@@ -62,7 +62,7 @@
 </script>
 
 <UiButton
-  onClick={createLobby}
+  on:click={createLobby}
   variant="primary"
 >
   Create new lobby
@@ -80,7 +80,7 @@
     {#each lobbies as lobby}
       <li>
         <UiButton
-          onClick={() => joinLobby(lobby.id)}
+          on:click={() => joinLobby(lobby.id)}
           variant="secondary"
         >
           <h2>{lobby.id.toUpperCase()}</h2>

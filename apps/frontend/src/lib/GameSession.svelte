@@ -120,7 +120,7 @@
         {/if}
 
         <UiPreGameDashboard
-          playerName={playerName}
+          {playerName}
           playerStates={gameSession.players}
         />
       </div>
@@ -143,19 +143,19 @@
         <p>Game is paused</p>
         <UiButton
           variant="primary"
-          onClick={sendMsg}>Start Game</UiButton
+          on:click={sendMsg}>Start Game</UiButton
         >
       {:else}
         <p>Game is active</p>
         <UiButton
           variant="primary"
-          onClick={sendMsg}>Play Card</UiButton
+          on:click={sendMsg}>Play Card</UiButton
         >
       {/if}
 
       <UiButton
         variant="danger"
-        onClick={leaveGame}>Leave Game</UiButton
+        on:click={leaveGame}>Leave Game</UiButton
       >
     </footer>
   {/if}

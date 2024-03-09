@@ -1,9 +1,14 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
   import { sessionStorageStore } from '../stores/storable';
   import GameSession from './GameSession.svelte';
   import LobbyList from './LobbyList.svelte';
+  import UiButton from './UIBlocks/UIButton.svelte';
+  import UiInput from './UIBlocks/UIInput.svelte';
 
   let playerName: string = sessionStorageStore.getItem('playerName') || '';
+  let tempPlayerName: string = ''; // Used when the player is prompted for a name
+  let isTempNameValid = false; // Use to enable/disable the join button
   let lobbyId: string = sessionStorageStore.getItem('lobbyId') || '';
   let hasJoinedLobby = !!playerName && !!lobbyId; // TODO: Check if lobbyId is valid
 
@@ -29,7 +34,36 @@
 </script>
 
 <main>
-  {#if !hasJoinedLobby}
+  <!-- If no username is found, prompt for a name before joining a lobby -->
+  {#if !playerName}
+    <div
+      class="card"
+      out:fade
+    >
+      <UiInput
+        label="Name"
+        on:input={(e) => {
+          tempPlayerName = e.detail.value;
+          isTempNameValid = e.detail.isValid;
+        }}
+        placeholder="Enter your name"
+      />
+      <div class="shift-end">
+        <UiButton
+          variant="success"
+          disabled={!isTempNameValid}
+          on:click={() => {
+            if (tempPlayerName) {
+              playerName = tempPlayerName;
+              sessionStorageStore.setItem('playerName', tempPlayerName);
+            }
+          }}
+        >
+          Join
+        </UiButton>
+      </div>
+    </div>
+  {:else if !hasJoinedLobby}
     <div class="card">
       <h2>Game Lobbies:</h2>
       <LobbyList on:join={joinLobby} />
@@ -62,5 +96,10 @@
   .card {
     padding: 1rem;
     border-radius: 0.5rem;
+  }
+
+  .shift-end {
+    display: flex;
+    justify-content: flex-end;
   }
 </style>

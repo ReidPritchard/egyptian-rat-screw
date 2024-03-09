@@ -47,10 +47,16 @@
 
 {#if isCurrentPlayer}
   <div>
-    <UiButton onClick={() => (state = 'ready')} variant="primary">
+    <UiButton
+      on:click={() => (state = 'ready')}
+      variant="primary"
+    >
       Ready
     </UiButton>
-    <UiButton onClick={() => (state = 'waiting')} variant="transparent">
+    <UiButton
+      on:click={() => (state = 'waiting')}
+      variant="transparent"
+    >
       Not Ready
     </UiButton>
   </div>

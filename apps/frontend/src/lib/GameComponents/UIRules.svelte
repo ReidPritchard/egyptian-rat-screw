@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { SlapRule } from '@oers/game-core';
+  import UiButton from '../UIBlocks/UIButton.svelte';
+  import UiModal from '../UIBlocks/UIModal.svelte';
 
   // The slap rules for the game
   export let slapRules: SlapRule[] = [];
@@ -30,46 +32,39 @@
 <!-- It will display the rules of the game -->
 
 <div id="rules">
-  <h3>Rules</h3>
-  <button on:click={toggleRules}>
+  <UiButton on:click={toggleRules}>
     {showRules ? 'Hide' : 'Show'} Rules
-  </button>
+  </UiButton>
+
   {#if showRules}
-    <ul>
-      <!-- Display each rule with its name -->
-      {#each slapRules as { name }, index (index)}
-        <!-- Clicking on the rule name should toggle displaying it's description -->
-        <li>
-          <strong>{index + 1}.</strong>
-          {name}
-          <button
-            class="small"
-            on:click={() => toggleRuleDescription(index)}
-          >
-            {showRulesDescription[index] ? 'Hide' : 'Show'} Description
-          </button>
-          {#if showRulesDescription[index]}
-            <p>{slapRules[index].description}</p>
-          {/if}
-        </li>
-      {/each}
-    </ul>
+    <UiModal
+      isOpen={showRules}
+      on:close={toggleRules}
+    >
+      <ul>
+        <!-- Display each rule with its name -->
+        {#each slapRules as { name }, index (index)}
+          <!-- Clicking on the rule name should toggle displaying it's description -->
+          <li>
+            <strong>{index + 1}.</strong>
+            {name}
+            <UiButton
+              size="small"
+              on:click={() => toggleRuleDescription(index)}
+            >
+              {showRulesDescription[index] ? 'Hide' : 'Show'} Description
+            </UiButton>
+            {#if showRulesDescription[index]}
+              <p>{slapRules[index].description}</p>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    </UiModal>
   {/if}
 </div>
 
 <style>
-  /* Rules should be displayed in a panel on the right side of the page */
-  /* #rules {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 20%;
-    height: 100%;
-    background-color: var(--dark-color);
-    padding: 20px;
-    overflow-y: auto;
-  } */
-
   button {
     background-color: var(--accent-color);
     border: none;
