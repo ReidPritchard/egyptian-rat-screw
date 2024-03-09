@@ -1,0 +1,94 @@
+:root {
+  color-scheme: light dark;
+
+  /* Setup Color Palette (Light Mode) */
+  --primary-color: #e8e9f3; /* Light lavender */
+  --primary-color-light: #f4f5fa; /* Lighter shade of primary color for backgrounds */
+  --primary-color-dark: #c2c4d6; /* Darker shade of primary color for borders or text */
+
+  --secondary-color: #b86f52; /* Warm brown */
+  --secondary-color-light: #d9a18c; /* Lighter shade of secondary color for hover states */
+  --secondary-color-dark: #94503a; /* Darker shade of secondary color for active states */
+
+  --accent-color: #f78764; /* Soft coral */
+  --accent-color-light: #fac4b0; /* Lighter shade of accent color */
+  --accent-color-dark: #c66948; /* Darker shade of accent color */
+
+  --dark-color: #153243; /* Deep blue */
+  --dark-color-light: #2a4a5b; /* Lighter shade of dark color */
+  --dark-color-dark: #0e1e2f; /* Almost black, for text */
+
+  --light-color: #284b63; /* Slate */
+  --light-color-light: #507a8f; /* Light slate for backgrounds */
+  --light-color-dark: #1c3547; /* Dark slate for accents */
+
+  --danger-color: #ff4d4d; /* Bright red */
+  --danger-color-light: #ff8787; /* Light red for warnings */
+  --danger-color-dark: #cc3d3d; /* Dark red for critical errors */
+
+  --success-color: #00cc66; /* Vivid green */
+  --success-color-light: #33d77a; /* Light green for success states */
+  --success-color-dark: #00994d; /* Dark green for success text */
+
+  --warning-color: #ffcc00; /* Amber for warnings */
+  --warning-color-light: #ffdb66; /* Light amber */
+  --warning-color-dark: #cca300; /* Dark amber */
+
+  --info-color: #17a2b8; /* Light blue for informational alerts */
+  --info-color-light: #5bc0de; /* Sky blue */
+  --info-color-dark: #117a8b; /* Deep sky blue */
+
+  --highlight-color: #fafad2; /* Light goldenrod for highlights */
+  --text-color: #2e2e2e; /* Dark grey for primary text */
+  --text-color-light: #595959; /* Medium grey for secondary text */
+
+  /* Utility Colors */
+  --background-color: #f0f2f5; /* Very light grey for page backgrounds */
+  --border-color: #d1d1d1; /* Light grey for borders */
+}
+
+.dark {
+  /* Correct Dark Mode Color Palette Overrides */
+  --primary-color: #2e3059; /* Dark lavender for primary background */
+  --primary-color-light: #41436a; /* Lighter shade for hover states in dark mode */
+  --primary-color-dark: #1d1e3c; /* Darker shade for borders or text in dark mode */
+
+  --secondary-color: #5c2c20; /* Dark warm brown for secondary elements */
+  --secondary-color-light: #6e4534; /* Lighter shade for hover states in dark mode */
+  --secondary-color-dark: #4a2e1b; /* Darker shade for active states in dark mode */
+
+  --accent-color: #883d32; /* Dark soft coral for accents */
+  --accent-color-light: #a65e4e; /* Lighter shade in dark mode */
+  --accent-color-dark: #6f2e26; /* Darker shade in dark mode */
+
+  --dark-color: #fafafa; /* Near white for primary text */
+  --dark-color-light: #d1e1e9; /* Lighter shade for secondary text and less prominent elements */
+  --dark-color-dark: #c2c2c2; /* Adjusted for dark mode for deeper contrast or borders */
+
+  --light-color: #507a8f; /* Adjusted light slate for backgrounds in dark mode */
+  --light-color-light: #739cb1; /* Lighter slate for highlights in dark mode */
+  --light-color-dark: #3b5767; /* Dark slate for accents in dark mode */
+
+  --danger-color: #661f1f; /* Very dark red for critical backgrounds */
+  --danger-color-light: #993333; /* Lighter red for warnings in dark mode */
+  --danger-color-dark: #4c1a1a; /* Darker red for critical errors in dark mode */
+
+  --success-color: #005233; /* Deep green for success backgrounds */
+  --success-color-light: #007a55; /* Lighter green for success states in dark mode */
+  --success-color-dark: #003825; /* Dark green for success text in dark mode */
+
+  --warning-color: #665c00; /* Dark amber for warning elements */
+  --warning-color-light: #998a00; /* Light amber for warnings in dark mode */
+  --warning-color-dark: #4d4300; /* Dark amber for dark mode */
+
+  --info-color: #0f5e72; /* Dark light blue for informational elements */
+  --info-color-light: #2a8fa8; /* Light blue for info hover states in dark mode */
+  --info-color-dark: #0a4251; /* Deep sky blue adjusted for dark mode */
+
+  --highlight-color: #797662; /* Dark goldenrod for highlights in dark mode */
+  --text-color: #e1e1e1; /* Light grey for primary text in dark mode */
+  --text-color-light: #c7c7c7; /* Softer light grey for secondary text in dark mode */
+
+  --background-color: #121212; /* Very dark grey for main background in dark mode */
+  --border-color: #343434; /* Dark grey for borders in dark mode */
+}

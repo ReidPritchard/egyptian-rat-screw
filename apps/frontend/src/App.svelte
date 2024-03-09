@@ -1,6 +1,7 @@
 <script lang="ts">
   import logo from './assets/logo-v01.webp';
   import AppContainer from './lib/AppContainer.svelte';
+  import ThemeToggle from './lib/UIBlocks/ThemeToggle.svelte';
   import { sessionStorageStore } from './stores/storable';
 
   let hasJoinedLobby =
@@ -14,29 +15,33 @@
       !!sessionStorageStore.getItem('playerName') &&
       !!sessionStorageStore.getItem('lobbyId');
   });
+
+  // If user prefers dark mode, set the theme to dark
+  let theme = 'light';
+  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    theme = 'dark';
+  }
 </script>
 
-<main>
-  {#if !hasJoinedLobby}
-    <div class="fadeIn">
-      <a
-        href="https://svelte.dev"
-        target="_blank"
-        rel="noreferrer"
-      >
+<main
+  class="container"
+  data-theme={theme}
+>
+  <header>
+    {#if !hasJoinedLobby}
+      <div>
         <img
           src={logo}
-          class="logo svelte"
-          alt="Svelte Logo"
+          class="logo"
+          alt="Egyptian Rat Screw logo"
         />
-      </a>
-    </div>
-    <h1>Egyptian Rat Screw</h1>
-  {:else}
-    <header class="fadeIn">
+      </div>
       <h1>Egyptian Rat Screw</h1>
-    </header>
-  {/if}
+    {:else}
+      <h1>Egyptian Rat Screw</h1>
+    {/if}
+    <ThemeToggle />
+  </header>
 
   <AppContainer />
 </main>
@@ -51,20 +56,16 @@
   .logo:hover {
     filter: drop-shadow(0 0 2em #646cffaa);
   }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
 
   header {
     position: absolute;
     top: 0;
     left: 0;
-    width: 50%;
+    width: 80%;
 
     display: flex;
-    justify-content: start;
+    justify-content: space-between;
     align-items: center;
-    gap: 1rem;
 
     padding: 1rem 5rem;
   }

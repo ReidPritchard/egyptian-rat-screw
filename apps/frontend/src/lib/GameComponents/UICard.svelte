@@ -1,35 +1,13 @@
 <script lang="ts">
   import type { Card } from '@oers/game-core';
   import { elasticOut } from 'svelte/easing';
+  import { playCard } from '../../utils/transitions';
 
   export let card: Card | undefined;
   export let rotation: number = 0;
 
   // Reactive statement for dynamic style including rotation
   $: transformedStyle = `transform: rotate(${rotation}deg);`;
-
-  /**
-   * Transition function to animate the card being added to the pile, including rotation
-   * @param {HTMLElement} node
-   * @param {{ delay?: number, duration?: number, easing?: (t: number) => number }} params
-   */
-  function playCardTransition(
-    node: HTMLElement,
-    { delay = 0, duration = 400, easing = elasticOut } = {}
-  ) {
-    const existingTransform =
-      getComputedStyle(node).transform === 'none'
-        ? ''
-        : getComputedStyle(node).transform;
-
-    return {
-      delay,
-      duration,
-      easing,
-      css: (t: number) =>
-        `${existingTransform} scale(${t}) translateZ(0); transform: ${transformedStyle} scale(${t}) translateZ(0);`,
-    };
-  }
 
   const displayValue = (): string => card?.rank || 'Unknown';
   const displaySuit = (): string => card?.suit || 'Unknown';
@@ -53,7 +31,7 @@
 {#if card}
   <div
     class="card"
-    in:playCardTransition={{ duration: 600 }}
+    in:playCard={{ duration: 600 }}
     style={transformedStyle}
     role="img"
     aria-label="{card.rank} of {card.suit}"

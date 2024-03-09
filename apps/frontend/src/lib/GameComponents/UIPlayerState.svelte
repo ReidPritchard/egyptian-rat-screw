@@ -1,58 +1,51 @@
 <script lang="ts">
   import type { PlayerStatus } from '@oers/game-core';
-  import { fade } from 'svelte/transition';
-  import { quintOut } from 'svelte/easing';
-  import { expand } from '../../utils/transitions';
+  import { draw, fade } from 'svelte/transition';
 
   export let state: PlayerStatus = 'unknown';
+  export let isCurrentPlayer = true;
 
-  /**
-   * A prop to determine if the state is for the current player
-   * or if it's for a different player in the game.
-   */
-  export let isCurrentPlayer = false;
+  const pathTransition = { duration: 700 };
 </script>
 
 <div
   transition:fade={{ duration: 300 }}
-  class:main={isCurrentPlayer}
+  class="main"
+  class:current-player={isCurrentPlayer}
 >
-  {#if state === 'ready'}
-    <svg
-      class="state svg-ready"
-      viewBox="0 0 24 24"
-    >
-      <!-- Check mark SVG -->
+  <svg
+    class="state"
+    class:svg-ready={state === 'ready'}
+    class:svg-waiting={state === 'waiting'}
+    class:svg-unknown={state === 'unknown'}
+    viewBox="0 0 24 24"
+  >
+    {#if state === 'ready'}
       <path
-        in:expand={{ duration: 400, delay: 1000, easing: quintOut }}
+        in:draw={pathTransition}
+        out:fade={pathTransition}
+        style="stroke: green; stroke-width: 2;"
         d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
       />
-    </svg>
-  {:else if state === 'waiting'}
-    <svg
-      class="state svg-waiting"
-      viewBox="0 0 24 24"
-    >
-      <!-- X mark SVG -->
+    {:else if state === 'waiting'}
       <path
+        in:draw={pathTransition}
+        out:fade={pathTransition}
+        style="stroke: red; stroke-width: 2;"
         d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
       />
-    </svg>
-  {:else}
-    <svg
-      class="state svg-unknown"
-      viewBox="0 0 24 24"
-    >
-      <!-- Question mark SVG (simplified representation) -->
+    {:else}
       <path
-        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92c-.65.67-1.17 1.45-1.17 2.83h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.37.59-.88.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"
+        out:fade={pathTransition}
+        style="stroke: black;"
+        d="M12 4C9.243 4 7 6.243 7 9h2c0-1.654 1.346-3 3-3s3 1.346 3 3c0 1.069-.454 1.465-1.481 2.255-.382.294-.813.626-1.226 1.038C10.981 13.604 10.995 14.897 11 15v2h2v-2.009c0-.024.023-.601.707-1.284.32-.32.682-.598 1.031-.867C15.798 12.024 17 11.1 17 9c0-2.757-2.243-5-5-5zm-1 14h2v2h-2z"
       />
-    </svg>
-  {/if}
+    {/if}
+  </svg>
 </div>
 
 {#if isCurrentPlayer}
-  <div class="text-xs text-center">
+  <div>
     <button on:click={() => (state = 'ready')}>Ready</button>
     <button on:click={() => (state = 'waiting')}>Not Ready</button>
   </div>
@@ -62,26 +55,20 @@
   .state {
     width: 50px;
     height: 50px;
+    fill: none;
     transition:
       transform 0.3s ease-in-out,
       opacity 0.3s ease;
   }
   .main {
-    /* make the current player's state larger */
-    transform: scale(3.5);
+    /* Adjust scale for current player for better visibility */
+    transform: scale(var(--player-scale));
+    transition: transform 0.3s ease;
   }
-  .svg-ready {
-    fill: green;
+  :global(:root) {
+    --player-scale: 1; /* Default scale */
   }
-  .svg-waiting {
-    fill: red;
-  }
-  .svg-unknown {
-    fill: gray;
-  }
-  /* Example animation: scale up on state change */
-  .state.change {
-    transform: scale(1.5);
-    opacity: 0.5;
+  .main.current-player {
+    --player-scale: 1.5; /* Increased scale for current player */
   }
 </style>

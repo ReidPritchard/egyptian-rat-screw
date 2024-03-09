@@ -3,52 +3,10 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: var(--primary-color);
-  background-color: var(--dark-color);
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  /* Setup Color Palette */
-  --primary-color: #e8e9f3;
-  --secondary-color: #b86f52;
-  --accent-color: #f78764;
-  --dark-color: #153243;
-  --light-color: #284b63;
-  --danger-color: #ff4d4d;
-  --success-color: #00cc66;
-}
-
-/* Default CSS Animations */
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes slideIn {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideOut {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
 }
 
 .fadeIn {
@@ -78,6 +36,9 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+
+  color: var(--text-color);
+  background-color: var(--background-color);
 }
 
 h1 {
@@ -98,35 +59,3 @@ h1 {
   min-height: 70vh;
   max-height: 90vh;
 }
-
-button {
-  border-radius: 8px;
-  border: 1px solid var(--light-color);
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: var(--dark-color);
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: var(--accent-color);
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-/* @media (prefers-color-scheme: light) {
-  :root {
-    color: var(--dark-color);
-    background-color: var(--primary-color);
-  }
-  a:hover {
-    color: var(--light-color);
-  }
-  button {
-    background-color: var(--primary-color);
-  }
-} */
