@@ -1,0 +1,36 @@
+name: Simple CI
+
+run-name: Simple CI Run (${{ github.run_number }})
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 19.x, 20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node ${{ matrix.node-version }} sample
+        uses: actions/setup-node@v3
+        with:
+          # node-version-file: 'package.json'
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Build
+        run: yarn build
+      - name: Lint
+        run: yarn lint
+      - name: Test
+        run: yarn test
