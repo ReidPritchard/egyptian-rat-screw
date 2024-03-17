@@ -6,7 +6,9 @@
   import UiButton from './UIBlocks/UIButton.svelte';
   import UiInput from './UIBlocks/UIInput.svelte';
 
-  let playerName: string = sessionStorageStore.getItem('playerName') || '';
+  const isDev = import.meta.env.DEV;
+
+  let playerName: string = isDev ? '' : sessionStorageStore.getItem('playerName') || '';
   let tempPlayerName: string = ''; // Used when the player is prompted for a name
   let isTempNameValid = false; // Use to enable/disable the join button
   let lobbyId: string = sessionStorageStore.getItem('lobbyId') || '';
@@ -19,7 +21,7 @@
     lobbyId = event.detail.lobbyId;
     hasJoinedLobby = true;
 
-    sessionStorageStore.setItem('playerName', playerName);
+    // sessionStorageStore.setItem('playerName', playerName);
     sessionStorageStore.setItem('lobbyId', lobbyId);
   }
 
@@ -66,7 +68,7 @@
   {:else if !hasJoinedLobby}
     <div class="card">
       <h2>Game Lobbies:</h2>
-      <LobbyList on:join={joinLobby} />
+      <LobbyList on:join={joinLobby} {playerName} />
     </div>
   {:else}
     <div class="card game-session">

@@ -6,6 +6,8 @@
 
   const dispatch = createEventDispatcher();
 
+  export let playerName: string;
+
   let lobbies: ERSGameSession[] = [];
   let isLoading = true;
   let error: string | null = null;
@@ -44,7 +46,6 @@
 
   async function joinLobby(lobbyId: string) {
     // Get the player's name
-    const playerName = prompt('Enter your name');
     try {
       const response = await fetch(`/api/games/${lobbyId}/join`, {
         method: 'POST',

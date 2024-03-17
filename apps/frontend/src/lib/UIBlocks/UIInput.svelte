@@ -98,7 +98,7 @@
 
   /* Hover State */
   input:hover {
-    border-color: var(--accent-color-hover);
+    border-color: var(--accent-color-dark);
   }
 
   /* Focus State */
@@ -108,6 +108,6 @@
   }
 
   .invalid {
-    border-color: var(--error-color);
+    border-color: var(--danger-color);
   }
 </style>
