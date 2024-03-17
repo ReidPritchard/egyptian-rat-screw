@@ -1,6 +1,6 @@
 import { Card, createDeck } from '../card';
 import { DataPayload } from '../event';
-import { Player } from '../player';
+import { Player, PlayerStatus } from '../player';
 import { ActiveRule, Rule, RuleContext } from '../rule';
 import { RuleBuilder, RuleBuilderHelpers, createRule } from '../rule/factory';
 import {
@@ -128,7 +128,11 @@ export class ERSGame {
       throw new Error('Game is full');
     }
 
-    const newPlayer: Player = { name: playerName, hand: [] };
+    const newPlayer: Player = {
+      name: playerName,
+      hand: [],
+      status: 'waiting',
+    };
     this.players.push(newPlayer);
     this.score.push({ playerName, score: 0 });
   }
@@ -141,6 +145,20 @@ export class ERSGame {
     } else {
       throw new Error(`Player ${playerName} not found`);
     }
+  }
+
+  /**
+   * Method for updating a player's status
+   * @param playerName The name of the player to update
+   * @param status The new status of the player
+   * @throws Error if the player is not found
+   * @returns boolean indicating if the status was updated
+   */
+  updatePlayerStatus(playerName: string, status: PlayerStatus): boolean {
+    const player = this.getPlayer(playerName);
+    const didStatusChange = player.status !== status;
+    player.status = status;
+    return didStatusChange;
   }
 
   /**
@@ -252,9 +270,15 @@ export class ERSGame {
   }
 
   startGame() {
+    // FIXME: This is a temp change for easier testing
     // if (this.players.length < 2) {
     //   throw new Error("Not enough players to start the game");
     // }
+
+    // Make sure all players are ready
+    if (this.players.some((player) => player.status !== 'ready')) {
+      throw new Error('Not all players are ready');
+    }
 
     this.reset();
     this.gameActive = GameStates.InProgress;

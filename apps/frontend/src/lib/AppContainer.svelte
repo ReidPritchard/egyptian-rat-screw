@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import { sessionStorageStore } from '../stores/storable';
-  import GameSession from './GameSession.svelte';
+  import GameSession from './GameComponents/GameSession.svelte';
   import LobbyList from './LobbyList.svelte';
   import UiButton from './UIBlocks/UIButton.svelte';
   import UiInput from './UIBlocks/UIInput.svelte';
@@ -33,6 +33,14 @@
     sessionStorageStore.removeItem('playerName');
     sessionStorageStore.removeItem('lobbyId');
   }
+
+  function handleSubmit(submitEvent: Event) {
+    if (tempPlayerName) {
+      playerName = tempPlayerName;
+      // FIXME: We need to setup a way to change behavior based on the environment
+      sessionStorageStore.setItem('playerName', tempPlayerName);
+    }
+  }
 </script>
 
 <main>
@@ -42,28 +50,25 @@
       class="card"
       out:fade
     >
-      <UiInput
-        label="Name"
-        on:input={(e) => {
-          tempPlayerName = e.detail.value;
-          isTempNameValid = e.detail.isValid;
-        }}
-        placeholder="Enter your name"
-      />
-      <div class="shift-end">
-        <UiButton
-          variant="success"
-          disabled={!isTempNameValid}
-          on:click={() => {
-            if (tempPlayerName) {
-              playerName = tempPlayerName;
-              sessionStorageStore.setItem('playerName', tempPlayerName);
-            }
+      <form on:submit|preventDefault={handleSubmit}>
+        <UiInput
+          label="Name"
+          on:input={(e) => {
+            tempPlayerName = e.detail.value;
+            isTempNameValid = e.detail.isValid;
           }}
-        >
-          Join
-        </UiButton>
-      </div>
+          placeholder="Enter your name"
+        />
+        <div class="shift-end">
+          <UiButton
+            variant="success"
+            disabled={!tempPlayerName}
+            isSubmitAction={true}
+          >
+            Join
+          </UiButton>
+        </div>
+      </form>
     </div>
   {:else if !hasJoinedLobby}
     <div class="card">

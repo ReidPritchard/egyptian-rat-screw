@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 
+
 function createStorageStore(storage: Storage) {
   const { subscribe, set, update } = writable<Record<string, any>>({});
 

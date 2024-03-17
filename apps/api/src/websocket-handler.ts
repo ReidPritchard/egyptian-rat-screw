@@ -1,6 +1,10 @@
 import expressWs from 'express-ws';
 import { ErrorCodes, isClientPayload, isDataPayload } from '@oers/game-core';
-import type { ServerPayload, ClientPayload } from '@oers/game-core';
+import type {
+  ServerPayload,
+  ClientPayload,
+  PlayerStatus,
+} from '@oers/game-core';
 import { info, debug } from '@oers/utils';
 import { Router } from 'express';
 import app, { gameManager } from './server';
@@ -33,7 +37,8 @@ router.ws('/games/:id', (ws: WebSocket, req) => {
 
   if (!game) {
     info('Game not found');
-    ws.send(JSON.stringify({ type: 'error', message: 'Game not found' }));
+    // ws.send(JSON.stringify({ type: 'error', message: 'Game not found' }));
+    sendError(ws, 'Game not found', ErrorCodes.NOT_FOUND);
     ws.close();
     return;
   }
@@ -45,56 +50,71 @@ router.ws('/games/:id', (ws: WebSocket, req) => {
     let response: ServerPayload;
 
     try {
-      payload = JSON.parse(event.data);
+      payload = JSON.parse(event.data) as ClientPayload;
     } catch (error) {
+      info('Invalid JSON format', event.data);
+      sendError(ws, 'Invalid JSON format', ErrorCodes.INVALID_INPUT);
+      return;
+    }
+
+    if (!isClientPayload(payload)) {
       info('Invalid payload', event.data);
       sendError(ws, 'Invalid payload', ErrorCodes.INVALID_INPUT);
       return;
     }
 
-    if (isDataPayload(payload) && isClientPayload(payload)) {
-      const { type } = payload;
+    const { type } = payload;
 
-      info('Received payload type', type);
-      switch (type) {
-        case 'player-ready':
-          try {
-            game.startGame();
+    info('Received payload type', type);
+    switch (type) {
+      case 'player-ready': {
+        const didStatusChange: boolean = game.updatePlayerStatus(
+          playerName,
+          payload.isReady ? 'ready' : 'waiting'
+        );
+        if (didStatusChange) {
+          gameManager.broadcastGameStateToSession(gameId);
+        }
+
+        // Try to start the game if all players are ready
+        try {
+          game.startGame();
+          response = {
+            type: 'game-started',
+            // The start time should be ~10 seconds from now
+            startTime: new Date(Date.now() + 10000).toISOString(),
+          };
+          gameManager.broadcastToSession(gameId, JSON.stringify(response));
+          gameManager.broadcastGameStateToSession(gameId);
+        } catch (error) {
+          info('Error starting game', error);
+          sendError(ws, 'Error starting game', ErrorCodes.GAME_START_FAILED);
+        }
+        break;
+      }
+      case 'play-card-attempt':
+        try {
+          const card = game.playCard(game.getPlayer(playerName));
+          if (card) {
             response = {
-              type: 'game-started',
-              startTime: new Date().toISOString(),
+              type: 'play-card-result',
+              name: playerName,
+              card,
             };
             gameManager.broadcastToSession(gameId, JSON.stringify(response));
-            gameManager.broadcastGameStateToSession(gameId);
-          } catch (error) {
-            info('Error starting game', error);
-            sendError(ws, 'Error starting game', ErrorCodes.GAME_START_FAILED);
           }
-          break;
-        case 'play-card-attempt':
-          try {
-            const card = game.playCard(game.getPlayer(playerName));
-            if (card) {
-              response = {
-                type: 'play-card-result',
-                name: playerName,
-                card,
-              };
-              gameManager.broadcastToSession(gameId, JSON.stringify(response));
-            }
-          } catch (error) {
-            info('Error playing card', error);
-            sendError(
-              ws,
-              'Error playing card',
-              ErrorCodes.PLAY_CARD_ACTION_FAILED
-            );
-          }
-          break;
-        default:
-          debug('Invalid action', type);
-          sendError(ws, 'Invalid action', ErrorCodes.UNSUPPORTED_ACTION);
-      }
+        } catch (error) {
+          info('Error playing card', error);
+          sendError(
+            ws,
+            'Error playing card',
+            ErrorCodes.PLAY_CARD_ACTION_FAILED
+          );
+        }
+        break;
+      default:
+        debug('Invalid action', type);
+        sendError(ws, 'Invalid action', ErrorCodes.UNSUPPORTED_ACTION);
     }
   };
 

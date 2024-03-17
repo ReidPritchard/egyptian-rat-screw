@@ -1,4 +1,5 @@
 <script lang="ts">
+  export let isSubmitAction = false;
   export let variant:
     | 'primary'
     | 'secondary'
@@ -14,6 +15,7 @@
 <button
   class="button {variant} {size}"
   {disabled}
+  type={isSubmitAction ? 'submit' : 'button'}
   on:click
 >
   <slot />

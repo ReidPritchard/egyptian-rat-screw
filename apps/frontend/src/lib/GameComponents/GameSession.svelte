@@ -1,16 +1,18 @@
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
-  import { socketStore } from '../stores/socketStore';
+  import { socketStore } from '../../stores/socketStore';
   import {
     gameSessionStore,
     type GameSession,
-  } from '../stores/gameSessionStore';
-  import Rules from './GameComponents/UIRules.svelte';
-  import CardPile from './GameComponents/UICardPile.svelte';
-  import UiButton from './UIBlocks/UIButton.svelte';
-  import UiPlayerState from './GameComponents/UIPlayerState.svelte';
-  import UiCurrentPlayer from './GameComponents/UICurrentPlayer.svelte';
-  import UiPreGameDashboard from './GameComponents/UIPreGameDashboard.svelte';
+  } from '../../stores/gameSessionStore';
+  import Rules from './UIRules.svelte';
+  import CardPile from './UICardPile.svelte';
+  import UiButton from '../UIBlocks/UIButton.svelte';
+  import UiCurrentPlayer from './UICurrentPlayer.svelte';
+  import UiPreGameDashboard from './UIPreGameDashboard.svelte';
+  import UiSessionDetails from './UISessionDetails.svelte';
+  import { ErrorCodes, type ClientPayload } from '@oers/game-core';
+  import UiGameCountdown from './UIGameCountdown.svelte';
 
   export let gameId: string;
   export let playerName: string;
@@ -50,11 +52,13 @@
 
         if (data.type === 'error') {
           console.error('Received error message:', data);
-          leaveGame();
-          return;
+          const errorKey = data.errorKey;
+          if (errorKey === ErrorCodes.NOT_FOUND) {
+            leaveGame();
+          }
+        } else {
+          gameSessionStore.handlePayload(data, playerName);
         }
-
-        gameSessionStore.handlePayload(data, playerName);
       }
     });
 
@@ -83,20 +87,15 @@
 
     // If the game is paused, send a "start-game" message
     if (gameSession.status === 'paused') {
-      const msg = gameSessionStore.generatePayload(
-        'player-ready',
-        playerName,
-        gameId
-      );
-      socketStore.send(JSON.stringify(msg));
+      sendEvent('player-ready');
       return;
     }
 
-    const msg = gameSessionStore.generatePayload(
-      'play-card-attempt',
-      playerName,
-      gameId
-    );
+    sendEvent('play-card-attempt');
+  }
+
+  function sendEvent(eventType: ClientPayload['type']) {
+    const msg = gameSessionStore.generatePayload(eventType, playerName, gameId);
     socketStore.send(JSON.stringify(msg));
   }
 </script>
@@ -107,22 +106,55 @@
   {:else if gameSession}
     <div class="game-session-details fadeIn">
       <div id="left-col">
-        <h2>Game Session</h2>
-        <p>Game ID: {gameId}</p>
-        <p>Player Name: {playerName}</p>
+        {#if gameSession.status}<p>Status: {gameSession.status}</p>{/if}
+        {#if gameSession.slapRules}<Rules
+            slapRules={gameSession.slapRules}
+          />{/if}
+        <UiSessionDetails
+          sessionDetails={{ 'Game ID': gameId, 'Player Name': playerName }}
+        />
       </div>
 
       <div id="middle-col">
-        <UiCurrentPlayer playerName={gameSession.currentPlayer} />
-
         {#if gameSession.cardPile && gameSession.status !== 'paused' && gameSession.status !== 'ended'}
+          <UiCurrentPlayer playerName={gameSession.currentPlayer} />
           <CardPile pile={gameSession.cardPile} />
         {/if}
 
-        <UiPreGameDashboard
-          {playerName}
-          playerStates={gameSession.players}
-        />
+        {#if gameSession.status === 'paused' || gameSession.status === 'ended'}
+          <UiPreGameDashboard
+            {playerName}
+            playerStates={gameSession.players}
+            on:stateChange={(event) => {
+              console.log('State change event:', event);
+              sendEvent('player-ready');
+            }}
+          />
+        {/if}
+
+        <UiButton
+          variant="primary"
+          on:click={() => {
+            gameSession.startTime = new Date(Date.now() + 10000);
+          }}
+        >
+          Start Countdown
+        </UiButton>
+
+        {#if gameSession.startTime}
+          <UiGameCountdown
+            startTime={gameSession.startTime}
+            on:countdownFinished={() => {
+              console.log('Countdown finished');
+              gameSession.startTime = undefined;
+            }}
+            on:countdownCancelled={() => {
+              console.log('Countdown cancelled');
+              gameSession.startTime = undefined;
+              sendEvent('player-ready');
+            }}
+          />
+        {/if}
       </div>
 
       <div id="right-col">
@@ -130,10 +162,6 @@
             Number of Cards in Hand: {gameSession.numCardsInHand}
           </p>{/if}
         {#if gameSession.score}<p>Score: {gameSession.score}</p>{/if}
-        {#if gameSession.status}<p>Status: {gameSession.status}</p>{/if}
-        {#if gameSession.slapRules}<Rules
-            slapRules={gameSession.slapRules}
-          />{/if}
         {#if gameSession.notify}<p>Notification: {gameSession.notify}</p>{/if}
       </div>
     </div>
@@ -177,7 +205,7 @@
     grid-template-columns: 1fr 4fr 1fr;
     grid-template-rows: auto;
 
-    grid-template-areas: 'left middle right' 'left middle right' 'left middle right';
+    grid-template-areas: 'left middle right' 'left middle right' 'left middle right' 'footer footer footer';
 
     gap: 1rem;
     padding: 1rem;
@@ -216,26 +244,10 @@
   }
 
   footer {
-    position: absolute;
-    bottom: 0;
+    grid-area: footer;
 
     display: flex;
     gap: 1rem;
-
-    padding: 5rem;
-  }
-
-  .send-button {
-    padding: 0.5rem 1rem;
-    color: var(--light-color);
-    background-color: var(--accent-color);
-    border: none;
-    border-radius: 0.25rem;
-    cursor: pointer;
-  }
-
-  .send-button:hover {
-    background-color: var(--accent-color-dark);
   }
 
   .loading {

@@ -1,9 +1,10 @@
-import type {
-  Card,
-  ClientPayload,
-  DataPayload,
-  Player,
-  SlapRule,
+import {
+  ErrorCodes,
+  type Card,
+  type ClientPayload,
+  type DataPayload,
+  type Player,
+  type SlapRule,
 } from '@oers/game-core';
 import { readonly, writable } from 'svelte/store';
 
@@ -12,6 +13,7 @@ export interface GameSession {
   players: Partial<Player>[];
   score: number;
   status: 'playing' | 'paused' | 'ended';
+  startTime?: Date;
   cardPile: Card[];
   numCardsInHand: number;
   slapRules: SlapRule[];
@@ -49,7 +51,11 @@ const createGameSessionStore = () => {
       const { type } = payload;
       switch (type) {
         case 'game-started':
-          update((state) => ({ ...state, status: 'playing' }));
+          update((state) => ({
+            ...state,
+            startTime: new Date(payload.startTime),
+            status: 'playing',
+          }));
           break;
         case 'game-status':
           const { players, scores, handSize, slapRules, pile, currentPlayer } =
@@ -75,19 +81,39 @@ const createGameSessionStore = () => {
                 : state.numCardsInHand,
           }));
           break;
+        case 'error':
+          switch (payload.errorCode) {
+            case ErrorCodes.GAME_START_FAILED:
+              update((state) => ({ ...state, status: 'paused' }));
+              break;
+            case ErrorCodes.PLAY_CARD_ACTION_FAILED:
+              break;
+            default:
+              break;
+          }
       }
     },
     generatePayload: (
       actionType: ClientPayload['type'],
-      name: string,
+      name: string, // TODO: might be nice to track these in the store so we don't have to pass anything in
       gameId?: string
     ): ClientPayload => {
       switch (actionType) {
         case 'player-ready':
+          // Toggle our ready status
+          let isReady = false;
+          update((state) => {
+            const player = state.players.find((p) => p.name === name);
+            if (player) {
+              player.status = player.status === 'ready' ? 'waiting' : 'ready';
+              isReady = player.status === 'ready';
+            }
+            return state;
+          });
           return {
             type: 'player-ready',
             name: name,
-            isReady: true,
+            isReady,
           };
         case 'join-game':
           return {
