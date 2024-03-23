@@ -43,6 +43,7 @@
     bind:value
     {placeholder}
     aria-label={placeholder}
+    class:valid={isValid}
     class:invalid={!isValid}
   />
 {:else if type === 'email'}
@@ -53,6 +54,7 @@
     bind:value
     {placeholder}
     aria-label={placeholder}
+    class:valid={isValid}
     class:invalid={!isValid}
   />
 {:else if type === 'number'}
@@ -63,6 +65,7 @@
     bind:value
     {placeholder}
     aria-label={placeholder}
+    class:valid={isValid}
     class:invalid={!isValid}
   />
 {:else}
@@ -73,6 +76,7 @@
     bind:value
     {placeholder}
     aria-label={placeholder}
+    class:valid={isValid}
     class:invalid={!isValid}
   />
 {/if}
@@ -109,5 +113,9 @@
 
   .invalid {
     border-color: var(--danger-color);
+  }
+
+  .valid {
+    border-color: var(--success-color);
   }
 </style>

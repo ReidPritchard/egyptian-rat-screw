@@ -26,10 +26,7 @@
   <ThemeToggle />
 </header>
 
-<main
-  class="container"
-  style="padding-top: {headerOffset}px;"
->
+<main class="container">
   <AppContainer />
 </main>
 
