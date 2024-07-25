@@ -1,4 +1,6 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "egyptian-rat-screw",
   "private": true,
   "scripts": {
     "build": "turbo run build",

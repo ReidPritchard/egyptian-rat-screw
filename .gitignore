@@ -12,3 +12,8 @@ dist-ssr
 server/dist
 public/dist
 .vscode
+
+# Ignore apple "double files"
+# Use `dot_clean -m ./` to remove them
+._*
+
