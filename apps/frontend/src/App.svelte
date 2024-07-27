@@ -1,5 +1,7 @@
 <script lang="ts">
   import logo from './assets/logo-v01.webp';
+  import rat from './assets/rat.png';
+  import ratSlap from './assets/rat-slap.png';
   import AppContainer from './lib/AppContainer.svelte';
   import ThemeToggle from './lib/UIBlocks/ThemeToggle.svelte';
   import { sessionStorageStore } from './stores/storable';
@@ -14,7 +16,7 @@
   {#if !hasJoinedLobby}
     <div>
       <img
-        src={logo}
+        src={rat}
         class="logo"
         alt="Egyptian Rat Screw logo"
       />
@@ -32,7 +34,7 @@
 
 <style>
   .logo {
-    height: 6em;
+    height: 10em;
     padding: 1.5em;
     border-radius: 50%;
 

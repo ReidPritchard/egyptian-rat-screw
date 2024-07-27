@@ -17,3 +17,11 @@ public/dist
 # Use `dot_clean -m ./` to remove them
 ._*
 
+
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
