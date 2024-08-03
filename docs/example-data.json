@@ -1,0 +1,63 @@
+{
+    "games": {
+        "game123": {
+            "gameId": "game123",
+            "players": [
+                "player456",
+                "player789"
+            ],
+            "currentPlayer": "player456",
+            "deck": [
+                {
+                    "cardId": "c1",
+                    "cardType": "rat",
+                    "cardValue": 2
+                },
+                {
+                    "cardId": "c2",
+                    "cardType": "slap"
+                }
+            ],
+            "discardPile": [],
+            "playerHands": {
+                "player456": [
+                    {
+                        "cardId": "c3",
+                        "cardType": "rat",
+                        "cardValue": 1
+                    },
+                    {
+                        "cardId": "c4",
+                        "cardType": "special"
+                    }
+                ],
+                "player789": [
+                    {
+                        "cardId": "c5",
+                        "cardType": "rat",
+                        "cardValue": 3
+                    },
+                    {
+                        "cardId": "c6",
+                        "cardType": "slap"
+                    }
+                ]
+            },
+            "gameState": "in progress"
+        }
+    },
+    "players": {
+        "player456": {
+            "playerId": "player456",
+            "username": "Alice",
+            "connected": true,
+            "ready": true
+        },
+        "player789": {
+            "playerId": "player789",
+            "username": "Bob",
+            "connected": true,
+            "ready": true
+        }
+    }
+}

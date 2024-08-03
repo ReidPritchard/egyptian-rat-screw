@@ -1,28 +1,29 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "egyptian-rat-screw",
+  "name": "oers",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "turbo run build",
-    "clean": "turbo run clean && rimraf node_modules",
-    "dev": "turbo run dev",
-    "format": "prettier --write \"**/*.{ts,svelte,md,json}\"",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "clean": "rm -rf dist && rm -rf node_modules"
+  },
+  "dependencies": {
+    "firebase": "^10.12.5"
   },
   "devDependencies": {
-    "eslint": "^8.0.1",
-    "prettier": "^3.1.1",
-    "turbo": "^2.0.9"
-  },
-  "engines": {
-    "node": ">=18",
-    "yarn": "4.1.1"
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
+    "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "@tsconfig/svelte": "^5.0.2",
+    "prettier-plugin-svelte": "^3.2.0",
+    "svelte": "^4.2.11",
+    "svelte-check": "^3.6.4",
+    "tslib": "^2.6.2",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.4"
+  }
 }
