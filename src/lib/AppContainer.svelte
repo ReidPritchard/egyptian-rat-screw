@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { fade } from 'svelte/transition';
   import { sessionStorageStore } from '../stores/storable';
+  import { sessionStore, ISession } from '../stores/session';
   import GameSession from './GameComponents/GameSession.svelte';
   import LobbyList from './LobbyList.svelte';
   import UiButton from './UIBlocks/UIButton.svelte';
@@ -16,6 +16,23 @@
   let isTempNameValid = false; // Use to enable/disable the join button
   let lobbyId: string = sessionStorageStore.getItem('lobbyId') || '';
   let hasJoinedLobby = !!playerName && !!lobbyId; // TODO: Check if lobbyId is valid
+
+  let sessionStoreState: null | ISession;
+  sessionStore.subscribe((state) => {
+    sessionStoreState = state;
+  });
+
+    // Check if username is unique
+  function doesUsernameExist(username: string) {
+      // Get the database reference
+      const ref = sessionStoreState.firebaseDatabase.ref('players');
+      // Get the snapshot of the players
+      const snapshot = ref.once('value');
+      // Get the players
+      const players = snapshot.val();
+      // Check if the username is unique
+      return !Object.values(players || {}).some((p) => p.username === username);
+  }
 
   function joinLobby(
     event: CustomEvent<{ lobbyId: string; playerName: string }>
@@ -65,7 +82,7 @@
           label="Name"
           on:input={(e) => {
             tempPlayerName = e.detail.value;
-            isTempNameValid = e.detail.isValid;
+            isTempNameValid = e.detail.isValid && !doesUsernameExist(tempPlayerName);
           }}
           placeholder="Enter your name"
         />

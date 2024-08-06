@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { PlayerStatus } from '@oers/game-core';
   import { draw, fade } from 'svelte/transition';
   import UiButton from '../UIBlocks/UIButton.svelte';
   import { createEventDispatcher } from 'svelte';
+
+  type PlayerStatus = 'ready' | 'waiting' | 'unknown';
 
   export let state: PlayerStatus = 'unknown';
   export let isCurrentPlayer = true;

@@ -1,12 +1,16 @@
-import {
-  ErrorCodes,
-  type Card,
-  type ClientPayload,
-  type DataPayload,
-  type Player,
-  type SlapRule,
-} from '@oers/game-core';
 import { readonly, writable } from 'svelte/store';
+
+export enum ErrorCodes {
+  GAME_START_FAILED = 'GAME_START_FAILED',
+  PLAY_CARD_ACTION_FAILED = 'PLAY_CARD_ACTION_FAILED',
+}
+// Set all types to any for now
+export type Card = any;
+export type ClientPayload = any;
+export type DataPayload = any;
+export type Player = any;
+export type SlapRule = any;
+// TODO: Actually define these
 
 export interface GameSession {
   currentPlayer: string;

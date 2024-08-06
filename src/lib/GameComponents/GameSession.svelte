@@ -11,8 +11,13 @@
   import UiCurrentPlayer from './UICurrentPlayer.svelte';
   import UiPreGameDashboard from './UIPreGameDashboard.svelte';
   import UiSessionDetails from './UISessionDetails.svelte';
-  import { ErrorCodes, type ClientPayload } from '@oers/game-core';
+  // import { ErrorCodes, type ClientPayload } from '@oers/game-core';
   import UiGameCountdown from './UIGameCountdown.svelte';
+
+  type ClientPayload = {
+    type: string;
+    [key: string]: any;
+  };
 
   export let gameId: string;
   export let playerName: string;

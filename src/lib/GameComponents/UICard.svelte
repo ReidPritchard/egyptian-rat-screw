@@ -1,7 +1,11 @@
 <script lang="ts">
-  import type { Card } from '@oers/game-core';
   import { elasticOut } from 'svelte/easing';
   import { playCard } from '../../utils/transitions';
+
+  interface Card {
+    rank: string;
+    suit: string;
+  }
 
   export let card: Card | undefined;
   export let rotation: number = 0;

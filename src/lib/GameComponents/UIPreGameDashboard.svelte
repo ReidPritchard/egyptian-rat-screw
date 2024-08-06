@@ -1,6 +1,11 @@
 <script lang="ts">
-  import type { Player } from '@oers/game-core';
+  // import type { Player } from '@oers/game-core';
   import UiPlayerState from './UIPlayerState.svelte';
+
+  type Player = {
+    name: string;
+    status: string;
+  };
 
   export let playerName: string;
   export let playerStates: Partial<Player>[] = [];

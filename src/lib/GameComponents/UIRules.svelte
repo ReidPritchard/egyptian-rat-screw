@@ -1,7 +1,13 @@
 <script lang="ts">
-  import type { SlapRule } from '@oers/game-core';
+//   import type { SlapRule } from '@oers/game-core';
   import UiButton from '../UIBlocks/UIButton.svelte';
   import UiModal from '../UIBlocks/UIModal.svelte';
+
+  type SlapRule = {
+    name: string;
+    description: string;
+  };
+
 
   // The slap rules for the game
   export let slapRules: SlapRule[] = [];
