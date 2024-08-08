@@ -8,15 +8,10 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build:functions": "cd functions && npm run build",
-    "emulate": "npm run build:functions && firebase emulators:start --export-on-exit './emulator-data' --import './emulator-data'",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "clean": "rm -rf dist && rm -rf node_modules"
-  },
-  "dependencies": {
-    "firebase": "^10.12.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
