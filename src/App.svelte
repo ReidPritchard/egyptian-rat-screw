@@ -3,23 +3,29 @@
   import rat from './assets/rat.png';
   import ratSlap from './assets/rat-slap.png';
   import AppContainer from './lib/AppContainer.svelte';
-  import ThemeToggle from './lib/UIBlocks/ThemeToggle.svelte';
+  // import ThemeToggle from './lib/UIBlocks/ThemeToggle.svelte';
+  import { doesUsernameExist, createGame, joinGame } from './utils/db-api';
   import { sessionStorageStore } from './stores/storable';
-
-  import { sessionStore } from './stores/session';
-  sessionStore.subscribe((state) => {
-  (window as any).$$debug = {
-    sessionStorageStore,
-      state
-  };
-
-  });
-
+  import { onDestroy, setContext } from 'svelte';
 
   $: hasJoinedLobby =
     !!$sessionStorageStore.playerName && !!$sessionStorageStore.lobbyId;
 
+  // Setup context for db
+  setContext('db-api', {
+    doesUsernameExist,
+    createGame,
+    joinGame,
+  });
+
   let headerOffset = 0;
+
+  // on disconnect, remove player from lobby
+  onDestroy(() => {
+    if (hasJoinedLobby) {
+      sessionStorageStore.lobbyId = '';
+    }
+  });
 </script>
 
 <header bind:offsetHeight={headerOffset}>
@@ -35,7 +41,7 @@
   {:else}
     <h1>Egyptian Rat Screw</h1>
   {/if}
-  <ThemeToggle />
+  <!-- <ThemeToggle /> -->
 </header>
 
 <main class="container">
