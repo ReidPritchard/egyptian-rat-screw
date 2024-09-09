@@ -17,6 +17,7 @@ public/dist
 # Use `dot_clean -m ./` to remove them
 ._*
 
+.github/
 
 .yarn/*
 !.yarn/patches
