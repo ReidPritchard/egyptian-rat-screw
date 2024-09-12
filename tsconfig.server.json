@@ -2,12 +2,12 @@
     "compilerOptions": {
         "target": "es6",
         "module": "esnext",
+        "outDir": "dist/server",
         "strict": true,
-        "jsx": "react",
         "esModuleInterop": true,
         "moduleResolution": "node"
     },
     "include": [
-        "client/**/*"
+        "server/**/*"
     ]
 }

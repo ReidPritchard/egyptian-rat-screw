@@ -12,19 +12,10 @@ module.exports = {
     },
     module: {
         rules: [
-            // Use the inferno loader plugin to transpile inferno components
             {
                 test: /\.tsx?$/,
-                use: [
-                    {
-                        loader: 'babel-loader',
-                        options: {
-                            presets: ['@babel/preset-env', '@babel/preset-typescript'],
-                            plugins: ['babel-plugin-inferno', "@babel/plugin-syntax-jsx"],
-                        },
-                    },
-                ],
-                exclude: /node_modules/,
+                use: 'ts-loader',
+                include: path.resolve(__dirname, 'client'),
             },
         ],
     },
