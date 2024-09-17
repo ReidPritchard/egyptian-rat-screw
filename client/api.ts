@@ -1,75 +1,68 @@
 import { io, Socket } from 'socket.io-client';
-import { GameState, LobbyState, PlayerAction } from './types';
+import { Card, GameState, LobbyState, PlayerAction, SlapRule } from './types';
 
-class API {
-    private socket: Socket;
-    private listeners: { [event: string]: Function[] } = {};
+class Api {
+  socket: Socket;
 
-    constructor() {
-        this.socket = io('http://localhost:3000');
-        this.setupSocketListeners();
-    }
+  constructor() {
+    this.socket = io('http://localhost:3000', { path: '/socket.io' });
+  }
 
-    private setupSocketListeners() {
-        this.socket.on('connect', () => this.emit('connect'));
-        this.socket.on('disconnect', () => this.emit('disconnect'));
-        this.socket.on('lobbyUpdate', (lobbyState: LobbyState) => this.emit('lobbyUpdate', lobbyState));
-        this.socket.on('gameCreated', (gameState: GameState) => this.emit('gameCreated', gameState));
-        this.socket.on('gameUpdate', (gameState: GameState) => this.emit('gameUpdate', gameState));
-        this.socket.on('slapResult', (isValidSlap: boolean) => this.emit('slapResult', isValidSlap));
-        this.socket.on('playerAction', (playerAction: PlayerAction) => this.emit('playerAction', playerAction));
-        this.socket.on('error', (errorMessage: string) => this.emit('error', errorMessage));
-        this.socket.on('gameOver', (gameState: GameState) => this.emit('gameOver', gameState));
-    }
+  joinLobby(playerName: string) {
+    this.socket.emit('joinLobby', playerName);
+  }
 
-    on(event: string, callback: Function) {
-        if (!this.listeners[event]) {
-            this.listeners[event] = [];
-        }
-        this.listeners[event].push(callback);
-    }
+  createGame() {
+    this.socket.emit('createGame');
+  }
 
-    private emit(event: string, ...args: any[]) {
-        if (this.listeners[event]) {
-            this.listeners[event].forEach(callback => callback(...args));
-        }
-    }
+  joinGame(gameId: string) {
+    this.socket.emit('joinGame', gameId);
+  }
 
-    joinLobby(playerName: string) {
-        this.socket.emit('joinLobby', playerName);
-    }
+  playCard() {
+    this.socket.emit('playCard');
+  }
 
-    createGame() {
-        this.socket.emit('createGame');
-    }
+  slap() {
+    this.socket.emit('slap');
+  }
 
-    joinGame(gameId: string) {
-        this.socket.emit('joinGame', gameId);
-    }
+  updatePlayerName(newName: string) {
+    this.socket.emit('updatePlayerName', newName);
+  }
 
-    playCard() {
-        this.socket.emit('playCard');
-    }
+  restartGame() {
+    this.socket.emit('restartGame');
+  }
 
-    slap() {
-        this.socket.emit('slap');
-    }
+  updateGameSettings(gameId: string, settings: { maxPlayers?: number; slapRules?: SlapRule[] }) {
+    this.socket.emit('updateGameSettings', gameId, settings);
+  }
 
-    getSocketId(): string {
-        return this.socket.id || '';
-    }
+  leaveGame() {
+    this.socket.emit('leaveGame');
+  }
 
-    removeAllListeners(event: string) {
-        delete this.listeners[event];
-    }
+  on(event: 'connect', callback: () => void): void;
+  on(event: 'disconnect', callback: () => void): void;
+  on(event: 'lobbyUpdate', callback: (lobbyState: LobbyState) => void): void;
+  on(event: 'gameCreated' | 'gameUpdate', callback: (gameState: GameState) => void): void;
+  on(event: 'slapResult', callback: (isValidSlap: boolean) => void): void;
+  on(event: 'gameOver', callback: (gameState: GameState) => void): void;
+  on(event: 'error', callback: (errorMessage: string) => void): void;
+  on(event: 'playerAction', callback: (action: PlayerAction) => void): void;
+  on(event: 'gameSettings', callback: (slapRules: SlapRule[]) => void): void;
 
-    updatePlayerName(newName: string) {
-        this.socket.emit('updatePlayerName', newName);
-    }
+  on(event: string, callback: (...args: any[]) => void): void {
+    this.socket.on(event, callback);
+  }
 
-    restartGame() {
-        this.socket.emit('restartGame');
-    }
+  removeAllListeners(event: 'connect'): void;
+  removeAllListeners(event: 'disconnect'): void;
+  removeAllListeners(event: string): void {
+    this.socket.removeAllListeners(event);
+  }
 }
 
-export const api = new API();
+export const api = new Api();

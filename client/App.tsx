@@ -2,38 +2,47 @@ import React, { useState, useEffect } from 'react';
 import { ClientGame } from './ClientGame';
 import { api } from './api';
 import { ClientPlayer } from './ClientPlayer';
+import { MantineProvider, Container, LoadingOverlay } from '@mantine/core';
+import { useColorScheme } from '@mantine/hooks';
 
 export function App() {
-    const [localPlayer, setLocalPlayer] = useState<ClientPlayer | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
+  const preferredColorScheme = useColorScheme();
+  const [localPlayer, setLocalPlayer] = useState<ClientPlayer | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-    useEffect(() => {
-        api.on('connect', () => {
-            console.log('Connected to server');
-            setIsConnected(true);
-            setLocalPlayer(new ClientPlayer(api.getSocketId(), ''));
-        });
+  useEffect(() => {
+    const initialName = localStorage.getItem('playerName') ?? '';
 
-        api.on('disconnect', () => {
-            console.log('Disconnected from server');
-            setIsConnected(false);
-            setLocalPlayer(null);
-        });
+    api.on('connect', () => {
+      console.log('Connected to server');
+      setIsConnected(true);
+      // Ensure socket.id is available
+      if (api.socket.id) {
+        setLocalPlayer(new ClientPlayer(api.socket.id, initialName));
+      } else {
+        console.error('Socket ID not available');
+      }
+    });
 
-        return () => {
-            // Clean up listeners if necessary
-            api.removeAllListeners('connect');
-            api.removeAllListeners('disconnect');
-        };
-    }, []);
+    api.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setIsConnected(false);
+      setLocalPlayer(null);
+    });
 
-    if (!isConnected) {
-        return <div>Connecting to server...</div>;
-    }
+    return () => {
+      // Clean up listeners if necessary
+      api.removeAllListeners('connect');
+      api.removeAllListeners('disconnect');
+    };
+  }, []);
 
-    if (!localPlayer) {
-        return <div>Initializing player...</div>;
-    }
-
-    return <ClientGame localPlayer={localPlayer} />;
+  return (
+    <MantineProvider defaultColorScheme={preferredColorScheme}>
+      <Container>
+        <LoadingOverlay visible={!isConnected || !localPlayer} />
+        {isConnected && localPlayer && <ClientGame localPlayer={localPlayer} />}
+      </Container>
+    </MantineProvider>
+  );
 }
