@@ -1,13 +1,34 @@
 import React, { Component } from 'react';
 import { api } from './api';
 import { Container, Group, TextInput, Paper, Title, Tabs, ActionIcon, Tooltip, Stack, Space } from '@mantine/core';
-import { GameState, LobbyState, ClientGameState, PlayerAction, Card, SlapRule } from './types';
+import { LobbyState, PlayerAction, Card, SlapRule, PlayerInfo, PlayerActionResult, GameSettings } from './types';
 import { motion } from 'framer-motion';
 import { ErrorMessages } from './components/ErrorMessages';
 import { Lobby } from './components/Lobby';
 import { Game } from './components/Game';
 import { notifications } from '@mantine/notifications';
 import { IconPlus, IconLogin } from '@tabler/icons-react';
+import { SocketEvents } from './socketEvents';
+import { GameState } from './types';
+
+export type Tab = 'lobby' | 'game';
+
+export interface ClientGameState {
+  gameState: GameState | null;
+  allSlapRules: SlapRule[];
+  lobbyState: LobbyState | null;
+  otherPlayers: PlayerInfo[];
+  lastSlapResult: boolean | null;
+  gameId: string;
+  animatingCardId: string | null;
+  playerName: string;
+  errorMessages: string[];
+  activeTab: Tab;
+  playerActionLog: (PlayerAction | PlayerActionResult)[];
+  isActionLogExpanded: boolean;
+  bottomCard: Card | null;
+  bottomCardTimer: NodeJS.Timeout | null;
+}
 
 interface ClientGameProps {
   localPlayer: { id: string; name: string };
@@ -24,7 +45,7 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
       lastSlapResult: null,
       gameId: '',
       animatingCardId: null,
-      playerName: localStorage.getItem('playerName') || props.localPlayer.name,
+      playerName: props.localPlayer.name,
       errorMessages: [],
       playerActionLog: [],
       isActionLogExpanded: true,
@@ -32,34 +53,20 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
       bottomCardTimer: null,
       activeTab: 'lobby',
     };
-    this.setupApiListeners();
   }
 
   componentDidMount() {
-    api.joinLobby(this.props.localPlayer.name);
-    this.setupNotifications();
+    this.setupApiListeners();
   }
 
   setupApiListeners() {
-    api.on('lobbyUpdate', (lobbyState: LobbyState) => this.updateLobbyState(lobbyState));
-    api.on('gameCreated', (gameState: GameState) => this.updateGameState(gameState));
-    api.on('gameUpdate', (gameState: GameState) => this.updateGameState(gameState));
-    api.on('slapResult', (isValidSlap: boolean) => this.updateSlapResult(isValidSlap));
-    api.on('gameOver', (gameState: GameState) => this.updateGameState(gameState));
-    api.on('error', (errorMessage: string) => this.handleError(errorMessage));
-    api.on('playerAction', (action: PlayerAction) => this.handlePlayerAction(action));
-    api.on('gameSettings', (slapRules: SlapRule[]) => this.handleGameSettings(slapRules));
-  }
-
-  setupNotifications() {
-    api.on('gameUpdate', (gameState: GameState) => {
-      if (
-        gameState.maxPlayers !== this.state.gameState?.maxPlayers ||
-        gameState.slapRules !== this.state.gameState?.slapRules
-      ) {
-        this.showNotification('Game settings updated successfully!');
-      }
-    });
+    api.socket.on(SocketEvents.LOBBY_UPDATE, (lobbyState: LobbyState) => this.updateLobbyState(lobbyState));
+    api.socket.on(SocketEvents.GAME_UPDATE, (gameState: GameState) => this.updateGameState(gameState));
+    api.socket.on(SocketEvents.PLAYER_ACTION, (action: PlayerAction) => this.handlePlayerAction(action));
+    api.socket.on(SocketEvents.PLAYER_ACTION_RESULT, (result: PlayerActionResult) => this.handlePlayerAction(result));
+    api.socket.on(SocketEvents.SET_GAME_SETTINGS, (slapRules: SlapRule[]) => this.handleGameSettings(slapRules));
+    api.socket.on(SocketEvents.ERROR, (errorMessage: string) => this.handleError(errorMessage));
+    api.socket.on(SocketEvents.GET_GAME_SETTINGS, (slapRules: SlapRule[]) => this.handleGameSettings(slapRules));
   }
 
   showNotification(message: string) {
@@ -80,21 +87,16 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
   updateGameState(newState: GameState): void {
     console.log('updateGameState', newState);
 
-    this.setState(
-      (prevState) => {
-        if (prevState.bottomCardTimer) {
-          clearTimeout(prevState.bottomCardTimer);
-        }
-        return {
-          gameState: newState,
-          bottomCard: null,
-          bottomCardTimer: null,
-        };
-      },
-      () => {
-        this.updatePlayers();
-      },
-    );
+    this.setState((prevState) => {
+      if (prevState.bottomCardTimer) {
+        clearTimeout(prevState.bottomCardTimer);
+      }
+      return {
+        gameState: newState,
+        bottomCard: null,
+        bottomCardTimer: null,
+      };
+    });
   }
 
   handleGameSettings(slapRules: SlapRule[]) {
@@ -105,24 +107,13 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
     this.setState({ lobbyState: newState });
   }
 
-  updateSlapResult(isValidSlap: boolean): void {
-    this.setState({ lastSlapResult: isValidSlap });
-  }
-
-  private updatePlayers(): void {
-    if (this.state.gameState) {
-      const otherPlayers = this.state.gameState.players.filter((player) => player.id !== this.props.localPlayer.id);
-      this.setState({ otherPlayers });
-    }
-  }
-
   handleCreateGame = () => {
-    api.createGame();
-    this.setState({ activeTab: 'game' });
+    // To create a game, we just join a game with an empty id
+    this.handleJoinGame('');
   };
 
   handleJoinGame = (gameId: string) => {
-    api.joinGame(gameId);
+    api.joinGame(gameId, this.state.playerName);
     this.setState({ activeTab: 'game' });
   };
 
@@ -141,17 +132,13 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
     localStorage.setItem('playerName', newName);
   };
 
-  handleRestartGame = () => {
-    api.restartGame();
-  };
-
   dismissError = (index: number) => {
     this.setState((prevState) => ({
       errorMessages: prevState.errorMessages.filter((_, i) => i !== index),
     }));
   };
 
-  handlePlayerAction(action: PlayerAction) {
+  handlePlayerAction(action: PlayerAction | PlayerActionResult) {
     this.setState((prevState) => ({
       playerActionLog: [action, ...prevState.playerActionLog],
     }));
@@ -187,19 +174,12 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
     this.setState((prevState) => ({ isActionLogExpanded: !prevState.isActionLogExpanded }));
   };
 
-  handleMaxPlayersChange = (value: string | undefined) => {
-    if (value && this.state.gameState) {
-      const maxPlayers = parseInt(value, 10);
-      if (!isNaN(maxPlayers) && maxPlayers >= 2 && maxPlayers <= 8) {
-        api.updateGameSettings(this.state.gameState.id, { maxPlayers });
-      }
-    }
+  handleGameSettingsChange = (settings: GameSettings) => {
+    api.setGameSettings(this.state.gameId, settings);
   };
 
-  handleSlapRuleChange = (selectedRules: SlapRule[]) => {
-    if (this.state.gameState) {
-      api.updateGameSettings(this.state.gameState.id, { slapRules: selectedRules });
-    }
+  handleVoteToStartGame = (vote: boolean) => {
+    api.voteToStartGame(vote);
   };
 
   handleLeaveGame = () => {
@@ -277,6 +257,7 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
               <Game
                 gameState={gameState}
                 allSlapRules={this.state.allSlapRules}
+                gameSettings={gameState.gameSettings}
                 localPlayer={this.props.localPlayer}
                 otherPlayers={this.state.otherPlayers}
                 lastSlapResult={this.state.lastSlapResult}
@@ -285,9 +266,8 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
                 isActionLogExpanded={this.state.isActionLogExpanded}
                 handlePlayCard={this.handlePlayCard}
                 handleSlap={this.handleSlap}
-                handleRestartGame={this.handleRestartGame}
-                handleMaxPlayersChange={this.handleMaxPlayersChange}
-                handleSlapRuleChange={this.handleSlapRuleChange}
+                handleVoteToStartGame={this.handleVoteToStartGame}
+                handleGameSettingsChange={this.handleGameSettingsChange}
                 toggleActionLog={this.toggleActionLog}
                 handleLeaveGame={this.handleLeaveGame}
               />

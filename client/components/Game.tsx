@@ -20,7 +20,7 @@ import {
   Flex,
 } from '@mantine/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GameState, Card, PlayerAction, SlapRule } from '../types';
+import { GameState, Card, PlayerAction, SlapRule, GameSettings, PlayerActionResult } from '../types';
 import { CardStack } from './CardStack';
 import { BottomCard } from './BottomCard';
 import { ActionLog } from './ActionLog';
@@ -37,27 +37,29 @@ import {
   IconDoorExit,
 } from '@tabler/icons-react';
 import { TurnOrder } from './TurnOrder';
+import { Vote } from './Vote';
 
 interface GameProps {
   gameState: GameState;
+  gameSettings: GameSettings;
   allSlapRules: SlapRule[];
   localPlayer: { id: string; name: string };
   otherPlayers: { id: string; name: string }[];
   lastSlapResult: boolean | null;
   bottomCard: Card | null;
-  playerActionLog: PlayerAction[];
+  playerActionLog: (PlayerAction | PlayerActionResult)[];
   isActionLogExpanded: boolean;
   handlePlayCard: () => void;
   handleSlap: () => void;
-  handleRestartGame: () => void;
-  handleMaxPlayersChange: (value: string | undefined) => void;
-  handleSlapRuleChange: (selectedRules: SlapRule[]) => void;
+  handleGameSettingsChange: (settings: GameSettings) => void;
   toggleActionLog: () => void;
   handleLeaveGame: () => void;
+  handleVoteToStartGame: (vote: boolean) => void;
 }
 
 export const Game: React.FC<GameProps> = ({
   gameState,
+  gameSettings,
   allSlapRules,
   localPlayer,
   lastSlapResult,
@@ -66,31 +68,44 @@ export const Game: React.FC<GameProps> = ({
   isActionLogExpanded,
   handlePlayCard,
   handleSlap,
-  handleRestartGame,
-  handleMaxPlayersChange,
-  handleSlapRuleChange,
+  handleGameSettingsChange,
+  handleVoteToStartGame,
   toggleActionLog,
   handleLeaveGame,
 }) => {
   const [isCustomRuleModalOpen, setIsCustomRuleModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [voteToStartGame, setVoteToStartGame] = useState<boolean | null>(null);
 
   const handleSaveCustomRule = (newRule: SlapRule) => {
     const updatedRules = [...allSlapRules, newRule];
-    handleSlapRuleChange(updatedRules);
+    handleGameSettingsChange({
+      ...gameSettings,
+      slapRules: updatedRules,
+    });
     setIsCustomRuleModalOpen(false);
   };
 
-  const isLocalPlayerTurn = gameState.players[gameState.currentPlayer].id === localPlayer.id;
+  const isLocalPlayerTurn = gameState.currentPlayerId === localPlayer.id;
 
   return (
     <Container size="sm" p="lg">
+      <Vote
+        isVoteOpen={true}
+        yesCount={voteToStartGame === true ? 1 : 0}
+        noCount={voteToStartGame === false ? 1 : 0}
+        onVote={(vote) => {
+          setVoteToStartGame(vote);
+          handleVoteToStartGame(vote);
+        }}
+        label="Vote to start the game"
+      />
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Paper shadow="xs" p="md" withBorder>
           <Group justify="space-between" mb="md">
             <Title order={3}>{gameState.name}</Title>
             <Badge color={isLocalPlayerTurn ? 'green' : 'blue'} size="lg">
-              {isLocalPlayerTurn ? 'Your Turn' : `${gameState.players[gameState.currentPlayer].name}'s Turn`}
+              {isLocalPlayerTurn ? 'Your Turn' : `${gameState.playerNames[gameState.currentPlayerId]}'s Turn`}
             </Badge>
           </Group>
 
@@ -99,7 +114,7 @@ export const Game: React.FC<GameProps> = ({
             <Grid.Col span={8}>
               <Box my="md">
                 <Text ta="center" size="sm" mb="xs">
-                  Pile Size: {gameState.pileSize}
+                  Pile Size: {gameState.pile?.length ?? 0}
                 </Text>
                 <Group justify="center" mb="xl">
                   <BottomCard bottomCard={bottomCard} />
@@ -135,7 +150,12 @@ export const Game: React.FC<GameProps> = ({
             <Grid.Col span={12}>
               <Group justify="space-between" mt="xl">
                 <Tooltip label="Restart Game">
-                  <ActionIcon variant="filled" color="green" onClick={handleRestartGame} disabled={!gameState.gameOver}>
+                  <ActionIcon
+                    variant="filled"
+                    color="green"
+                    onClick={() => handleVoteToStartGame(true)}
+                    disabled={!gameState.gameOver}
+                  >
                     <IconReload size="1.2rem" />
                   </ActionIcon>
                 </Tooltip>
@@ -179,19 +199,22 @@ export const Game: React.FC<GameProps> = ({
         <Stack>
           <NumberInput
             label="Max Players"
-            value={gameState.maxPlayers}
-            onChange={(value) => handleMaxPlayersChange(value?.toString())}
+            value={gameSettings.maximumPlayers}
+            onChange={(value) => handleGameSettingsChange({ ...gameSettings, maximumPlayers: Number(value) })}
             min={2}
             max={8}
           />
           <MultiSelect
             label="Slap Rules"
-            data={gameState.slapRules
+            data={allSlapRules
               .filter((rule) => rule && rule.name)
               .map((rule) => ({ value: rule.name, label: rule.name }))}
-            value={gameState.slapRules.filter((rule) => rule && rule.name).map((rule) => rule.name)}
+            value={gameSettings.slapRules.map((rule: SlapRule) => rule.name)}
             onChange={(selectedRules) =>
-              handleSlapRuleChange(selectedRules.map((rule) => gameState.slapRules.find((r) => r.name === rule)!))
+              handleGameSettingsChange({
+                ...gameSettings,
+                slapRules: selectedRules.map((rule) => gameSettings.slapRules.find((r) => r.name === rule)!),
+              })
             }
             placeholder="Select slap rules"
           />

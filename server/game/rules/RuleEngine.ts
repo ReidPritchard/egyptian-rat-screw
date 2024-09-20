@@ -1,42 +1,53 @@
-import { Card } from '../Deck';
+import { Card, GameSettings, SlapRule } from '../../types';
 import { Player } from '../Player';
+import { Condition } from './Condition';
 
 export class RuleEngine {
-  private rules: any;
+  private rules: GameSettings;
 
-  constructor(rules: any) {
+  constructor(rules: GameSettings) {
     this.rules = rules;
   }
 
-  public checkSlapCondition(pile: Card[]): boolean {
-    // Implement customizable slap conditions
-    // Example: Double (two cards of the same rank in a row)
-    if (pile.length >= 2) {
-      const topCard = pile[pile.length - 1];
-      const prevCard = pile[pile.length - 2];
-      if (topCard.rank === prevCard.rank) {
+  private evaluateRule(rule: SlapRule, pile: Card[], slapper: Player): boolean {
+    let result = true;
+    for (const condition of rule.conditions) {
+      const checkableCondition = new Condition(condition);
+      result = result && checkableCondition.check(pile, slapper);
+    }
+    return result;
+  }
+
+  public checkSlapCondition(pile: Card[], slapper: Player): boolean {
+    for (const rule of this.rules.slapRules) {
+      if (this.evaluateRule(rule, pile, slapper)) {
         return true;
       }
     }
+
     // Additional conditions can be added based on this.rules
     return false;
   }
 
-  public validateSlap(pile: Card[]): boolean {
-    // Validate the slap according to the current pile and rules
-    return this.checkSlapCondition(pile);
+  public getValidSlapRules(pile: Card[], slapper: Player): SlapRule[] {
+    return this.rules.slapRules.filter((rule) => this.evaluateRule(rule, pile, slapper));
   }
 
-  public getSlapTimeLimit(): number {
-    return this.rules.slapTimeLimit || 2000; // Default 2 seconds
+  public validateSlap(pile: Card[], slapper: Player): boolean {
+    // Validate the slap according to the current pile and rules
+    return this.checkSlapCondition(pile, slapper);
   }
 
   public getTurnTimeLimit(): number {
-    return this.rules.turnTimeLimit || 10000; // Default 10 seconds
+    return this.rules.turnTimeout || 10000; // Default 10 seconds
   }
 
   public getMinimumPlayers(): number {
     return this.rules.minimumPlayers || 2;
+  }
+
+  public getMaximumPlayers(): number {
+    return this.rules.maximumPlayers || 8;
   }
 
   public checkFaceCardChallenge(card: Card): number {
@@ -56,7 +67,7 @@ export class RuleEngine {
 
   public getFaceCardChallengeCount(card: Card): number {
     // Customizable face card challenge counts
-    const faceCardValues = this.rules.faceCardValues || {
+    const faceCardValues = this.rules.faceCardChallengeCounts || {
       J: 1,
       Q: 2,
       K: 3,
@@ -75,23 +86,17 @@ export class RuleEngine {
 
   public isCounterCard(card: Card): boolean {
     // Custom rule: A '10' can counter a face card
-    if (this.rules.counterCardRanks && this.rules.counterCardRanks.includes(card.rank)) {
+    if (this.rules.challengeCounterCards && this.rules.challengeCounterCards.includes(card)) {
       return true;
     }
     return false;
   }
 
-  public getSocialAction(slapper: Player, players: Player[], pile: Card[]): string | null {
-    // Implement social rules
-    if (this.rules.socialRules) {
-      // Example: If player X slaps a rank 6, player Y must take a drink
-      const topCard = pile[pile.length - 1];
-      for (const rule of this.rules.socialRules) {
-        if (topCard.rank === rule.cardRank && slapper.name === rule.slapperName) {
-          return `${rule.targetPlayerName} must ${rule.action}`;
-        }
-      }
-    }
-    return null;
+  public getGameSettings(): GameSettings {
+    return this.rules;
+  }
+
+  public setGameSettings(settings: GameSettings) {
+    this.rules = settings;
   }
 }

@@ -1,65 +1,59 @@
 import { io, Socket } from 'socket.io-client';
-import { Card, GameState, LobbyState, PlayerAction, SlapRule } from './types';
+import { GameSettings, PlayerInfo, PlayerActionType } from './types';
+import { SocketEvents } from './socketEvents';
+import { config } from './config';
 
 class Api {
   socket: Socket;
 
   constructor() {
-    this.socket = io('http://localhost:3000', { path: '/socket.io' });
+    this.socket = io(config.serverUrl, { path: '/socket.io' });
   }
 
-  joinLobby(playerName: string) {
-    this.socket.emit('joinLobby', playerName);
+  setPlayerName(playerName: string) {
+    this.socket.emit(SocketEvents.SET_PLAYER_NAME, playerName);
   }
 
-  createGame() {
-    this.socket.emit('createGame');
+  joinGame(gameId: string, playerName: string) {
+    this.setPlayerName(playerName);
+    this.socket.emit(SocketEvents.JOIN_GAME, gameId);
   }
 
-  joinGame(gameId: string) {
-    this.socket.emit('joinGame', gameId);
+  voteToStartGame(vote: boolean) {
+    this.socket.emit(SocketEvents.GAME_VOTE, vote);
   }
 
   playCard() {
-    this.socket.emit('playCard');
+    this.socket.emit(SocketEvents.PLAYER_PLAY_CARD);
   }
 
   slap() {
-    this.socket.emit('slap');
+    this.socket.emit(SocketEvents.PLAYER_ACTION, PlayerActionType.SLAP);
   }
 
   updatePlayerName(newName: string) {
-    this.socket.emit('updatePlayerName', newName);
+    this.socket.emit(SocketEvents.SET_PLAYER_NAME, newName);
   }
 
-  restartGame() {
-    this.socket.emit('restartGame');
+  getGameSettings(gameId: string) {
+    this.socket.emit(SocketEvents.GET_GAME_SETTINGS, gameId);
   }
 
-  updateGameSettings(gameId: string, settings: { maxPlayers?: number; slapRules?: SlapRule[] }) {
-    this.socket.emit('updateGameSettings', gameId, settings);
+  setGameSettings(gameId: string, settings: GameSettings) {
+    this.socket.emit(SocketEvents.SET_GAME_SETTINGS, gameId, settings);
   }
 
   leaveGame() {
-    this.socket.emit('leaveGame');
+    this.socket.emit(SocketEvents.LEAVE_GAME);
   }
 
-  on(event: 'connect', callback: () => void): void;
-  on(event: 'disconnect', callback: () => void): void;
-  on(event: 'lobbyUpdate', callback: (lobbyState: LobbyState) => void): void;
-  on(event: 'gameCreated' | 'gameUpdate', callback: (gameState: GameState) => void): void;
-  on(event: 'slapResult', callback: (isValidSlap: boolean) => void): void;
-  on(event: 'gameOver', callback: (gameState: GameState) => void): void;
-  on(event: 'error', callback: (errorMessage: string) => void): void;
-  on(event: 'playerAction', callback: (action: PlayerAction) => void): void;
-  on(event: 'gameSettings', callback: (slapRules: SlapRule[]) => void): void;
-
-  on(event: string, callback: (...args: any[]) => void): void {
+  on(event: SocketEvents, callback: (...args: any[]) => void): void {
     this.socket.on(event, callback);
   }
 
   removeAllListeners(event: 'connect'): void;
   removeAllListeners(event: 'disconnect'): void;
+
   removeAllListeners(event: string): void {
     this.socket.removeAllListeners(event);
   }

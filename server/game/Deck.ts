@@ -1,10 +1,5 @@
 import { Player } from './Player';
-
-export interface Card {
-  rank: string;
-  suit: string;
-  code: string;
-}
+import { Card, Ranks, Suits } from '../types';
 
 export class Deck {
   private static suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
@@ -13,12 +8,13 @@ export class Deck {
   public static createShuffledDeck(): Card[] {
     const deck: Card[] = [];
 
-    for (const suit of Deck.suits) {
-      for (const rank of Deck.ranks) {
+    for (const suit of Suits) {
+      for (const rank of Ranks) {
         deck.push({
+          id: `${rank}${suit}`,
+          code: `${rank}${suit.charAt(0)}`,
           rank: rank,
           suit: suit,
-          code: `${rank}${suit.charAt(0)}`,
         });
       }
     }

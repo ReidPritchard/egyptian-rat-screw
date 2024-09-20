@@ -1,3 +1,8 @@
+/**
+ * @file shared/types.ts
+ * @description Consolidates all shared TypeScript types for both client and server.
+ */
+
 export const Suits = ['hearts', 'diamonds', 'clubs', 'spades'] as const;
 export type Suit = (typeof Suits)[number];
 
@@ -16,30 +21,15 @@ export enum PlayerActionType {
   SLAP = 'slap',
   INVALID_SLAP = 'invalidSlap',
 }
+
 export interface PlayerAction {
   playerId: string;
   actionType: PlayerActionType;
   timestamp: number;
 }
 
-export interface PlayerActionResult {
-  playerId: string;
-  actionType: PlayerActionType;
-  result: 'success' | 'failure';
-  message?: string;
-}
-
-export interface GameSettings {
-  minimumPlayers: number;
-  maximumPlayers: number;
-  slapRules: SlapRule[];
-  faceCardChallengeCounts: { [key: string]: number };
-  challengeCounterCards: Partial<Card>[]; // Partial<Card> allows for a Card object with missing properties, which are treated as wild for the purpose of matching
-  turnTimeout: number;
-}
-
 export interface ICondition {
-  field: 'pile.length' | 'pile[0].rank' | 'pile[1].rank' | 'currentPlayer' | 'currentPlayer.name';
+  field: string;
   operator: '===' | '!==' | '>' | '<' | '>=' | '<=' | 'in';
   value: string | number | string[];
 }
@@ -67,15 +57,46 @@ export interface SlapRule {
   targetPlayerName?: string;
 }
 
+export interface PlayerActionResult {
+  playerId: string;
+  actionType: PlayerActionType;
+  result: 'success' | 'failure';
+  message?: string;
+}
+
+export interface GameSettings {
+  minimumPlayers: number;
+  maximumPlayers: number;
+  slapRules: SlapRule[];
+  faceCardChallengeCounts: { [key: string]: number };
+  challengeCounterCards: Partial<Card>[]; // Partial<Card> allows for a Card object with missing properties, which are treated as wild for the purpose of matching
+  turnTimeout: number;
+}
+
 export interface PlayerInfo {
   id: string;
   name: string;
 }
 
+export interface GameState {
+  id: string;
+  name: string;
+  maxPlayers: number;
+  players: PlayerInfo[];
+  currentPlayer: number;
+  pileSize: number;
+  pile: Card[] | null;
+  playerHandSizes: { [playerId: string]: number };
+  playerNames: { [playerId: string]: string };
+  gameOver: boolean;
+  winner: PlayerInfo | null;
+  slapRules: SlapRule[];
+}
+
 // A subset of GameState that is sent to the client
 // This is used to reduce the amount of data sent to the client
 // and to prevent the client from having full access to the game state
-export interface GameState {
+export interface ClientGameState {
   name: string;
   pile: Card[] | null;
   playerIds: string[]; // Also the turn order

@@ -5,10 +5,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start:server": "tsx server/server.ts",
+    "start:server": "tsx server/index.ts",
     "start:client": "webpack --config webpack.config.cjs",
     "start": "npm run start:server & npm run start:client",
-    "dev:server": "tsx watch server/server.ts",
+    "dev:server": "tsx watch server/index.ts",
     "dev:client": "webpack --config webpack.config.cjs --watch",
     "dev": "npm run dev:server & npm run dev:client",
     "build:server": "tsc --project tsconfig.server.json",

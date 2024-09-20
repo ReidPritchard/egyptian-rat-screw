@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, Group, Select, TextInput, Text, Paper, MultiSelect } from '@mantine/core';
-import { Condition, SlapRule } from '../types';
+import { ICondition, SlapRule, SlapRuleAction } from '../types';
 
 interface CustomSlapRuleBuilderProps {
   onSaveRule: (rule: SlapRule) => void;
@@ -65,20 +65,20 @@ export const CustomSlapRuleBuilder: React.FC<CustomSlapRuleBuilderProps> = ({ on
   };
 
   const saveRule = () => {
-    const parsedConditions: Condition[] = conditions.map((cond, index) => {
+    const parsedConditions: ICondition[] = conditions.map((cond, index) => {
       const [field, operator, ...valueParts] = cond.split(' ');
       if (operator === 'in') {
         const value = JSON.parse(valueParts.join(' '));
         return {
-          field: field as Condition['field'],
-          operator: operator as Condition['operator'],
+          field: field as ICondition['field'],
+          operator: operator as ICondition['operator'],
           value: value,
         };
       } else {
         const value = valueParts.join(' ');
         return {
-          field: field as Condition['field'],
-          operator: operator as Condition['operator'],
+          field: field as ICondition['field'],
+          operator: operator as ICondition['operator'],
           value: isNaN(Number(value)) ? value : Number(value),
         };
       }
@@ -87,6 +87,7 @@ export const CustomSlapRuleBuilder: React.FC<CustomSlapRuleBuilderProps> = ({ on
     const newRule: SlapRule = {
       name: ruleName,
       conditions: parsedConditions,
+      action: SlapRuleAction.TAKE_PILE,
     };
 
     onSaveRule(newRule);

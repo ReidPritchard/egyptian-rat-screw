@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { Card } from './Deck';
+import { Card, PlayerInfo } from '../types'; // Updated import path
 
 export class Player {
   public socket: Socket;
@@ -29,6 +29,17 @@ export class Player {
 
   public hasCards(): boolean {
     return this.deck.length > 0;
+  }
+
+  public getDeckSize(): number {
+    return this.deck.length;
+  }
+
+  public getPlayerInfo(): PlayerInfo {
+    return {
+      id: this.socket.id,
+      name: this.name,
+    };
   }
 
   private shuffle(cards: Card[]): Card[] {

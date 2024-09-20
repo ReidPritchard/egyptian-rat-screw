@@ -1,13 +1,18 @@
 {
-    "compilerOptions": {
-        "target": "es6",
-        "module": "esnext",
-        "outDir": "dist/server",
-        "strict": true,
-        "esModuleInterop": true,
-        "moduleResolution": "node"
+  "compilerOptions": {
+    "target": "es6",
+    "module": "esnext",
+    "outDir": "dist/server",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "paths": {
+      // Remove the @shared path alias
+      // "@shared/*": ["../shared/*"]
     },
-    "include": [
-        "server/**/*"
-    ]
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["server/**/*", "shared/**/*"]
 }

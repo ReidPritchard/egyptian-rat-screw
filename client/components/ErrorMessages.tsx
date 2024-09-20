@@ -12,12 +12,7 @@ export const ErrorMessages: React.FC<ErrorMessagesProps> = ({ errorMessages, dis
   return (
     <Transition mounted={errorMessages.length > 0} transition="fade" duration={400} timingFunction="ease">
       {(styles) => (
-        <Alert
-          title="Error"
-          color="red"
-          onClose={() => dismissError(0)}
-          style={{ ...styles, marginBottom: '20px' }}
-        >
+        <Alert title="Error" color="red" onClose={() => dismissError(0)} style={{ ...styles, marginBottom: '20px' }}>
           {errorMessages[0]}
         </Alert>
       )}

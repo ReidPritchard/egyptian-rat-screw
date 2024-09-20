@@ -1,96 +1,155 @@
 import { Server, Socket } from 'socket.io';
 import { Player } from './Player';
-import { Card, Deck } from './Deck';
+import { Deck } from './Deck';
 import { RuleEngine } from './rules/RuleEngine';
+import {
+  GameState,
+  PlayerInfo,
+  SlapRule,
+  Card,
+  ClientGameState,
+  PlayerAction,
+  PlayerActionType,
+  GameSettings,
+  SlapRuleAction,
+} from '../types';
+import { SocketEvents } from '../socketEvents';
 
 export class Game {
-  private static games: Map<string, Game> = new Map();
-  private static socketGameMap: Map<string, string> = new Map();
-
   public gameId: string;
   private io: Server;
+
   private players: Player[] = [];
   private turnIndex: number = 0;
+
   private centralPile: Card[] = [];
   private ruleEngine: RuleEngine;
-  private isGameStarted: boolean = false;
-  private slapTimeout: NodeJS.Timeout | null = null;
 
-  private constructor(io: Server, gameId: string, rules: any) {
+  private isGameStarted: boolean = false;
+
+  private playerActionLog: PlayerAction[] = [];
+
+  constructor(io: Server, gameId: string, rules: SlapRule[] = []) {
     this.io = io;
     this.gameId = gameId;
-    this.ruleEngine = new RuleEngine(rules);
+
+    // Default game settings
+    const gameSettings: GameSettings = {
+      minimumPlayers: 2,
+      maximumPlayers: 8,
+      slapRules: rules,
+      faceCardChallengeCounts: {
+        J: 1,
+        Q: 2,
+        K: 3,
+        A: 4,
+      },
+      challengeCounterCards: [{ rank: '10' }],
+      turnTimeout: 10000, // 10 seconds
+    };
+    this.ruleEngine = new RuleEngine(gameSettings);
   }
 
-  public static createGame(io: Server, rules: any): Game {
-    const gameId = Game.generateGameId();
-    const game = new Game(io, gameId, rules);
-    Game.games.set(gameId, game);
-    return game;
-  }
-
-  public static getGameById(gameId: string): Game | undefined {
-    return Game.games.get(gameId);
-  }
-
-  public static getGameBySocket(socket: Socket): Game | undefined {
-    const gameId = Game.socketGameMap.get(socket.id);
-    if (gameId) {
-      return Game.games.get(gameId);
-    }
-    return undefined;
-  }
-
-  public static handleDisconnect(socket: Socket) {
-    const game = Game.getGameBySocket(socket);
-    if (game) {
-      game.removePlayer(socket);
-    }
-  }
-
-  private static generateGameId(): string {
-    return Math.random().toString(36).substr(2, 6).toUpperCase();
-  }
-
-  public addPlayer(socket: Socket, playerName: string) {
+  public addPlayer(socket: Socket, playerInfo: PlayerInfo) {
     if (this.isGameStarted) {
-      socket.emit('error', { message: 'Game already started.' });
+      socket.emit(SocketEvents.ERROR, 'Game already started.');
       return;
     }
 
-    const player = new Player(socket, playerName);
+    if (this.players.length >= this.ruleEngine.getMaximumPlayers()) {
+      socket.emit(SocketEvents.ERROR, 'Game is full.');
+      return;
+    }
+
+    // Player name must be unique
+    if (this.players.some((p) => p.name === playerInfo.name)) {
+      socket.emit(SocketEvents.ERROR, 'Player name must be unique.');
+      return;
+    }
+
+    // Player name must be non-empty
+    if (playerInfo.name === '') {
+      socket.emit(SocketEvents.ERROR, 'Player name must be non-empty.');
+      return;
+    }
+
+    // All checks passed, add the player
+    const player = new Player(socket, playerInfo.name);
+
     this.players.push(player);
     socket.join(this.gameId);
-    Game.socketGameMap.set(socket.id, this.gameId);
 
-    this.io.to(this.gameId).emit('player_joined', {
-      playerName: player.name,
-      players: this.players.map((p) => p.name),
-    });
-
-    if (this.players.length >= this.ruleEngine.getMinimumPlayers()) {
-      this.startGame();
-    }
+    // Notify all players that a new player has joined
+    this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
   }
 
   public removePlayer(socket: Socket) {
     const playerIndex = this.players.findIndex((p) => p.socket.id === socket.id);
     if (playerIndex !== -1) {
       const player = this.players.splice(playerIndex, 1)[0];
-      this.io.to(this.gameId).emit('player_left', { playerName: player.name });
-      Game.socketGameMap.delete(socket.id);
 
       if (this.players.length === 0) {
-        Game.games.delete(this.gameId);
+        // Game should be removed by GameManager
       } else {
         if (this.isGameStarted) {
-          if (playerIndex <= this.turnIndex) {
-            this.turnIndex = (this.turnIndex - 1 + this.players.length) % this.players.length;
-          }
+          // Make sure the game is still in progress
           this.checkForWinner();
         }
+        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
       }
     }
+  }
+
+  public hasPlayer(playerId: string): boolean {
+    return this.players.some((player) => player.socket.id === playerId);
+  }
+
+  public getPlayerCount(): number {
+    return this.players.length;
+  }
+
+  public performPlayerAction(action: PlayerAction) {
+    if (!this.isGameStarted) {
+      this.io.to(this.gameId).emit(SocketEvents.ERROR, 'Game has not started yet.');
+      return;
+    }
+
+    const player = this.players.find((p) => p.socket.id === action.playerId);
+    if (player) {
+      this.playerActionLog.push(action);
+      switch (action.actionType) {
+        case PlayerActionType.PLAY_CARD:
+          this.playCard(player);
+          break;
+        case PlayerActionType.SLAP:
+          this.handleSlapAttempt(player.socket);
+          break;
+        case PlayerActionType.INVALID_SLAP:
+          // This is a notification to the other players that the player has made an invalid slap
+          break;
+        default:
+          console.error('Invalid action type');
+      }
+      this.io.to(this.gameId).emit(SocketEvents.PLAYER_ACTION_RESULT, {
+        playerId: player.socket.id,
+        actionType: action.actionType,
+        result: 'success',
+        message: 'Action performed',
+      });
+    }
+    this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
+  }
+
+  public getGameSettings() {
+    return this.ruleEngine.getGameSettings();
+  }
+
+  public setGameSettings(settings: GameSettings) {
+    // If the game is already started, return an error
+    if (this.isGameStarted) {
+      return;
+    }
+    this.ruleEngine.setGameSettings(settings);
   }
 
   private startGame() {
@@ -98,9 +157,7 @@ export class Game {
     const deck = Deck.createShuffledDeck();
     Deck.dealCards(deck, this.players);
 
-    this.io.to(this.gameId).emit('game_started', {
-      players: this.players.map((p) => p.name),
-    });
+    this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
 
     this.nextTurn();
   }
@@ -110,18 +167,16 @@ export class Game {
 
     this.turnIndex = this.turnIndex % this.players.length;
     const currentPlayer = this.players[this.turnIndex];
-    this.io.to(this.gameId).emit('turn', { playerName: currentPlayer.name });
-
-    currentPlayer.socket.emit('your_turn');
+    this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
 
     // Set a time limit for the player to play a card
     const turnTimeLimit = this.ruleEngine.getTurnTimeLimit();
     const turnTimeout = setTimeout(() => {
-      this.io.to(this.gameId).emit('player_timeout', { playerName: currentPlayer.name });
+      this.io.to(this.gameId).emit(SocketEvents.PLAYER_TIMEOUT, currentPlayer.socket.id);
       this.advanceTurn();
     }, turnTimeLimit);
 
-    currentPlayer.socket.once('play_card', () => {
+    currentPlayer.socket.once(SocketEvents.PLAYER_PLAY_CARD, () => {
       clearTimeout(turnTimeout);
       this.playCard(currentPlayer);
     });
@@ -132,7 +187,7 @@ export class Game {
     if (player && player.socket.id === socket.id && this.players[this.turnIndex].socket.id === socket.id) {
       this.playCard(player);
     } else {
-      socket.emit('error', { message: 'Not your turn.' });
+      socket.emit(SocketEvents.ERROR, 'Not your turn.');
     }
   }
 
@@ -140,26 +195,18 @@ export class Game {
     const card = player.playCard();
     if (card) {
       this.centralPile.push(card);
-      this.io.to(this.gameId).emit('card_played', {
-        playerName: player.name,
-        card: card.code,
-      });
+      this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
 
       const faceCardChallenge = this.ruleEngine.checkFaceCardChallenge(card);
       if (faceCardChallenge > 0) {
         this.handleFaceCardChallenge(faceCardChallenge);
       } else {
-        const slapCondition = this.ruleEngine.checkSlapCondition(this.centralPile);
-        if (slapCondition) {
-          this.waitForSlap();
-        } else {
-          this.advanceTurn();
-        }
+        this.advanceTurn();
       }
     } else {
-      // Player is out of cards
-      this.io.to(this.gameId).emit('player_out', { playerName: player.name });
-      this.players.splice(this.turnIndex, 1);
+      // Player is out of cards (just skip turn)
+      this.advanceTurn();
+      this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
       this.checkForWinner();
     }
   }
@@ -172,10 +219,7 @@ export class Game {
       const card = nextPlayer.playCard();
       if (card) {
         this.centralPile.push(card);
-        this.io.to(this.gameId).emit('card_played', {
-          playerName: nextPlayer.name,
-          card: card.code,
-        });
+        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
 
         const isFaceCard = this.ruleEngine.isFaceCard(card);
         const isCounterCard = this.ruleEngine.isCounterCard(card);
@@ -193,17 +237,14 @@ export class Game {
             const winner = this.players[previousPlayerIndex];
             winner.collectPile(this.centralPile);
             this.centralPile = [];
-            this.io.to(this.gameId).emit('challenge_failed', {
-              winner: winner.name,
-              loser: nextPlayer.name,
-            });
+            this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
             this.turnIndex = previousPlayerIndex;
             this.advanceTurn();
           }
         }
       } else {
         // Next player is out of cards
-        this.io.to(this.gameId).emit('player_out', { playerName: nextPlayer.name });
+        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
         this.players.splice(this.turnIndex, 1);
         this.turnIndex = this.turnIndex % this.players.length;
         this.checkForWinner();
@@ -213,50 +254,48 @@ export class Game {
     playNextCard();
   }
 
-  private waitForSlap() {
-    if (this.slapTimeout) {
-      clearTimeout(this.slapTimeout);
-    }
-
-    const slapTimeLimit = this.ruleEngine.getSlapTimeLimit();
-
-    this.io.to(this.gameId).emit('slap_possible', { timeLimit: slapTimeLimit });
-
-    this.slapTimeout = setTimeout(() => {
-      this.advanceTurn();
-    }, slapTimeLimit);
-  }
-
   public handleSlapAttempt(socket: Socket) {
-    if (this.slapTimeout) {
-      clearTimeout(this.slapTimeout);
-    }
-
     const player = this.getPlayerBySocket(socket);
     if (player) {
-      const success = this.ruleEngine.validateSlap(this.centralPile);
-      if (success) {
-        player.collectPile(this.centralPile);
-        this.centralPile = [];
-
-        // Handle social rules
-        const socialAction = this.ruleEngine.getSocialAction(player, this.players, this.centralPile);
-
-        this.io.to(this.gameId).emit('slap_success', {
-          playerName: player.name,
-          socialAction: socialAction,
-        });
+      const validRules = this.ruleEngine.getValidSlapRules(this.centralPile, player);
+      if (validRules.length > 0) {
+        // Reward for correct slap based on the rule's action
+        const firstRule = validRules[0];
+        let target = [this.players.find((p) => p.name === firstRule.targetPlayerName)];
+        switch (firstRule.action) {
+          case SlapRuleAction.TAKE_PILE:
+            player.collectPile(this.centralPile);
+            this.centralPile = [];
+            break;
+          case SlapRuleAction.DRINK_ALL:
+            target = this.players.filter((p) => p.name !== player.name);
+          case SlapRuleAction.SKIP:
+          case SlapRuleAction.DRINK:
+            this.io.to(this.gameId).emit(SocketEvents.PLAYER_ACTION_RESULT, {
+              playerId: player.socket.id,
+              actionType: firstRule.action,
+              result: 'success',
+              message: `Slap successful: ${target.map((p) => p?.name).join(', ')} ${firstRule.action}`,
+            });
+            break;
+        }
 
         this.turnIndex = this.players.indexOf(player);
         this.advanceTurn();
+        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
       } else {
         // Penalty for incorrect slap
         const penaltyCard = player.givePenaltyCard();
         if (penaltyCard) {
           this.centralPile.push(penaltyCard);
         }
-        this.io.to(this.gameId).emit('slap_fail', { playerName: player.name });
-        this.advanceTurn();
+        this.io.to(this.gameId).emit(SocketEvents.PLAYER_ACTION_RESULT, {
+          playerId: player.socket.id,
+          actionType: PlayerActionType.INVALID_SLAP,
+          result: 'failure',
+          message: 'Slap unsuccessful',
+        });
+        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
       }
     }
   }
@@ -272,10 +311,33 @@ export class Game {
 
   private checkForWinner() {
     if (this.players.length === 1) {
-      this.io.to(this.gameId).emit('game_over', { winner: this.players[0].name });
-      Game.games.delete(this.gameId);
+      this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
+      // Game should be removed by GameManager
     } else if (this.players.length > 1) {
       this.advanceTurn();
     }
+  }
+
+  public getGameState(): ClientGameState {
+    const { handSizes, playerNames } = this.players.reduce(
+      (acc, player) => {
+        acc.handSizes[player.socket.id] = player.getDeckSize();
+        acc.playerNames[player.socket.id] = player.name;
+        return acc;
+      },
+      { handSizes: {}, playerNames: {} },
+    );
+
+    return {
+      name: this.gameId,
+      pile: this.centralPile,
+      playerIds: this.players.map((p) => p.socket.id),
+      playerHandSizes: handSizes,
+      playerNames: playerNames,
+      currentPlayerId: this.players[this.turnIndex].socket.id,
+      gameOver: this.players.length === 0,
+      winner: this.players.length === 1 ? this.players[0].getPlayerInfo() : null,
+      gameSettings: this.ruleEngine.getGameSettings(),
+    };
   }
 }

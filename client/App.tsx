@@ -4,6 +4,7 @@ import { api } from './api';
 import { ClientPlayer } from './ClientPlayer';
 import { MantineProvider, Container, LoadingOverlay } from '@mantine/core';
 import { useColorScheme } from '@mantine/hooks';
+import { SocketEvents } from './socketEvents';
 
 export function App() {
   const preferredColorScheme = useColorScheme();
@@ -12,8 +13,9 @@ export function App() {
 
   useEffect(() => {
     const initialName = localStorage.getItem('playerName') ?? '';
+    api.setPlayerName(initialName);
 
-    api.on('connect', () => {
+    api.socket.on(SocketEvents.CONNECT, () => {
       console.log('Connected to server');
       setIsConnected(true);
       // Ensure socket.id is available
@@ -24,7 +26,7 @@ export function App() {
       }
     });
 
-    api.on('disconnect', () => {
+    api.socket.on(SocketEvents.DISCONNECT, () => {
       console.log('Disconnected from server');
       setIsConnected(false);
       setLocalPlayer(null);
@@ -32,8 +34,8 @@ export function App() {
 
     return () => {
       // Clean up listeners if necessary
-      api.removeAllListeners('connect');
-      api.removeAllListeners('disconnect');
+      api.socket.removeAllListeners('connect');
+      api.socket.removeAllListeners('disconnect');
     };
   }, []);
 

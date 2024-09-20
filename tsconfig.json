@@ -1,13 +1,19 @@
 {
-    "compilerOptions": {
-        "target": "es6",
-        "module": "esnext",
-        "strict": true,
-        "jsx": "react",
-        "esModuleInterop": true,
-        "moduleResolution": "node"
+  "compilerOptions": {
+    "target": "es6",
+    "module": "esnext",
+    "strict": true,
+    "jsx": "react",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "paths": {
+      // Remove the @shared path alias
+      // "@shared/*": ["shared/*"]
     },
-    "include": [
-        "client/**/*"
-    ]
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist"
+  },
+  "include": ["client/**/*", "shared/**/*"]
 }
