@@ -106,9 +106,21 @@ export interface ClientGameState {
   gameOver: boolean;
   winner: PlayerInfo | null;
   gameSettings: GameSettings;
+  voteState: VoteState | null;
 }
 
 export interface LobbyState {
   players: PlayerInfo[];
   games: { id: string; name: string; playerCount: number; maxPlayers: number }[];
+}
+
+export interface Vote {
+  playerId: string;
+  vote: boolean;
+}
+
+export interface VoteState {
+  topic: string;
+  votes: Vote[];
+  totalPlayers: number;
 }

@@ -1,5 +1,5 @@
-import { Button, Group, Modal, Text, Stack, Progress, ProgressSection } from '@mantine/core';
 import React from 'react';
+import { Button, Group, Modal, Text, Stack, Progress, ProgressSection } from '@mantine/core';
 
 interface VoteProps {
   onVote: (vote: boolean) => void;
@@ -7,9 +7,10 @@ interface VoteProps {
   yesCount: number;
   noCount: number;
   isVoteOpen: boolean;
+  totalPlayers: number;
 }
 
-export const Vote = ({ onVote, yesCount, noCount, isVoteOpen, label }: VoteProps) => {
+export const Vote: React.FC<VoteProps> = ({ onVote, yesCount, noCount, isVoteOpen, label, totalPlayers }) => {
   const totalVotes = yesCount + noCount;
   const yesPercentage = totalVotes > 0 ? (yesCount / totalVotes) * 100 : 0;
 
@@ -23,6 +24,7 @@ export const Vote = ({ onVote, yesCount, noCount, isVoteOpen, label }: VoteProps
         <Group>
           <Text>Yes: {yesCount}</Text>
           <Text>No: {noCount}</Text>
+          <Text>Remaining: {totalPlayers - totalVotes}</Text>
         </Group>
         <Group>
           <Button color="green" onClick={() => onVote(true)}>

@@ -3,7 +3,15 @@
  * @description Centralizes all socket event names and their corresponding types.
  */
 
-import { ClientGameState, GameSettings, LobbyState, PlayerAction, PlayerActionResult, SlapRule } from './types';
+import {
+  ClientGameState,
+  GameSettings,
+  LobbyState,
+  PlayerAction,
+  PlayerActionResult,
+  SlapRule,
+  VoteState,
+} from './types';
 
 /**
  * Enum of all socket event names.
@@ -33,6 +41,11 @@ export enum SocketEvents {
 
   // Error Handling
   ERROR = 'error', // Used by server to send an error message to the client
+
+  // Voting Events
+  START_VOTE = 'startVote',
+  SUBMIT_VOTE = 'submitVote',
+  VOTE_UPDATE = 'voteUpdate',
 }
 
 /**
@@ -54,4 +67,9 @@ export interface SocketPayloads {
   [SocketEvents.GET_GAME_SETTINGS]: void;
 
   [SocketEvents.ERROR]: string;
+
+  // Voting Payloads
+  [SocketEvents.START_VOTE]: { topic: string };
+  [SocketEvents.SUBMIT_VOTE]: { vote: boolean };
+  [SocketEvents.VOTE_UPDATE]: VoteState;
 }

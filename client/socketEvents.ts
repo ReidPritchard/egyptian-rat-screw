@@ -3,7 +3,7 @@
  * @description Centralizes all socket event names and their corresponding types.
  */
 
-import { GameSettings, GameState, LobbyState, PlayerAction, PlayerActionResult } from './types';
+import { GameSettings, GameState, LobbyState, PlayerAction, PlayerActionResult, VoteState } from './types';
 
 /**
  * Enum of all socket event names.
@@ -21,7 +21,6 @@ export enum SocketEvents {
   JOIN_GAME = 'joinGame', // Used by client to join a game
   LEAVE_GAME = 'leaveGame', // Used by client to leave a game
   GAME_UPDATE = 'gameUpdate', // Used by server to update the game state
-  GAME_VOTE = 'gameVote', // Used by client to vote to start the game
 
   // Player Actions
   PLAYER_ACTION = 'playerAction',
@@ -35,6 +34,11 @@ export enum SocketEvents {
 
   // Error Handling
   ERROR = 'error', // Used by server to send an error message to the client
+
+  // New Vote Events
+  START_VOTE = 'startVote',
+  SUBMIT_VOTE = 'submitVote',
+  VOTE_UPDATE = 'voteUpdate',
 }
 
 /**
@@ -48,7 +52,6 @@ export interface SocketPayloads {
   [SocketEvents.LEAVE_GAME]: void;
 
   [SocketEvents.GAME_UPDATE]: GameState;
-  [SocketEvents.GAME_VOTE]: void;
 
   [SocketEvents.PLAYER_ACTION]: PlayerAction;
   [SocketEvents.PLAYER_ACTION_RESULT]: PlayerActionResult;
@@ -57,4 +60,9 @@ export interface SocketPayloads {
   [SocketEvents.GET_GAME_SETTINGS]: void;
 
   [SocketEvents.ERROR]: string;
+
+  // New Vote Payloads
+  [SocketEvents.START_VOTE]: { topic: string };
+  [SocketEvents.SUBMIT_VOTE]: { vote: boolean };
+  [SocketEvents.VOTE_UPDATE]: VoteState;
 }

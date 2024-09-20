@@ -19,10 +19,6 @@ class Api {
     this.socket.emit(SocketEvents.JOIN_GAME, gameId);
   }
 
-  voteToStartGame(vote: boolean) {
-    this.socket.emit(SocketEvents.GAME_VOTE, vote);
-  }
-
   playCard() {
     this.socket.emit(SocketEvents.PLAYER_PLAY_CARD);
   }
@@ -56,6 +52,14 @@ class Api {
 
   removeAllListeners(event: string): void {
     this.socket.removeAllListeners(event);
+  }
+
+  startVote(topic: string) {
+    this.socket.emit(SocketEvents.START_VOTE, { topic });
+  }
+
+  submitVote(vote: boolean) {
+    this.socket.emit(SocketEvents.SUBMIT_VOTE, { vote });
   }
 }
 

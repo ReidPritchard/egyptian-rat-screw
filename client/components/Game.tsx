@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Group,
@@ -38,6 +38,7 @@ import {
 } from '@tabler/icons-react';
 import { TurnOrder } from './TurnOrder';
 import { Vote } from './Vote';
+import { api } from '../api';
 
 interface GameProps {
   gameState: GameState;
@@ -88,18 +89,28 @@ export const Game: React.FC<GameProps> = ({
 
   const isLocalPlayerTurn = gameState.currentPlayerId === localPlayer.id;
 
+  useEffect(() => {
+    if (gameState.voteState) {
+      setVoteToStartGame(gameState.voteState.votes.some((v) => v.vote));
+    }
+  }, [gameState.voteState]);
+
+  const handleStartVote = () => {
+    api.startVote('startGame');
+  };
+
   return (
     <Container size="sm" p="lg">
-      <Vote
-        isVoteOpen={true}
-        yesCount={voteToStartGame === true ? 1 : 0}
-        noCount={voteToStartGame === false ? 1 : 0}
-        onVote={(vote) => {
-          setVoteToStartGame(vote);
-          handleVoteToStartGame(vote);
-        }}
-        label="Vote to start the game"
-      />
+      {gameState.voteState && (
+        <Vote
+          isVoteOpen={true}
+          yesCount={gameState.voteState.votes.filter((v) => v.vote).length}
+          noCount={gameState.voteState.votes.filter((v) => !v.vote).length}
+          totalPlayers={gameState.voteState.totalPlayers}
+          onVote={handleVoteToStartGame}
+          label={gameState.voteState.topic}
+        />
+      )}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Paper shadow="xs" p="md" withBorder>
           <Group justify="space-between" mb="md">
@@ -149,13 +160,8 @@ export const Game: React.FC<GameProps> = ({
             {/* Actions */}
             <Grid.Col span={12}>
               <Group justify="space-between" mt="xl">
-                <Tooltip label="Restart Game">
-                  <ActionIcon
-                    variant="filled"
-                    color="green"
-                    onClick={() => handleVoteToStartGame(true)}
-                    disabled={!gameState.gameOver}
-                  >
+                <Tooltip label="Start Vote to Restart Game">
+                  <ActionIcon variant="filled" color="green" onClick={handleStartVote}>
                     <IconReload size="1.2rem" />
                   </ActionIcon>
                 </Tooltip>

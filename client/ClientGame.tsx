@@ -1,7 +1,16 @@
 import React, { Component } from 'react';
 import { api } from './api';
 import { Container, Group, TextInput, Paper, Title, Tabs, ActionIcon, Tooltip, Stack, Space } from '@mantine/core';
-import { LobbyState, PlayerAction, Card, SlapRule, PlayerInfo, PlayerActionResult, GameSettings } from './types';
+import {
+  LobbyState,
+  PlayerAction,
+  Card,
+  SlapRule,
+  PlayerInfo,
+  PlayerActionResult,
+  GameSettings,
+  VoteState,
+} from './types';
 import { motion } from 'framer-motion';
 import { ErrorMessages } from './components/ErrorMessages';
 import { Lobby } from './components/Lobby';
@@ -67,6 +76,7 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
     api.socket.on(SocketEvents.SET_GAME_SETTINGS, (slapRules: SlapRule[]) => this.handleGameSettings(slapRules));
     api.socket.on(SocketEvents.ERROR, (errorMessage: string) => this.handleError(errorMessage));
     api.socket.on(SocketEvents.GET_GAME_SETTINGS, (slapRules: SlapRule[]) => this.handleGameSettings(slapRules));
+    api.socket.on(SocketEvents.VOTE_UPDATE, (voteState: VoteState) => this.handleVoteUpdate(voteState));
   }
 
   showNotification(message: string) {
@@ -179,7 +189,7 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
   };
 
   handleVoteToStartGame = (vote: boolean) => {
-    api.voteToStartGame(vote);
+    api.submitVote(vote);
   };
 
   handleLeaveGame = () => {
@@ -194,6 +204,12 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
       activeTab: 'lobby',
     });
   };
+
+  handleVoteUpdate(voteState: VoteState) {
+    this.setState((prevState) => ({
+      gameState: prevState.gameState ? { ...prevState.gameState, voteState } : null,
+    }));
+  }
 
   render() {
     const { lobbyState, gameState, playerName } = this.state;

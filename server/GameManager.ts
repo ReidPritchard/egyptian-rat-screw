@@ -154,4 +154,24 @@ export class GameManager {
       })),
     };
   }
+
+  public startVote(socket: Socket, topic: string) {
+    const gameId = this.playerGameMap.get(socket.id);
+    if (gameId) {
+      const game = this.games.get(gameId);
+      if (game) {
+        game.startVote(topic);
+      }
+    }
+  }
+
+  public submitVote(socket: Socket, vote: boolean) {
+    const gameId = this.playerGameMap.get(socket.id);
+    if (gameId) {
+      const game = this.games.get(gameId);
+      if (game) {
+        game.submitVote(socket.id, vote);
+      }
+    }
+  }
 }

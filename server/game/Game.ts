@@ -12,6 +12,8 @@ import {
   PlayerActionType,
   GameSettings,
   SlapRuleAction,
+  VoteState,
+  Vote,
 } from '../types';
 import { SocketEvents } from '../socketEvents';
 
@@ -28,6 +30,8 @@ export class Game {
   private isGameStarted: boolean = false;
 
   private playerActionLog: PlayerAction[] = [];
+
+  private voteState: VoteState | null = null;
 
   constructor(io: Server, gameId: string, rules: SlapRule[] = []) {
     this.io = io;
@@ -338,6 +342,49 @@ export class Game {
       gameOver: this.players.length === 0,
       winner: this.players.length === 1 ? this.players[0].getPlayerInfo() : null,
       gameSettings: this.ruleEngine.getGameSettings(),
+      voteState: this.voteState,
     };
+  }
+
+  public startVote(topic: string) {
+    this.voteState = {
+      topic,
+      votes: [],
+      totalPlayers: this.players.length,
+    };
+    this.io.to(this.gameId).emit(SocketEvents.VOTE_UPDATE, this.voteState);
+  }
+
+  public submitVote(playerId: string, vote: boolean) {
+    if (!this.voteState) return;
+
+    const existingVoteIndex = this.voteState.votes.findIndex((v) => v.playerId === playerId);
+    if (existingVoteIndex !== -1) {
+      this.voteState.votes[existingVoteIndex].vote = vote;
+    } else {
+      this.voteState.votes.push({ playerId, vote });
+    }
+
+    this.io.to(this.gameId).emit(SocketEvents.VOTE_UPDATE, this.voteState);
+
+    if (this.voteState.votes.length === this.voteState.totalPlayers) {
+      this.resolveVote();
+    }
+  }
+
+  private resolveVote() {
+    if (!this.voteState) return;
+
+    const yesVotes = this.voteState.votes.filter((v) => v.vote).length;
+    const result = yesVotes > this.voteState.totalPlayers / 2;
+
+    // Handle the result (e.g., start the game if voting to start)
+    if (this.voteState.topic === 'startGame' && result) {
+      this.startGame();
+    }
+
+    // Reset vote state
+    this.voteState = null;
+    this.io.to(this.gameId).emit(SocketEvents.VOTE_UPDATE, null);
   }
 }

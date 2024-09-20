@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { GameManager } from './GameManager';
-import { SocketEvents } from './socketEvents';
+import { SocketEvents, SocketPayloads } from './socketEvents';
 import { GameSettings, PlayerActionType, PlayerInfo } from './types';
 
 let io: Server;
@@ -58,6 +58,14 @@ export function setupSocketHandlers(ioServer: Server) {
       console.log('A user disconnected');
       gameManager.leaveGame(socket);
       gameManager.removeFromLobby(socket.id);
+    });
+
+    socket.on(SocketEvents.START_VOTE, ({ topic }: SocketPayloads[SocketEvents.START_VOTE]) => {
+      gameManager.startVote(socket, topic);
+    });
+
+    socket.on(SocketEvents.SUBMIT_VOTE, ({ vote }: SocketPayloads[SocketEvents.SUBMIT_VOTE]) => {
+      gameManager.submitVote(socket, vote);
     });
   });
 }
