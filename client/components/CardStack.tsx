@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box } from '@mantine/core';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlayingCard } from '../PlayingCard';
+import { PlayingCard } from './PlayingCard';
 import { Card } from '../types';
 
 interface CardStackProps {
@@ -22,7 +22,7 @@ export const CardStack: React.FC<CardStackProps> = ({ pile }) => {
               opacity: 1,
               y: 0,
               rotate: (index * 10) % 360,
-              zIndex: array.length - index,
+              zIndex: index,
             }}
             exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.3 }}

@@ -50,19 +50,9 @@ export class RuleEngine {
     return this.rules.maximumPlayers || 8;
   }
 
-  public checkFaceCardChallenge(card: Card): number {
-    // Returns the number of cards the next player must play
-    const faceCardValues: { [key: string]: number } = {
-      J: 1,
-      Q: 2,
-      K: 3,
-      A: 4,
-    };
-
-    if (faceCardValues[card.rank]) {
-      return faceCardValues[card.rank];
-    }
-    return 0;
+  public isChallengeCard(card: Card): boolean {
+    const challengeCards = Object.keys(this.rules.faceCardChallengeCounts || {});
+    return challengeCards.includes(card.rank);
   }
 
   public getFaceCardChallengeCount(card: Card): number {
@@ -78,10 +68,6 @@ export class RuleEngine {
       return faceCardValues[card.rank];
     }
     return 0;
-  }
-
-  public isFaceCard(card: Card): boolean {
-    return ['J', 'Q', 'K', 'A'].includes(card.rank);
   }
 
   public isCounterCard(card: Card): boolean {

@@ -33,7 +33,6 @@ export enum SocketEvents {
   PLAYER_ACTION = 'playerAction',
   PLAYER_ACTION_RESULT = 'playerActionResult',
   PLAYER_TIMEOUT = 'playerTimeout',
-  PLAYER_PLAY_CARD = 'playerPlayCard',
 
   // Settings
   SET_GAME_SETTINGS = 'setGameSettings', // Used by client to set game settings

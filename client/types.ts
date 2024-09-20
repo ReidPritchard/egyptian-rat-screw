@@ -72,6 +72,14 @@ export interface PlayerInfo {
   name: string;
 }
 
+export interface CardChallenge {
+  active: boolean;
+  challenger: PlayerInfo;
+  challenged: PlayerInfo;
+  remainingCounterChances: number;
+  result: 'challenger' | 'counter' | null;
+}
+
 // A subset of GameState that is sent to the client
 // This is used to reduce the amount of data sent to the client
 // and to prevent the client from having full access to the game state
@@ -86,6 +94,7 @@ export interface GameState {
   winner: PlayerInfo | null;
   gameSettings: GameSettings;
   voteState: VoteState | null;
+  cardChallenge: CardChallenge | null;
 }
 
 export interface LobbyState {

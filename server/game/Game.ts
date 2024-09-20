@@ -14,8 +14,10 @@ import {
   SlapRuleAction,
   VoteState,
   Vote,
+  CardChallenge,
 } from '../types';
 import { SocketEvents } from '../socketEvents';
+import { defaultSlapRules } from './rules/SlapRules';
 
 export class Game {
   public gameId: string;
@@ -31,9 +33,10 @@ export class Game {
 
   private playerActionLog: PlayerAction[] = [];
 
+  private faceCardChallenge: CardChallenge | null = null;
   private voteState: VoteState | null = null;
 
-  constructor(io: Server, gameId: string, rules: SlapRule[] = []) {
+  constructor(io: Server, gameId: string, rules: SlapRule[] = defaultSlapRules) {
     this.io = io;
     this.gameId = gameId;
 
@@ -173,17 +176,12 @@ export class Game {
     const currentPlayer = this.players[this.turnIndex];
     this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
 
-    // Set a time limit for the player to play a card
-    const turnTimeLimit = this.ruleEngine.getTurnTimeLimit();
-    const turnTimeout = setTimeout(() => {
-      this.io.to(this.gameId).emit(SocketEvents.PLAYER_TIMEOUT, currentPlayer.socket.id);
-      this.advanceTurn();
-    }, turnTimeLimit);
-
-    currentPlayer.socket.once(SocketEvents.PLAYER_PLAY_CARD, () => {
-      clearTimeout(turnTimeout);
-      this.playCard(currentPlayer);
-    });
+    // TODO: Implement turn timeout, for now just keep the turn alive
+    // const turnTimeLimit = this.ruleEngine.getTurnTimeLimit();
+    // const turnTimeout = setTimeout(() => {
+    //   this.io.to(this.gameId).emit(SocketEvents.PLAYER_TIMEOUT, currentPlayer.socket.id);
+    //   this.advanceTurn();
+    // }, turnTimeLimit);
   }
 
   public handlePlayCard(socket: Socket) {
@@ -199,14 +197,16 @@ export class Game {
     const card = player.playCard();
     if (card) {
       this.centralPile.push(card);
-      this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
 
-      const faceCardChallenge = this.ruleEngine.checkFaceCardChallenge(card);
+      const faceCardChallenge = this.ruleEngine.getFaceCardChallengeCount(card);
       if (faceCardChallenge > 0) {
-        this.handleFaceCardChallenge(faceCardChallenge);
+        this.handleFaceCardChallenge(player, card, faceCardChallenge);
+      } else if (this.faceCardChallenge?.active) {
+        this.handleFaceCardChallengeCounter(player, card);
       } else {
         this.advanceTurn();
       }
+      this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
     } else {
       // Player is out of cards (just skip turn)
       this.advanceTurn();
@@ -215,47 +215,52 @@ export class Game {
     }
   }
 
-  private handleFaceCardChallenge(challengeCount: number) {
-    this.turnIndex = (this.turnIndex + 1) % this.players.length;
-    const nextPlayer = this.players[this.turnIndex];
+  private handleFaceCardChallenge(challenger: Player, card: Card, challengeCount: number) {
+    const challenged = this.players[(this.turnIndex + 1) % this.players.length];
 
-    const playNextCard = () => {
-      const card = nextPlayer.playCard();
-      if (card) {
-        this.centralPile.push(card);
-        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
-
-        const isFaceCard = this.ruleEngine.isFaceCard(card);
-        const isCounterCard = this.ruleEngine.isCounterCard(card);
-
-        if (isFaceCard || isCounterCard) {
-          // Challenge is countered
-          this.handleFaceCardChallenge(this.ruleEngine.getFaceCardChallengeCount(card));
-        } else {
-          challengeCount--;
-          if (challengeCount > 0) {
-            playNextCard();
-          } else {
-            // Challenge failed
-            const previousPlayerIndex = (this.turnIndex - 1 + this.players.length) % this.players.length;
-            const winner = this.players[previousPlayerIndex];
-            winner.collectPile(this.centralPile);
-            this.centralPile = [];
-            this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
-            this.turnIndex = previousPlayerIndex;
-            this.advanceTurn();
-          }
-        }
-      } else {
-        // Next player is out of cards
-        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
-        this.players.splice(this.turnIndex, 1);
-        this.turnIndex = this.turnIndex % this.players.length;
-        this.checkForWinner();
-      }
+    this.faceCardChallenge = {
+      active: true,
+      challenger: challenger.getPlayerInfo(),
+      challenged: challenged.getPlayerInfo(),
+      remainingCounterChances: challengeCount,
+      result: null,
     };
 
-    playNextCard();
+    this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
+    this.advanceTurn();
+  }
+
+  private handleFaceCardChallengeCounter(player: Player, card: Card) {
+    if (!this.faceCardChallenge) return;
+
+    if (this.ruleEngine.isChallengeCard(card)) {
+      // Counter successful, start a new challenge
+      const newChallengeCount = this.ruleEngine.getFaceCardChallengeCount(card);
+      this.handleFaceCardChallenge(player, card, newChallengeCount);
+    } else if (this.ruleEngine.isCounterCard(card)) {
+      // Counter successful, end the challenge
+      this.faceCardChallenge.result = 'counter';
+      this.faceCardChallenge.active = false;
+      this.advanceTurn();
+    } else {
+      this.faceCardChallenge.remainingCounterChances--;
+
+      if (this.faceCardChallenge.remainingCounterChances === 0) {
+        const challenger = this.players.find((p) => p.name === this.faceCardChallenge?.challenger.name);
+        if (challenger) {
+          challenger.collectPile(this.centralPile);
+          this.centralPile = [];
+        }
+        this.faceCardChallenge.result = 'challenger';
+        this.faceCardChallenge.active = false;
+        this.turnIndex = this.players.indexOf(challenger!);
+        this.advanceTurn();
+      } else {
+        this.nextTurn();
+      }
+    }
+
+    this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
   }
 
   public handleSlapAttempt(socket: Socket) {
@@ -263,9 +268,15 @@ export class Game {
     if (player) {
       const validRules = this.ruleEngine.getValidSlapRules(this.centralPile, player);
       if (validRules.length > 0) {
+        console.log(
+          'Valid rules:',
+          validRules.map((r) => r.name),
+        );
         // Reward for correct slap based on the rule's action
         const firstRule = validRules[0];
         let target = [this.players.find((p) => p.name === firstRule.targetPlayerName)];
+        console.log('Target:', target);
+        console.log('Action:', firstRule.action);
         switch (firstRule.action) {
           case SlapRuleAction.TAKE_PILE:
             player.collectPile(this.centralPile);
@@ -291,7 +302,7 @@ export class Game {
         // Penalty for incorrect slap
         const penaltyCard = player.givePenaltyCard();
         if (penaltyCard) {
-          this.centralPile.push(penaltyCard);
+          this.centralPile.unshift(penaltyCard);
         }
         this.io.to(this.gameId).emit(SocketEvents.PLAYER_ACTION_RESULT, {
           playerId: player.socket.id,
@@ -299,7 +310,6 @@ export class Game {
           result: 'failure',
           message: 'Slap unsuccessful',
         });
-        this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
       }
     }
   }
@@ -343,6 +353,7 @@ export class Game {
       winner: this.players.length === 1 ? this.players[0].getPlayerInfo() : null,
       gameSettings: this.ruleEngine.getGameSettings(),
       voteState: this.voteState,
+      cardChallenge: this.faceCardChallenge?.active ? this.faceCardChallenge : null,
     };
   }
 

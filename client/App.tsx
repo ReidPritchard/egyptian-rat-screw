@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { ClientGame } from './ClientGame';
 import { api } from './api';
-import { ClientPlayer } from './ClientPlayer';
 import { MantineProvider, Container, LoadingOverlay } from '@mantine/core';
 import { useColorScheme } from '@mantine/hooks';
 import { SocketEvents } from './socketEvents';
+import { PlayerInfo } from './types';
+import { config } from './config';
 
 export function App() {
   const preferredColorScheme = useColorScheme();
-  const [localPlayer, setLocalPlayer] = useState<ClientPlayer | null>(null);
+  const [localPlayer, setLocalPlayer] = useState<PlayerInfo | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const initialName = localStorage.getItem('playerName') ?? '';
+    const initialName = localStorage.getItem(config.localStoragePlayerNameKey) ?? '';
     api.setPlayerName(initialName);
 
     api.socket.on(SocketEvents.CONNECT, () => {
       console.log('Connected to server');
       setIsConnected(true);
-      // Ensure socket.id is available
       if (api.socket.id) {
-        setLocalPlayer(new ClientPlayer(api.socket.id, initialName));
+        setLocalPlayer({ id: api.socket.id, name: initialName });
       } else {
         console.error('Socket ID not available');
       }
@@ -33,7 +33,6 @@ export function App() {
     });
 
     return () => {
-      // Clean up listeners if necessary
       api.socket.removeAllListeners('connect');
       api.socket.removeAllListeners('disconnect');
     };

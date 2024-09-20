@@ -29,10 +29,22 @@ export interface PlayerAction {
 }
 
 export interface ICondition {
-  field: string;
+  field: ConditionValue;
   operator: '===' | '!==' | '>' | '<' | '>=' | '<=' | 'in';
-  value: string | number | string[];
+  value: ConditionValue;
 }
+
+export interface IDynamicValue {
+  value: string;
+  isDynamic: true;
+}
+
+export interface IStaticValue {
+  value: string | number | string[];
+  isDynamic: false;
+}
+
+export type ConditionValue = IDynamicValue | IStaticValue;
 
 export enum SlapRuleAction {
   TAKE_PILE = 'take-pile',
@@ -107,6 +119,7 @@ export interface ClientGameState {
   winner: PlayerInfo | null;
   gameSettings: GameSettings;
   voteState: VoteState | null;
+  cardChallenge: CardChallenge | null;
 }
 
 export interface LobbyState {
@@ -123,4 +136,12 @@ export interface VoteState {
   topic: string;
   votes: Vote[];
   totalPlayers: number;
+}
+
+export interface CardChallenge {
+  active: boolean;
+  challenger: PlayerInfo;
+  challenged: PlayerInfo;
+  remainingCounterChances: number;
+  result: 'challenger' | 'counter' | null;
 }

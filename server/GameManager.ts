@@ -42,7 +42,7 @@ export class GameManager {
     // If the game doesn't exist, create it
     if (!this.games.has(gameId) || gameId === '') {
       gameId = gameId || Math.random().toString();
-      this.games.set(gameId, new Game(GameManager.io, gameId, []));
+      this.games.set(gameId, new Game(GameManager.io, gameId));
     }
 
     // Try to add the player to the game
@@ -88,6 +88,16 @@ export class GameManager {
 
   public getLobbyPlayer(playerId: string): PlayerInfo | undefined {
     return this.lobbyPlayers.get(playerId);
+  }
+
+  public handlePlayCard(socket: Socket) {
+    const gameId = this.playerGameMap.get(socket.id);
+    if (gameId) {
+      const game = this.games.get(gameId);
+      if (game) {
+        game.handlePlayCard(socket);
+      }
+    }
   }
 
   public performPlayerAction(socket: Socket, actionType: PlayerActionType) {

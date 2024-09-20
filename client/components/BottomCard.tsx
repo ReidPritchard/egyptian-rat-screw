@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text, Transition } from '@mantine/core';
-import { PlayingCard } from '../PlayingCard';
+import { PlayingCard } from './PlayingCard';
 import { Card } from '../types';
 
 interface BottomCardProps {

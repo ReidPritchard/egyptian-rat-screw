@@ -20,7 +20,7 @@ class Api {
   }
 
   playCard() {
-    this.socket.emit(SocketEvents.PLAYER_PLAY_CARD);
+    this.socket.emit(SocketEvents.PLAYER_ACTION, PlayerActionType.PLAY_CARD);
   }
 
   slap() {
