@@ -55,6 +55,7 @@ class Api {
   }
 
   startVote(topic: string) {
+    console.log('Emitting start vote', topic);
     this.socket.emit(SocketEvents.START_VOTE, { topic });
   }
 

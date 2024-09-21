@@ -14,10 +14,13 @@ export function setupSocketHandlers(ioServer: Server) {
     console.log('A user connected');
 
     // Add the player to the lobby via GameManager
-    gameManager.addToLobby({
-      id: socket.id,
-      name: '',
-    });
+    gameManager.initPlayerInLobby(
+      {
+        id: socket.id,
+        name: '',
+      },
+      socket,
+    );
     io.emit(SocketEvents.LOBBY_UPDATE, gameManager.getLobbyState());
 
     socket.on(SocketEvents.SET_PLAYER_NAME, (playerName: string) => {
@@ -54,18 +57,18 @@ export function setupSocketHandlers(ioServer: Server) {
       socket.emit(SocketEvents.ERROR, error.message);
     });
 
-    socket.on(SocketEvents.DISCONNECT, () => {
-      console.log('A user disconnected');
-      gameManager.leaveGame(socket);
-      gameManager.removeFromLobby(socket.id);
-    });
-
     socket.on(SocketEvents.START_VOTE, ({ topic }: SocketPayloads[SocketEvents.START_VOTE]) => {
+      console.log('Starting vote', topic);
       gameManager.startVote(socket, topic);
     });
 
     socket.on(SocketEvents.SUBMIT_VOTE, ({ vote }: SocketPayloads[SocketEvents.SUBMIT_VOTE]) => {
       gameManager.submitVote(socket, vote);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('A user disconnected');
+      gameManager.handleDisconnect(socket);
     });
   });
 }

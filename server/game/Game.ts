@@ -59,7 +59,6 @@ export class Game {
 
     const player = new Player(socket, playerInfo.name);
     this.players.push(player);
-    socket.join(this.gameId);
     this.emitGameUpdate();
   }
 
@@ -82,13 +81,12 @@ export class Game {
   public removePlayer(socket: Socket) {
     const playerIndex = this.players.findIndex((p) => p.socket.id === socket.id);
     if (playerIndex !== -1) {
-      const player = this.players.splice(playerIndex, 1)[0];
+      console.log('Removing player', socket.id);
+      this.players.splice(playerIndex, 1);
+      console.log('Players left', this.players.length);
 
-      if (this.players.length === 0) {
-        // Game should be removed by GameManager
-      } else {
+      if (this.players.length > 0) {
         if (this.isGameStarted) {
-          // Make sure the game is still in progress
           this.checkForWinner();
         }
         this.emitGameUpdate();
@@ -378,6 +376,12 @@ export class Game {
   }
 
   private emitGameUpdate() {
+    console.log(
+      'Players',
+      this.players.map((p) => p.name),
+      this.io.sockets.adapter.rooms,
+    );
+    console.log('Emitting game update', this.gameId);
     this.io.to(this.gameId).emit(SocketEvents.GAME_UPDATE, this.getGameState());
   }
 
@@ -386,6 +390,12 @@ export class Game {
   }
 
   public startVote(topic: string) {
+    console.log('Starting vote', topic);
+    if (this.voteState) {
+      console.log('Vote already in progress');
+      return;
+    }
+
     this.voteState = {
       topic,
       votes: [],

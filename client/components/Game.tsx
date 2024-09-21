@@ -101,17 +101,32 @@ export const Game: React.FC<GameProps> = ({
 
   return (
     <Container size="sm" p="lg">
-      {gameState.voteState && (
-        <Vote
-          isVoteOpen={true}
-          yesCount={gameState.voteState.votes.filter((v) => v.vote).length}
-          noCount={gameState.voteState.votes.filter((v) => !v.vote).length}
-          totalPlayers={gameState.voteState.totalPlayers}
-          onVote={handleVoteToStartGame}
-          label={gameState.voteState.topic}
-        />
-      )}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <AnimatePresence>
+        {gameState.voteState && (
+          <motion.div
+            key="vote"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Vote
+              isVoteOpen={true}
+              yesCount={gameState.voteState.votes.filter((v) => v.vote).length}
+              noCount={gameState.voteState.votes.filter((v) => !v.vote).length}
+              totalPlayers={gameState.voteState.totalPlayers}
+              onVote={handleVoteToStartGame}
+              label={gameState.voteState.topic}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <motion.div
+        key="game"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <Paper shadow="xs" p="md" withBorder>
           <Group justify="space-between" mb="md">
             <Title order={3}>{gameState.name}</Title>

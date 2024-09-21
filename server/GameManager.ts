@@ -2,15 +2,21 @@ import { Server, Socket } from 'socket.io';
 import { Game } from './game/Game';
 import { SocketEvents } from './socketEvents';
 import { GameSettings, LobbyState, PlayerAction, PlayerActionType, PlayerInfo } from './types';
+import { LOBBY_ROOM } from './config';
 
 export class GameManager {
   private static instance: GameManager;
   private static io: Server;
 
+  /**
+   * Stores all active games, indexed by their game ID.
+   */
   private games: Map<string, Game> = new Map();
-  private playerGameMap: Map<string, string> = new Map();
+
+  /**
+   * Maps socket IDs to the corresponding player information.
+   */
   private socketPlayerMap: Map<string, PlayerInfo> = new Map();
-  private lobbyPlayers: Map<string, PlayerInfo> = new Map();
 
   private constructor(io: Server) {
     GameManager.io = io;
@@ -24,46 +30,81 @@ export class GameManager {
     return GameManager.instance;
   }
 
-  public setIo(io: Server): void {
-    GameManager.io = io;
-  }
-
   public joinGame(gameId: string, player: PlayerInfo, socket: Socket): void {
-    if (this.isPlayerInGame(player.id)) {
+    if (this.isPlayerInGame(socket)) {
       this.emitError(socket, 'Player is already in a game.');
       return;
     }
 
     const game = this.getOrCreateGame(gameId);
+
+    // Join the game and leave the lobby
+    // This is done before adding the player to the game
+    // so that the game update is emitted to the new player too
+    socket.leave(LOBBY_ROOM);
+    socket.join(game.gameId);
+
     game.addPlayer(socket, player);
 
-    this.updatePlayerMaps(player, gameId, socket);
-    this.removeFromLobby(player.id);
+    this.socketPlayerMap.set(socket.id, player);
+
     this.emitLobbyUpdate();
   }
 
   public leaveGame(socket: Socket): void {
-    const gameId = this.playerGameMap.get(socket.id);
-    if (!gameId) return;
+    // socket.rooms is a Set, it will always contain the socket's identifier
+    // but we want to find any game id
+    const gameId = Array.from(socket.rooms).find((room) => room !== socket.id && this.games.has(room));
+
+    if (!gameId) {
+      this.emitError(socket, 'Player is not in a game.');
+      return;
+    }
 
     const game = this.games.get(gameId);
-    if (!game) return;
+    if (!game) {
+      this.emitError(socket, 'Game does not exist.');
+      return;
+    }
 
     game.removePlayer(socket);
-    this.handlePlayerLeave(socket, gameId);
+
+    socket.leave(gameId);
+    socket.join(LOBBY_ROOM);
+
+    // If the game is empty, remove it
+    if (game.getPlayerCount() === 0) {
+      this.games.delete(gameId);
+    }
+
     this.emitLobbyUpdate();
   }
 
-  public addToLobby(player: PlayerInfo): void {
-    this.lobbyPlayers.set(player.id, player);
-  }
-
-  public removeFromLobby(playerId: string): void {
-    this.lobbyPlayers.delete(playerId);
+  public initPlayerInLobby(player: PlayerInfo, socket: Socket): void {
+    socket.join(LOBBY_ROOM);
+    this.socketPlayerMap.set(socket.id, player);
+    this.emitLobbyUpdate();
   }
 
   public getLobbyPlayer(playerId: string): PlayerInfo | undefined {
-    return this.lobbyPlayers.get(playerId);
+    return this.socketPlayerMap.get(playerId);
+  }
+
+  public handleDisconnect(socket: Socket): void {
+    // Make sure the player is removed from any games they are in
+    // also remove them from the lobby
+    socket.rooms.forEach((room, isLobby) => {
+      console.log('Removing player from game', room, isLobby);
+      const game = this.games.get(room);
+      if (game) {
+        game.removePlayer(socket);
+      }
+      socket.leave(room);
+    });
+
+    this.socketPlayerMap.delete(socket.id);
+
+    this.emitLobbyUpdate();
   }
 
   public handlePlayCard(socket: Socket): void {
@@ -92,31 +133,40 @@ export class GameManager {
   }
 
   public setPlayerName(socketId: string, playerName: string): void {
-    const player = this.lobbyPlayers.get(socketId);
+    const player = this.getLobbyPlayer(socketId);
     if (player) {
       player.name = playerName;
-      this.lobbyPlayers.set(socketId, player);
+      this.socketPlayerMap.set(socketId, player);
       this.emitLobbyUpdate();
     }
   }
 
   public getLobbyState(): LobbyState {
+    // Get all player ids in the lobby room
+    const playerIdsInLobby = Array.from(GameManager.io.sockets.adapter.rooms.get(LOBBY_ROOM) || []);
+    const playersInLobby = playerIdsInLobby
+      .map((playerId) => this.getLobbyPlayer(playerId as string))
+      .filter((player) => player !== undefined)
+      .map((player) => ({ id: player.id, name: player.name || 'Anonymous' }));
     return {
-      players: Array.from(this.lobbyPlayers.values()),
+      players: playersInLobby,
       games: Array.from(this.games.values()).map(this.getGameInfo),
     };
   }
 
   public startVote(socket: Socket, topic: string): void {
-    this.performGameAction(socket, (game) => game.startVote(topic));
+    this.performGameAction(socket, (game) => {
+      console.log('Starting vote on game', game.gameId);
+      game.startVote(topic);
+    });
   }
 
   public submitVote(socket: Socket, vote: boolean): void {
     this.performGameAction(socket, (game) => game.submitVote(socket.id, vote));
   }
 
-  private isPlayerInGame(playerId: string): boolean {
-    return this.playerGameMap.has(playerId);
+  private isPlayerInGame(socket: Socket): boolean {
+    return Array.from(socket.rooms).some((room) => this.games.has(room));
   }
 
   private getOrCreateGame(gameId: string): Game {
@@ -125,24 +175,6 @@ export class GameManager {
       this.games.set(gameId, new Game(GameManager.io, gameId));
     }
     return this.games.get(gameId)!;
-  }
-
-  private updatePlayerMaps(player: PlayerInfo, gameId: string, socket: Socket): void {
-    this.playerGameMap.set(player.id, gameId);
-    this.socketPlayerMap.set(socket.id, player);
-  }
-
-  private handlePlayerLeave(socket: Socket, gameId: string): void {
-    const player = this.socketPlayerMap.get(socket.id);
-    if (player) {
-      this.addToLobby(player);
-    }
-    this.playerGameMap.delete(socket.id);
-    this.socketPlayerMap.delete(socket.id);
-
-    if (this.games.get(gameId)?.getPlayerCount() === 0) {
-      this.games.delete(gameId);
-    }
   }
 
   private emitLobbyUpdate(): void {
@@ -156,12 +188,13 @@ export class GameManager {
   private performGameAction(socket: Socket, action: (game: Game) => void): void {
     const game = this.getGameForSocket(socket);
     if (game) {
+      console.log('Performing game action on game', game.gameId);
       action(game);
     }
   }
 
   private getGameForSocket(socket: Socket, gameId?: string): Game | undefined {
-    gameId = gameId || this.playerGameMap.get(socket.id);
+    gameId = gameId || Array.from(socket.rooms).find((room) => room !== socket.id && this.games.has(room));
     if (!gameId) {
       this.emitError(socket, 'Player is not in a game.');
       return;
