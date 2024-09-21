@@ -19,6 +19,7 @@ import { notifications } from '@mantine/notifications';
 import { IconPlus, IconLogin } from '@tabler/icons-react';
 import { SocketEvents } from './socketEvents';
 import { GameState } from './types';
+import { config } from './config';
 
 export type Tab = 'lobby' | 'game';
 
@@ -149,6 +150,7 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
   };
 
   handlePlayerAction(action: PlayerAction | PlayerActionResult) {
+    console.log('handlePlayerAction', action);
     this.setState((prevState) => ({
       playerActionLog: [action, ...prevState.playerActionLog],
     }));
@@ -167,11 +169,10 @@ export class ClientGame extends Component<ClientGameProps, ClientGameState> {
 
     if (gameState && gameState.pile && gameState.pile.length > 0) {
       const bottomCard = gameState.pile[gameState.pile.length - 1];
-      const BOTTOM_CARD_DISPLAY_DURATION = 3000;
 
       const newTimer = setTimeout(() => {
         this.setState({ bottomCard: null, bottomCardTimer: null });
-      }, BOTTOM_CARD_DISPLAY_DURATION);
+      }, config.game.bottomCardDisplayDuration);
 
       this.setState({
         bottomCard: bottomCard,

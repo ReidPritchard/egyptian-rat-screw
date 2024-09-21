@@ -11,7 +11,7 @@ export const BottomCard: React.FC<BottomCardProps> = ({ bottomCard }) => {
   if (!bottomCard) return null;
 
   return (
-    <Transition mounted={!!bottomCard} transition="fade" duration={300} timingFunction="ease">
+    <Transition mounted={!!bottomCard} transition="fade" duration={50} timingFunction="ease">
       {(styles) => (
         <Box style={{ ...styles, position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)' }}>
           <Text mb="xs">Bottom card (invalid slap):</Text>

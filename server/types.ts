@@ -20,6 +20,8 @@ export enum PlayerActionType {
   PLAY_CARD = 'playCard',
   SLAP = 'slap',
   INVALID_SLAP = 'invalidSlap',
+  CHALLENGE_COUNTER_COMPLETE = 'challengeCounterComplete',
+  FACE_CARD_CHALLENGE = 'faceCardChallenge',
 }
 
 export interface PlayerAction {
@@ -74,6 +76,7 @@ export interface PlayerActionResult {
   actionType: PlayerActionType;
   result: 'success' | 'failure';
   message?: string;
+  timestamp: number;
 }
 
 export interface GameSettings {

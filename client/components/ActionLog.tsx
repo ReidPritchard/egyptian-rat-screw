@@ -19,6 +19,26 @@ export const ActionLog: React.FC<ActionLogProps> = ({
     return gameState.playerNames[playerId];
   };
 
+  const getActionMessage = (action: PlayerAction | PlayerActionResult): { message: string; color: string } => {
+    let message = '';
+    let color = 'blue';
+    const playerName = getPlayerName(action.playerId);
+    switch (action.actionType) {
+      case 'playCard':
+        message = `${playerName} played a card`;
+        break;
+      case 'slap':
+        message = `${playerName} made a valid slap`;
+        color = 'green';
+        break;
+      case 'invalidSlap':
+        message = `${playerName} made an invalid slap`;
+        color = 'red';
+        break;
+    }
+    return { message, color };
+  };
+
   return (
     <Paper withBorder p="xs" mt="md">
       <Group>
@@ -29,38 +49,21 @@ export const ActionLog: React.FC<ActionLogProps> = ({
       </Group>
       <Collapse in={isActionLogExpanded}>
         <Stack>
-          {playerActionLog
-            .filter((action): action is PlayerAction => 'timestamp' in action)
-            .slice(0, 10)
-            .map((action, index) => {
-              const playerName = getPlayerName(action.playerId);
-              let message = '';
-              let color = 'blue';
-
-              switch (action.actionType) {
-                case 'playCard':
-                  message = `${playerName} played a card`;
-                  break;
-                case 'slap':
-                  message = `${playerName} made a valid slap`;
-                  color = 'green';
-                  break;
-                case 'invalidSlap':
-                  message = `${playerName} made an invalid slap`;
-                  color = 'red';
-                  break;
-              }
-              return (
-                <Group key={index}>
-                  <Text size="xs" c="dimmed">
+          {playerActionLog.slice(0, 10).map((action, index) => {
+            const { message, color } = getActionMessage(action);
+            return (
+              <Group key={index}>
+                {'timestamp' in action ? (
+                  <Text c="dimmed" size="xs">
                     {new Date(action.timestamp).toLocaleTimeString()}
                   </Text>
-                  <Text c={color} size="sm">
-                    {message}
-                  </Text>
-                </Group>
-              );
-            })}
+                ) : null}
+                <Text c={color} size="sm">
+                  {message}
+                </Text>
+              </Group>
+            );
+          })}
         </Stack>
       </Collapse>
     </Paper>

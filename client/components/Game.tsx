@@ -142,7 +142,7 @@ export const Game: React.FC<GameProps> = ({
                   Pile Size: {gameState.pile?.length ?? 0}
                 </Text>
                 <Group justify="center" mb="xl">
-                  <BottomCard bottomCard={bottomCard} />
+                  {bottomCard && <BottomCard bottomCard={bottomCard} />}
                   <CardStack pile={gameState.pile} />
                 </Group>
               </Box>

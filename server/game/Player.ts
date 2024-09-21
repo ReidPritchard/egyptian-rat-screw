@@ -20,7 +20,12 @@ export class Player {
   }
 
   public collectPile(pile: Card[]) {
-    this.deck.push(...this.shuffle(pile));
+    // if the pile is less than 5 cards, shuffle it
+    // this is to prevent the order of played cards from being predictable
+    if (pile.length < 10) {
+      pile = this.shuffle(pile);
+    }
+    this.deck.push(...pile);
   }
 
   public givePenaltyCard(): Card | undefined {

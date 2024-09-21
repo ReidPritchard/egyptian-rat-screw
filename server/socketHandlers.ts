@@ -4,11 +4,11 @@ import { SocketEvents, SocketPayloads } from './socketEvents';
 import { GameSettings, PlayerActionType, PlayerInfo } from './types';
 
 let io: Server;
-const gameManager = GameManager.getInstance();
+let gameManager: GameManager;
 
 export function setupSocketHandlers(ioServer: Server) {
   io = ioServer;
-  gameManager.setIo(io);
+  gameManager = GameManager.getInstance(io);
 
   io.on('connection', (socket: Socket) => {
     console.log('A user connected');

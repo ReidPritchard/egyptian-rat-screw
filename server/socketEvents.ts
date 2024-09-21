@@ -3,15 +3,7 @@
  * @description Centralizes all socket event names and their corresponding types.
  */
 
-import {
-  ClientGameState,
-  GameSettings,
-  LobbyState,
-  PlayerAction,
-  PlayerActionResult,
-  SlapRule,
-  VoteState,
-} from './types';
+import { ClientGameState, GameSettings, LobbyState, PlayerAction, PlayerActionResult, VoteState } from './types';
 
 /**
  * Enum of all socket event names.

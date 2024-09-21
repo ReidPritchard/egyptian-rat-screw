@@ -27,6 +27,7 @@ export interface PlayerActionResult {
   actionType: PlayerActionType;
   result: 'success' | 'failure';
   message?: string;
+  timestamp: number;
 }
 
 export interface GameSettings {
