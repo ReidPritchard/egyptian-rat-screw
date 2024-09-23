@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ClientGame } from './ClientGame';
+import { GameContainer } from './GameContainer';
 import { api } from './api';
 import { MantineProvider, Container, LoadingOverlay } from '@mantine/core';
 import { useColorScheme } from '@mantine/hooks';
@@ -42,7 +42,7 @@ export function App() {
     <MantineProvider defaultColorScheme={preferredColorScheme}>
       <Container>
         <LoadingOverlay visible={!isConnected || !localPlayer} />
-        {isConnected && localPlayer && <ClientGame localPlayer={localPlayer} />}
+        {isConnected && localPlayer && <GameContainer localPlayer={localPlayer} />}
       </Container>
     </MantineProvider>
   );

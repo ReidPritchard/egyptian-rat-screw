@@ -66,9 +66,13 @@ export function setupSocketHandlers(ioServer: Server) {
       gameManager.submitVote(socket, vote);
     });
 
+    socket.on('disconnecting', () => {
+      console.log('Disconnecting player', socket.id);
+      gameManager.handleDisconnect(socket);
+    });
+
     socket.on('disconnect', () => {
       console.log('A user disconnected');
-      gameManager.handleDisconnect(socket);
     });
   });
 }

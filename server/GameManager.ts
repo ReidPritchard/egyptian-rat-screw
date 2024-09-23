@@ -1,8 +1,8 @@
 import { Server, Socket } from 'socket.io';
+import { LOBBY_ROOM } from './config';
 import { Game } from './game/Game';
 import { SocketEvents } from './socketEvents';
 import { GameSettings, LobbyState, PlayerAction, PlayerActionType, PlayerInfo } from './types';
-import { LOBBY_ROOM } from './config';
 
 export class GameManager {
   private static instance: GameManager;
@@ -91,6 +91,8 @@ export class GameManager {
   }
 
   public handleDisconnect(socket: Socket): void {
+    // Call this in socket io "disconnecting" event in order to access the socket's rooms
+
     // Make sure the player is removed from any games they are in
     // also remove them from the lobby
     socket.rooms.forEach((room, isLobby) => {

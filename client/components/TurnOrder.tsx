@@ -13,35 +13,37 @@ export const TurnOrder: React.FC<TurnOrderProps> = ({ gameState, localPlayerId }
   const currentPlayerIndex = gameState.currentPlayerId;
   const players = gameState.playerNames;
 
-  //   const [orderedPlayers, setOrderedPlayers] = useState(() => {
-  //     const initialOrder = [];
-  //     for (let i = 0; i < players.length; i++) {
-  //       initialOrder.push(players[(currentPlayerIndex + i) % players.length]);
-  //     }
-  //     return initialOrder;
-  //   });
-
   return (
     <Box>
       <Flex direction="column" justify="flex-end" align="self-start">
         <AnimatePresence>
-          {gameState.playerIds.map((playerId, index) => (
-            <motion.div
-              key={playerId}
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
-              style={{ display: 'flex', alignItems: 'flex-end' }}
-            >
-              <ThemeIcon color={playerId === gameState.currentPlayerId ? 'green' : 'blue'} variant="light">
-                <IconCircle size={16} />
-              </ThemeIcon>
-              <Text style={{ margin: '0 5px' }} fw={playerId === gameState.currentPlayerId ? 'bold' : 'normal'}>
-                {players[playerId]}
-              </Text>
-            </motion.div>
-          ))}
+          {gameState.playerIds
+            .sort((a, b) => gameState.playerHandSizes[a] - gameState.playerHandSizes[b])
+            .map((playerId, index) => (
+              <motion.div
+                key={playerId}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                style={{ display: 'flex', alignItems: 'flex-end' }}
+              >
+                <ThemeIcon
+                  color={playerId === localPlayerId ? 'green' : 'blue'}
+                  variant={playerId === currentPlayerIndex ? 'filled' : 'outline'}
+                >
+                  <IconCircle size={16} />
+                </ThemeIcon>
+                <Group>
+                  <Text style={{ margin: '0 5px' }} fw={playerId === localPlayerId ? 'bold' : 'normal'}>
+                    {players[playerId]}
+                  </Text>
+                  <Text size="xs" c="gray">
+                    {gameState.playerHandSizes[playerId]}
+                  </Text>
+                </Group>
+              </motion.div>
+            ))}
         </AnimatePresence>
       </Flex>
     </Box>

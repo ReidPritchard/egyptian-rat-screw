@@ -13,6 +13,7 @@ import {
   SlapRuleAction,
   VoteState,
   CardChallenge,
+  PlayerActionResult,
 } from '../types';
 import { SocketEvents } from '../socketEvents';
 import { defaultSlapRules } from './rules/SlapRules';
@@ -28,11 +29,23 @@ export class Game {
   private ruleEngine: RuleEngine;
 
   private isGameStarted: boolean = false;
+  private gameOver: boolean = false;
+  private winner: PlayerInfo | null = null;
 
   private playerActionLog: PlayerAction[] = [];
 
   private faceCardChallenge: CardChallenge | null = null;
   private voteState: VoteState | null = null;
+
+  private timeouts: {
+    challengeCounterSlap: NodeJS.Timeout | null;
+    turnTimeout: NodeJS.Timeout | null;
+    nextTurnTimeout: NodeJS.Timeout | null;
+  } = {
+    challengeCounterSlap: null,
+    turnTimeout: null,
+    nextTurnTimeout: null,
+  };
 
   constructor(io: Server, gameId: string, rules: SlapRule[] = defaultSlapRules) {
     this.io = io;
@@ -48,6 +61,7 @@ export class Game {
       faceCardChallengeCounts: { J: 1, Q: 2, K: 3, A: 4 },
       challengeCounterCards: [{ rank: '10' }],
       turnTimeout: 10000, // 10 seconds
+      challengeCounterSlapTimeout: 5000, // 3 seconds
     };
   }
 
@@ -148,6 +162,13 @@ export class Game {
   }
 
   private startGame() {
+    // reset previous state
+    this.gameOver = false;
+    this.winner = null;
+    this.playerActionLog = [];
+    this.faceCardChallenge = null;
+    this.voteState = null;
+
     this.isGameStarted = true;
     const deck = Deck.createShuffledDeck();
     Deck.dealCards(deck, this.players);
@@ -196,6 +217,8 @@ export class Game {
       this.emitGameUpdate();
     } else {
       // Player is out of cards (just skip turn)
+      // don't remove player from game as they can still slap
+      // back in to get cards
       this.advanceTurn();
       this.emitGameUpdate();
       this.checkForWinner();
@@ -208,6 +231,7 @@ export class Game {
     this.io.to(this.gameId).emit(SocketEvents.PLAYER_ACTION, {
       playerId: challenger.socket.id,
       actionType: PlayerActionType.FACE_CARD_CHALLENGE,
+      timestamp: Date.now(),
       message: `${challenger.name} has challenged ${challenged.name} with a ${card.rank}`,
     });
 
@@ -235,7 +259,8 @@ export class Game {
         actionType: PlayerActionType.CHALLENGE_COUNTER_COMPLETE,
         result: 'success',
         message: `${player.name} has survived the card challenge!`,
-      });
+        timestamp: Date.now(),
+      } as PlayerActionResult);
       this.advanceTurn();
     } else {
       this.faceCardChallenge.remainingCounterChances--;
@@ -251,8 +276,9 @@ export class Game {
             playerId: player.socket.id,
             actionType: PlayerActionType.CHALLENGE_COUNTER_COMPLETE,
             result: 'success',
+            timestamp: Date.now(),
             message: `${challenger.name} has won their challenge and has taken the pile!`,
-          });
+          } as PlayerActionResult);
         }
         this.faceCardChallenge.result = 'challenger';
         this.faceCardChallenge.active = false;
@@ -284,6 +310,8 @@ export class Game {
           case SlapRuleAction.TAKE_PILE:
             player.collectPile(this.centralPile);
             this.centralPile = [];
+            // Since the pile is cleared, any challenges are cancelled
+            this.faceCardChallenge = null;
             break;
           case SlapRuleAction.DRINK_ALL:
             target = this.players.filter((p) => p.name !== player.name);
@@ -327,11 +355,26 @@ export class Game {
   }
 
   private checkForWinner() {
-    if (this.players.length === 1) {
-      this.emitGameUpdate();
-      // Game should be removed by GameManager
-    } else if (this.players.length > 1) {
-      this.advanceTurn();
+    // The win condition is when a single player has all the cards
+    const totalCards = this.players.reduce((acc, player) => acc + player.getDeckSize(), 0) + this.centralPile.length;
+    // ^ should always be 52, but this allows for multiple decks
+    if (totalCards === 0) {
+      // This happens when a game is initialized but has never started
+      return;
+    }
+
+    // TODO: Technically the last player should "play out" the hand, playing cards into the pile
+    // for the last player not yet eliminated. Meaning the game is only over when the pile is empty
+    // Currently we don't support this as it's pretty confusing to implement.
+
+    for (const player of this.players) {
+      if (player.getDeckSize() === totalCards) {
+        this.gameOver = true;
+        this.winner = player.getPlayerInfo();
+
+        this.emitGameUpdate();
+        return;
+      }
     }
   }
 
@@ -344,8 +387,9 @@ export class Game {
       playerHandSizes: playerData.handSizes,
       playerNames: playerData.playerNames,
       currentPlayerId: this.getCurrentPlayerId(),
-      gameOver: this.players.length === 0,
-      winner: this.getWinner(),
+      gameStarted: this.isGameStarted,
+      gameOver: this.gameOver,
+      winner: this.winner,
       gameSettings: this.ruleEngine.getGameSettings(),
       voteState: this.voteState,
       cardChallenge: this.getActiveCardChallenge(),
@@ -368,7 +412,7 @@ export class Game {
   }
 
   private getWinner(): PlayerInfo | null {
-    return this.players.length === 1 ? this.players[0].getPlayerInfo() : null;
+    return this.winner;
   }
 
   private getActiveCardChallenge(): CardChallenge | null {

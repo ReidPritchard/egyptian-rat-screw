@@ -1,5 +1,11 @@
 import React from 'react';
-import { Button, Group, Modal, Text, Stack, Progress } from '@mantine/core';
+import { Button, Group, Modal, Text, Stack, Progress, Container } from '@mantine/core';
+
+const voteLabels = {
+  gameStart: 'Do you want to start the game?',
+  gameEnd: 'Do you want to end the game?',
+  gameRestart: 'Do you want to restart the game?',
+};
 
 interface VoteProps {
   onVote: (vote: boolean) => void;
@@ -19,7 +25,9 @@ export const Vote: React.FC<VoteProps> = ({ onVote, yesCount, noCount, isVoteOpe
   const remainingPercentage = 100 - yesPercentage - noPercentage;
 
   return (
-    <Modal opened={isVoteOpen} onClose={() => {}} title={label} centered>
+    <Container size="sm" p="md">
+      {/* Render the vote label */}
+      <Text>{voteLabels[label as keyof typeof voteLabels]}</Text>
       <Stack>
         <Progress.Root size="xl">
           <Progress.Section value={yesPercentage} color="green" />
@@ -40,6 +48,6 @@ export const Vote: React.FC<VoteProps> = ({ onVote, yesCount, noCount, isVoteOpe
           </Button>
         </Group>
       </Stack>
-    </Modal>
+    </Container>
   );
 };

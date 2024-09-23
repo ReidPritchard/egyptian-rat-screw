@@ -86,6 +86,14 @@ export interface GameSettings {
   faceCardChallengeCounts: { [key: string]: number };
   challengeCounterCards: Partial<Card>[]; // Partial<Card> allows for a Card object with missing properties, which are treated as wild for the purpose of matching
   turnTimeout: number;
+  /**
+   * The amount of time a "completed" challenge can be slapped before
+   * the game will automatically count the challenge as successful
+   *
+   * This allows any player to slap before the cards are removed due to the
+   * resolved challenge.
+   */
+  challengeCounterSlapTimeout: number;
 }
 
 export interface PlayerInfo {
@@ -118,6 +126,7 @@ export interface ClientGameState {
   playerHandSizes: { [playerId: string]: number };
   playerNames: { [playerId: string]: string };
   currentPlayerId: string;
+  gameStarted: boolean;
   gameOver: boolean;
   winner: PlayerInfo | null;
   gameSettings: GameSettings;

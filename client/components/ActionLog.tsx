@@ -1,6 +1,6 @@
 import React from 'react';
 import { Paper, Group, Title, Button, Collapse, Stack, Text } from '@mantine/core';
-import { GameState, PlayerAction, PlayerActionResult } from '../types';
+import { GameState, PlayerAction, PlayerActionResult, PlayerActionType } from '../types';
 
 interface ActionLogProps {
   playerActionLog: (PlayerAction | PlayerActionResult)[];
@@ -24,17 +24,28 @@ export const ActionLog: React.FC<ActionLogProps> = ({
     let color = 'blue';
     const playerName = getPlayerName(action.playerId);
     switch (action.actionType) {
-      case 'playCard':
+      case PlayerActionType.PLAY_CARD:
         message = `${playerName} played a card`;
         break;
-      case 'slap':
+      case PlayerActionType.SLAP:
         message = `${playerName} made a valid slap`;
         color = 'green';
         break;
-      case 'invalidSlap':
+      case PlayerActionType.INVALID_SLAP:
         message = `${playerName} made an invalid slap`;
         color = 'red';
         break;
+      case PlayerActionType.CHALLENGE_COUNTER_COMPLETE:
+        message = `${playerName} completed a challenge counter`;
+        color = 'green';
+        break;
+      case PlayerActionType.FACE_CARD_CHALLENGE:
+        message = `${playerName} started a face card challenge`;
+        color = 'green';
+        break;
+      default:
+        console.log('Unknown action type', action);
+        message = `${playerName} performed an action`;
     }
     return { message, color };
   };

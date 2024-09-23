@@ -3,7 +3,15 @@
  * @description Centralizes all socket event names and their corresponding types.
  */
 
-import { ClientGameState, GameSettings, LobbyState, PlayerAction, PlayerActionResult, VoteState } from './types';
+import {
+  ClientGameState,
+  GameSettings,
+  LobbyState,
+  PlayerAction,
+  PlayerActionResult,
+  PlayerInfo,
+  VoteState,
+} from './types';
 
 /**
  * Enum of all socket event names.
@@ -20,6 +28,7 @@ export enum SocketEvents {
   JOIN_GAME = 'joinGame', // Used by client to join a game
   LEAVE_GAME = 'leaveGame', // Used by client to leave a game
   GAME_UPDATE = 'gameUpdate', // Used by server to update the game state
+  GAME_OVER = 'gameOver', // Used by server to announce the game is over
 
   // Player Actions
   PLAYER_ACTION = 'playerAction',
@@ -50,7 +59,7 @@ export interface SocketPayloads {
   [SocketEvents.LEAVE_GAME]: void;
 
   [SocketEvents.GAME_UPDATE]: ClientGameState;
-
+  [SocketEvents.GAME_OVER]: PlayerInfo;
   [SocketEvents.PLAYER_ACTION]: PlayerAction;
   [SocketEvents.PLAYER_ACTION_RESULT]: PlayerActionResult;
 
