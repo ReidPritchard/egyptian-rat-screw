@@ -70,6 +70,13 @@ export interface SlapRule {
   targetPlayerName?: string;
 }
 
+export interface LocalPlayerSettings {
+  hotkeys: {
+    playCard: string;
+    slap: string;
+  };
+}
+
 export interface PlayerInfo {
   id: string;
   name: string;

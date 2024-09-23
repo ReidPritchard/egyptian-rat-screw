@@ -1,33 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Group, Modal, Text, Stack, Progress, Container } from '@mantine/core';
+import { api } from '../api';
+import { GameState } from '../types';
 
 const voteLabels = {
-  gameStart: 'Do you want to start the game?',
-  gameEnd: 'Do you want to end the game?',
-  gameRestart: 'Do you want to restart the game?',
+  startGame: 'Vote to start the game',
+  endGame: 'Vote to end the game',
+  restartGame: 'Vote to restart the game',
 };
 
 interface VoteProps {
+  gameState: GameState;
   onVote: (vote: boolean) => void;
-  label: string;
-  yesCount: number;
-  noCount: number;
-  isVoteOpen: boolean;
-  totalPlayers: number;
 }
 
-export const Vote: React.FC<VoteProps> = ({ onVote, yesCount, noCount, isVoteOpen, label, totalPlayers }) => {
-  const totalVotes = yesCount + noCount;
+export const Vote: React.FC<VoteProps> = ({ gameState, onVote }) => {
+  const [voteToStartGame, setVoteToStartGame] = useState<boolean | null>(null);
 
-  // Calculate percentages relative to total players
+  useEffect(() => {
+    if (gameState.voteState) {
+      setVoteToStartGame(gameState.voteState.votes.some((v: { vote: boolean }) => v.vote));
+    }
+  }, [gameState.voteState]);
+
+  const handleStartVote = () => {
+    api.startVote('startGame');
+  };
+
+  const yesCount = gameState.voteState?.votes.filter((v: { vote: boolean }) => v.vote).length ?? 0;
+  const noCount = gameState.voteState?.votes.filter((v: { vote: boolean }) => !v.vote).length ?? 0;
+  const totalPlayers = gameState.voteState?.totalPlayers ?? 0;
+  const totalVotes = yesCount + noCount;
   const yesPercentage = (yesCount / totalPlayers) * 100;
   const noPercentage = (noCount / totalPlayers) * 100;
   const remainingPercentage = 100 - yesPercentage - noPercentage;
 
   return (
     <Container size="sm" p="md">
-      {/* Render the vote label */}
-      <Text>{voteLabels[label as keyof typeof voteLabels]}</Text>
+      <Text>{voteLabels[gameState.voteState?.topic as keyof typeof voteLabels] ?? gameState.voteState?.topic}</Text>
       <Stack>
         <Progress.Root size="xl">
           <Progress.Section value={yesPercentage} color="green" />

@@ -21,18 +21,27 @@ import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { config } from '../config';
-import { Card, GameSettings, GameState, PlayerAction, PlayerActionResult, SlapRule } from '../types';
+import {
+  Card,
+  GameSettings,
+  GameState,
+  LocalPlayerSettings,
+  PlayerAction,
+  PlayerActionResult,
+  PlayerActionType,
+  SlapRule,
+} from '../types';
 import { ActionLog } from './ActionLog';
-import { BottomCard } from './BottomCard';
-import { CardStack } from './CardStack';
 import { CustomSlapRuleBuilder } from './CustomSlapRuleBuilder';
 import { GameOver } from './GameOver';
 import { PreGame } from './PreGame';
 import { SlapResult } from './SlapResult';
-import { TurnOrder } from './TurnOrder';
 import { Vote } from './Vote';
-// import { useKeybindings } from '../hooks/useKeybindings'; // Assuming you have or will create this custom hook
-import { useHotkeys } from '@mantine/hooks';
+import { GameHeader } from './GameHeader';
+import { GameBoard } from './GameBoard';
+import { PlayerActions } from './PlayerActions';
+import { SettingsDrawer } from './SettingsDrawer';
+import { GameAnimation } from './GameAnimation';
 
 interface GameProps {
   gameState: GameState;
@@ -55,19 +64,22 @@ export const Game: React.FC<GameProps> = ({
   gameSettings,
   allSlapRules,
   localPlayer,
-  lastSlapResult,
   playerActionLog,
-  isActionLogExpanded,
   handlePlayCard,
   handleSlap,
   handleGameSettingsChange,
   handleVoteToStartGame,
-  toggleActionLog,
   handleLeaveGame,
 }) => {
   const [isCustomRuleModalOpen, setIsCustomRuleModalOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [voteToStartGame, setVoteToStartGame] = useState<boolean | null>(null);
+
+  const [localPlayerSettings, setLocalPlayerSettings] = useState<LocalPlayerSettings>({
+    hotkeys: {
+      playCard: 'space',
+      slap: 's',
+    },
+  });
 
   const isLocalPlayerTurn = gameState.currentPlayerId === localPlayer.id;
 
@@ -98,6 +110,28 @@ export const Game: React.FC<GameProps> = ({
     setBottomCardTrigger((prevTrigger) => prevTrigger + 1);
   }, [gameState.pile?.[0]?.code]);
 
+  // Track the last action that was performed for the animation
+  const [lastAction, setLastAction] = useState<PlayerActionType | null>(null);
+  useEffect(() => {
+    if (playerActionLog.length > 0) {
+      const lastLogEntry = playerActionLog[playerActionLog.length - 1];
+      setLastAction(lastLogEntry.actionType);
+    }
+  }, [playerActionLog]);
+
+  // Try to load local player settings from localStorage
+  useEffect(() => {
+    const settings = localStorage.getItem(config.localStoragePlayerSettingsKey);
+    if (settings) {
+      setLocalPlayerSettings(JSON.parse(settings));
+    }
+  }, []);
+
+  // Save local player settings to localStorage
+  useEffect(() => {
+    localStorage.setItem(config.localStoragePlayerSettingsKey, JSON.stringify(localPlayerSettings));
+  }, [localPlayerSettings]);
+
   const renderVoteSection = () => (
     <AnimatePresence>
       {gameState.voteState && (
@@ -108,14 +142,7 @@ export const Game: React.FC<GameProps> = ({
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5 }}
         >
-          <Vote
-            isVoteOpen={true}
-            yesCount={gameState.voteState.votes.filter((v) => v.vote).length}
-            noCount={gameState.voteState.votes.filter((v) => !v.vote).length}
-            totalPlayers={gameState.voteState.totalPlayers}
-            onVote={handleVoteToStartGame}
-            label={gameState.voteState.topic}
-          />
+          <Vote gameState={gameState} onVote={handleVoteToStartGame} />
         </motion.div>
       )}
     </AnimatePresence>
@@ -129,137 +156,41 @@ export const Game: React.FC<GameProps> = ({
       transition={{ duration: 0.5 }}
     >
       <Paper shadow="xs" p="md" withBorder>
-        <Group justify="space-between" mb="md">
-          <Title order={3}>{gameState.name}</Title>
-          <Badge color={isLocalPlayerTurn ? 'green' : 'blue'} size="lg">
-            {isLocalPlayerTurn ? 'Your Turn' : `${gameState.playerNames[gameState.currentPlayerId]}'s Turn`}
-          </Badge>
-          {gameState.cardChallenge && (
-            <Badge color={gameState.cardChallenge.result === 'challenger' ? 'red' : 'green'} size="lg">
-              {gameState.cardChallenge.active ? (
-                <Group>
-                  <Text>
-                    {gameState.cardChallenge.challenger.name} challenged {gameState.cardChallenge.challenged.name}
-                  </Text>
-                  <Text>{gameState.cardChallenge.remainingCounterChances} remaining counter chances</Text>
-                </Group>
-              ) : (
-                <Text>Challenge Result: {gameState.cardChallenge.result} won</Text>
-              )}
-            </Badge>
-          )}
-        </Group>
-
-        <Grid justify="center" align="flex-start">
-          {/* Game */}
-          <Grid.Col span={8}>
-            <Box my="md">
-              <Text ta="center" size="sm" mb="xs">
-                Pile Size: {gameState.pile?.length ?? 0}
-              </Text>
-              <Group justify="center" mb="xl">
-                <BottomCard
-                  bottomCard={bottomCard}
-                  duration={config.game.bottomCardDisplayDuration}
-                  key={bottomCardTrigger}
-                />
-                <CardStack pile={gameState.pile} />
-              </Group>
-            </Box>
-          </Grid.Col>
-          {/* Player List */}
-          <Grid.Col span={4}>
-            <TurnOrder gameState={gameState} localPlayerId={localPlayer.id} />
-          </Grid.Col>
-          <Grid.Col span={12}>
-            <Group justify="center" mt="xl">
-              <Tooltip label="Play a card from your hand (n)">
-                <ActionIcon
-                  size="xl"
-                  variant="filled"
-                  color="blue"
-                  onClick={handlePlayCard}
-                  disabled={gameState.gameOver || !isLocalPlayerTurn}
-                >
-                  <IconCards size="1.5rem" />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Slap the pile if you think it's a valid slap (space)">
-                <ActionIcon size="xl" variant="filled" color="red" onClick={handleSlap} disabled={gameState.gameOver}>
-                  <IconHandStop size="1.5rem" />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Grid.Col>
-          {/* Actions */}
-          <Grid.Col span={12}>
-            <Group justify="space-between" mt="xl">
-              <Tooltip label="Start Vote to Restart Game">
-                <ActionIcon variant="filled" color="green" onClick={handleStartVote}>
-                  <IconReload size="1.2rem" />
-                </ActionIcon>
-              </Tooltip>
-              <Group>
-                <Tooltip label="Leave Game">
-                  <ActionIcon variant="filled" color="red" onClick={handleLeaveGame}>
-                    <IconDoorExit size="1.2rem" />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Game Settings">
-                  <ActionIcon variant="subtle" onClick={() => setIsSettingsOpen(true)}>
-                    <IconSettings size="1.2rem" />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-            </Group>
-          </Grid.Col>
-          {/* Action Log */}
-          <Grid.Col span={12}>
-            <ActionLog
-              gameState={gameState}
-              playerActionLog={playerActionLog}
-              isActionLogExpanded={isActionLogExpanded}
-              toggleActionLog={toggleActionLog}
-            />
-          </Grid.Col>
-        </Grid>
+        <GameHeader gameState={gameState} isLocalPlayerTurn={isLocalPlayerTurn} />
+        <GameBoard
+          gameState={gameState}
+          bottomCard={bottomCard}
+          bottomCardTrigger={bottomCardTrigger}
+          localPlayerId={localPlayer.id}
+        />
+        <PlayerActions
+          handlePlayCard={handlePlayCard}
+          handleSlap={handleSlap}
+          isLocalPlayerTurn={isLocalPlayerTurn}
+          gameOver={gameState.gameOver}
+          hotkeys={localPlayerSettings.hotkeys}
+        />
+        {lastAction && <GameAnimation action={lastAction} duration={0.5} />}
+        <ActionLog
+          gameState={gameState}
+          playerActionLog={playerActionLog}
+          isActionLogExpanded={false}
+          toggleActionLog={function (): void {
+            throw new Error('Function not implemented.');
+          }}
+        />
       </Paper>
     </motion.div>
   );
 
   const renderSettingsDrawer = () => (
-    <Drawer
-      opened={isSettingsOpen}
-      onClose={() => setIsSettingsOpen(false)}
-      title="Game Settings"
-      padding="xl"
-      size="sm"
-    >
-      <Stack>
-        <NumberInput
-          label="Max Players"
-          value={gameSettings.maximumPlayers}
-          onChange={(value) => handleGameSettingsChange({ ...gameSettings, maximumPlayers: Number(value) })}
-          min={2}
-          max={8}
-        />
-        <MultiSelect
-          label="Slap Rules"
-          data={allSlapRules
-            .filter((rule) => rule && rule.name)
-            .map((rule) => ({ value: rule.name, label: rule.name }))}
-          value={gameSettings.slapRules.map((rule: SlapRule) => rule.name)}
-          onChange={(selectedRules) =>
-            handleGameSettingsChange({
-              ...gameSettings,
-              slapRules: selectedRules.map((rule) => gameSettings.slapRules.find((r) => r.name === rule)!),
-            })
-          }
-          placeholder="Select slap rules"
-        />
-        <Button onClick={() => setIsCustomRuleModalOpen(true)}>Create Custom Rule</Button>
-      </Stack>
-    </Drawer>
+    <SettingsDrawer
+      localPlayerSettings={localPlayerSettings}
+      handleLocalPlayerSettingsChange={setLocalPlayerSettings}
+      gameSettings={gameSettings}
+      allSlapRules={allSlapRules}
+      handleGameSettingsChange={handleGameSettingsChange}
+    />
   );
 
   const renderCustomRuleModal = () => (
@@ -292,32 +223,9 @@ export const Game: React.FC<GameProps> = ({
     return renderGameSection();
   };
 
-  useHotkeys(
-    [
-      [
-        'space',
-        () => {
-          if (!gameState.gameOver) {
-            handleSlap();
-          }
-        },
-      ],
-      [
-        'n',
-        () => {
-          if (!gameState.gameOver && isLocalPlayerTurn) {
-            handlePlayCard();
-          }
-        },
-      ],
-    ],
-    ['INPUT', 'TEXTAREA'],
-  );
-
   return (
     <Container size="sm" p="lg">
       {renderUI()}
-      <SlapResult lastSlapResult={lastSlapResult} />
 
       {renderSettingsDrawer()}
       {renderCustomRuleModal()}

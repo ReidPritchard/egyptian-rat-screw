@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GameContainer } from './GameContainer';
 import { api } from './api';
-import { MantineProvider, Container, LoadingOverlay } from '@mantine/core';
+import { createTheme, MantineProvider, Container, LoadingOverlay } from '@mantine/core';
 import { useColorScheme } from '@mantine/hooks';
 import { SocketEvents } from './socketEvents';
 import { PlayerInfo } from './types';
@@ -11,6 +11,39 @@ export function App() {
   const preferredColorScheme = useColorScheme();
   const [localPlayer, setLocalPlayer] = useState<PlayerInfo | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+
+  const theme = createTheme({
+    primaryColor: 'rat-blue',
+    colors: {
+      // Light pink #FFC0CB
+      'rat-ears-pink': [
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+        '#FFC0CB',
+      ],
+      // Start at #9BC0E1
+      'rat-blue': [
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+        '#9BC0E1',
+      ],
+    },
+  });
 
   useEffect(() => {
     const initialName = localStorage.getItem(config.localStoragePlayerNameKey) ?? '';
@@ -39,7 +72,7 @@ export function App() {
   }, []);
 
   return (
-    <MantineProvider defaultColorScheme={preferredColorScheme}>
+    <MantineProvider theme={theme} defaultColorScheme={preferredColorScheme}>
       <Container>
         <LoadingOverlay visible={!isConnected || !localPlayer} />
         {isConnected && localPlayer && <GameContainer localPlayer={localPlayer} />}

@@ -1,8 +1,11 @@
 import {
   ActionIcon,
+  AspectRatio,
   Button,
   Container,
+  Flex,
   Group,
+  Image,
   Paper,
   Space,
   Stack,
@@ -28,6 +31,7 @@ import {
   GameSettings,
   GameState,
   LobbyState,
+  LocalPlayerSettings,
   PlayerAction,
   PlayerActionResult,
   PlayerInfo,
@@ -203,9 +207,12 @@ export class GameContainer extends Component<GameContainerProps, GameContainerSt
 
     return (
       <Container size="sm" p="md">
-        <Title order={1} mb="md">
-          Egyptian Rat Screw
-        </Title>
+        <Flex direction="row" justify="space-evenly" align="center">
+          <AspectRatio ratio={1}>
+            <Image src={'./assets/rat.png'} />
+          </AspectRatio>
+          <Image src={'./assets/title.png'} />
+        </Flex>
         <Tabs
           defaultValue="lobby"
           value={this.state.activeTab}
