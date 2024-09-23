@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Transition } from '@mantine/core';
+import { Alert, Button, Transition } from '@mantine/core';
 import { GameState } from '../types';
 
 interface GameOverProps {
@@ -17,6 +17,12 @@ export const GameOver: React.FC<GameOverProps> = ({ gameState, localPlayerId }) 
           {gameState.winner && gameState.winner.id === localPlayerId
             ? 'Congratulations! You won the game!'
             : `${gameState.winner!.name} wins!`}
+
+            <Button onClick={() => {
+              api.
+            }}>
+              Play Again
+            </Button>
         </Alert>
       )}
     </Transition>

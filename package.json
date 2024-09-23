@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "asyncapi generate fromTemplate ./server/api-spec.yaml @asyncapi/nodejs-ws-template -o ./api-server --force-write --param server=development",
     "start:server": "tsx server/index.ts",
     "start:client": "webpack --config webpack.config.cjs",
     "start": "npm run start:server & npm run start:client",
@@ -18,6 +19,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
   },
   "dependencies": {
+    "@asyncapi/cli": "^2.4.0",
     "@mantine/core": "^7.12.2",
     "@mantine/notifications": "^7.12.2",
     "@tabler/icons-react": "^3.17.0",

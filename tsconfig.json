@@ -15,5 +15,5 @@
     "declarationMap": true,
     "outDir": "./dist"
   },
-  "include": ["client/**/*", "shared/**/*"]
+  "include": ["client/**/*"]
 }
