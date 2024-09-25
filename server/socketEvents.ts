@@ -1,75 +1,202 @@
-/**
- * @file shared/socketEvents.ts
- * @description Centralizes all socket event names and their corresponding types.
- */
-
 import {
+  Card,
   ClientGameState,
   GameSettings,
+  GameStage,
   LobbyState,
   PlayerAction,
-  PlayerActionResult,
   PlayerInfo,
   VoteState,
 } from './types';
 
 /**
- * Enum of all socket event names.
+ * @enum SocketEvents
+ * @description Centralizes all socket event names and their corresponding types.
  */
 export enum SocketEvents {
   // Connection Events
   CONNECT = 'connect',
+  DISCONNECTING = 'disconnecting',
   DISCONNECT = 'disconnect',
 
-  // In-Lobby Events
-  SET_PLAYER_NAME = 'setPlayerName',
+  // Lobby Events
   LOBBY_UPDATE = 'lobbyUpdate',
+  PLAYER_NAME_CHANGED = 'playerNameChanged',
+  PLAYER_JOINED_LOBBY = 'playerJoinedLobby',
+  PLAYER_LEFT_LOBBY = 'playerLeftLobby',
+
   // Game Events
-  JOIN_GAME = 'joinGame', // Used by client to join a game
-  LEAVE_GAME = 'leaveGame', // Used by client to leave a game
-  GAME_UPDATE = 'gameUpdate', // Used by server to update the game state
-  GAME_OVER = 'gameOver', // Used by server to announce the game is over
+  GAME_STATE_UPDATED = 'gameStateUpdated',
+  GAME_PILE_UPDATED = 'gamePileUpdated',
+  GAME_SETTINGS_CHANGED = 'gameSettingsChanged',
+  GAME_STAGE_CHANGED = 'gameStageChanged',
+  GAME_STARTED = 'gameStarted',
+  GAME_ENDED = 'gameEnded',
 
-  // Player Actions
+  // Player Events
+  PLAYER_JOINED_GAME = 'playerJoinedGame',
+  PLAYER_LEFT_GAME = 'playerLeftGame',
+  PLAYER_READY = 'playerReady',
+  PLAYER_NOT_READY = 'playerNotReady',
+
+  // Player Actions (Client to Server)
+  CHANGE_NAME = 'changeName',
+  JOIN_GAME = 'joinGame',
+  CREATE_GAME = 'createGame',
+  LEAVE_GAME = 'leaveGame',
+  JOIN_LOBBY = 'joinLobby',
+  PLAY_CARD = 'playCard',
+  SLAP_PILE = 'slapPile',
+  SET_GAME_SETTINGS = 'setGameSettings',
   PLAYER_ACTION = 'playerAction',
-  PLAYER_ACTION_RESULT = 'playerActionResult',
-  PLAYER_TIMEOUT = 'playerTimeout',
 
-  // Settings
-  SET_GAME_SETTINGS = 'setGameSettings', // Used by client to set game settings
-  GET_GAME_SETTINGS = 'getGameSettings', // Used by client to get game settings
-
-  // Error Handling
-  ERROR = 'error', // Used by server to send an error message to the client
+  // Player Action Results (Server to Client)
+  CARD_PLAYED = 'cardPlayed',
+  SLAP_RESULT = 'slapResult',
+  CHALLENGE_STARTED = 'challengeStarted',
+  CHALLENGE_RESULT = 'challengeResult',
+  TURN_CHANGED = 'turnChanged',
 
   // Voting Events
-  START_VOTE = 'startVote',
-  SUBMIT_VOTE = 'submitVote',
-  VOTE_UPDATE = 'voteUpdate',
+  VOTE_STARTED = 'voteStarted',
+  VOTE_UPDATED = 'voteUpdated',
+  VOTE_ENDED = 'voteEnded',
+
+  // Notifications
+  ERROR = 'error',
+  MESSAGE = 'message',
 }
 
-/**
- * Payload types for each socket event.
- */
 export interface SocketPayloads {
-  [SocketEvents.SET_PLAYER_NAME]: string;
+  // Connection Events
+  [SocketEvents.CONNECT]: void;
+  [SocketEvents.DISCONNECTING]: void;
+  [SocketEvents.DISCONNECT]: void;
+
+  // Lobby Events
   [SocketEvents.LOBBY_UPDATE]: LobbyState;
+  [SocketEvents.PLAYER_NAME_CHANGED]: PlayerInfo;
+  [SocketEvents.PLAYER_JOINED_LOBBY]: PlayerInfo;
+  [SocketEvents.PLAYER_LEFT_LOBBY]: PlayerInfo;
 
-  [SocketEvents.JOIN_GAME]: { gameId: string; playerName: string };
-  [SocketEvents.LEAVE_GAME]: void;
+  // Game Events
+  [SocketEvents.GAME_STATE_UPDATED]: ClientGameState;
+  [SocketEvents.GAME_PILE_UPDATED]: Card[];
+  [SocketEvents.GAME_SETTINGS_CHANGED]: GameSettings;
+  [SocketEvents.GAME_STAGE_CHANGED]: GameStageChangedPayload;
+  [SocketEvents.GAME_STARTED]: GameStartedPayload;
+  [SocketEvents.GAME_ENDED]: GameEndedPayload;
 
-  [SocketEvents.GAME_UPDATE]: ClientGameState;
-  [SocketEvents.GAME_OVER]: PlayerInfo;
+  // Player Events
+  [SocketEvents.PLAYER_JOINED_GAME]: PlayerInfo;
+  [SocketEvents.PLAYER_LEFT_GAME]: PlayerInfo;
+  [SocketEvents.PLAYER_READY]: PlayerInfo;
+  [SocketEvents.PLAYER_NOT_READY]: PlayerInfo;
+
+  // Player Actions
+  [SocketEvents.CHANGE_NAME]: ChangeNamePayload;
+  [SocketEvents.JOIN_GAME]: JoinGamePayload;
+  [SocketEvents.CREATE_GAME]: CreateGamePayload;
+  [SocketEvents.LEAVE_GAME]: LeaveGamePayload;
+  [SocketEvents.JOIN_LOBBY]: JoinLobbyPayload;
+  [SocketEvents.PLAY_CARD]: PlayCardPayload;
+  [SocketEvents.SLAP_PILE]: SlapPilePayload;
   [SocketEvents.PLAYER_ACTION]: PlayerAction;
-  [SocketEvents.PLAYER_ACTION_RESULT]: PlayerActionResult;
 
-  [SocketEvents.SET_GAME_SETTINGS]: GameSettings;
-  [SocketEvents.GET_GAME_SETTINGS]: void;
+  // Player Action Results
+  [SocketEvents.CARD_PLAYED]: CardPlayedPayload;
+  [SocketEvents.SLAP_RESULT]: SlapResultPayload;
+  [SocketEvents.CHALLENGE_STARTED]: ChallengeStartedPayload;
+  [SocketEvents.CHALLENGE_RESULT]: ChallengeResultPayload;
+  [SocketEvents.TURN_CHANGED]: TurnChangedPayload;
 
+  // Voting Events
+  [SocketEvents.VOTE_STARTED]: VoteState;
+  [SocketEvents.VOTE_UPDATED]: VoteState;
+  [SocketEvents.VOTE_ENDED]: VoteEndedPayload;
+
+  // Notifications
   [SocketEvents.ERROR]: string;
+  [SocketEvents.MESSAGE]: MessagePayload;
+}
 
-  // Voting Payloads
-  [SocketEvents.START_VOTE]: { topic: string };
-  [SocketEvents.SUBMIT_VOTE]: { vote: boolean };
-  [SocketEvents.VOTE_UPDATE]: VoteState;
+// Define payload interfaces
+export interface GameStageChangedPayload {
+  previousStage: GameStage;
+  currentStage: GameStage;
+}
+
+export interface JoinGamePayload {
+  gameId: string;
+}
+
+export interface CreateGamePayload {}
+
+export interface LeaveGamePayload {}
+
+export interface JoinLobbyPayload {}
+
+export interface ChangeNamePayload {
+  name: string;
+}
+
+export interface PlayCardPayload {}
+
+export interface SlapPilePayload {
+  playerId: string;
+}
+
+export interface ChallengeCounterPayload {
+  playerId: string;
+}
+
+export interface CardPlayedPayload {
+  playerId: string;
+  card: Card;
+}
+
+export interface SlapResultPayload {
+  playerId: string;
+  result: 'valid' | 'invalid';
+  message?: string;
+}
+
+export interface ChallengeStartedPayload {
+  challengerId: string;
+  challengedId: string;
+  remainingCounterChances: number;
+}
+
+export interface ChallengeResultPayload {
+  winnerId: string;
+  loserId: string;
+  message?: string;
+}
+
+export interface TurnChangedPayload {
+  previousPlayerId: string;
+  currentPlayerId: string;
+}
+
+export interface GameStartedPayload {
+  startTime: number;
+}
+
+export interface GameEndedPayload {
+  winner: PlayerInfo | null;
+}
+
+export interface VoteEndedPayload {
+  voteResult: boolean;
+  voteCount: VoteCount;
+}
+
+export interface VoteCount {
+  yes: number;
+  no: number;
+}
+
+export interface MessagePayload {
+  message: string;
+  timestamp: number;
 }

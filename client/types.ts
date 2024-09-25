@@ -1,3 +1,8 @@
+/**
+ * @file shared/types.ts
+ * @description Consolidates all shared TypeScript types for both client and server.
+ */
+
 export const Suits = ['hearts', 'diamonds', 'clubs', 'spades'] as const;
 export type Suit = (typeof Suits)[number];
 
@@ -12,40 +17,41 @@ export interface Card {
 }
 
 export enum PlayerActionType {
-  PLAY_CARD = 'playCard',
-  SLAP = 'slap',
-  INVALID_SLAP = 'invalidSlap',
-  CHALLENGE_COUNTER_COMPLETE = 'challengeCounterComplete',
-  FACE_CARD_CHALLENGE = 'faceCardChallenge',
+  START_VOTE = 'start-vote',
+  CAST_VOTE = 'cast-vote',
+  SET_READY = 'set-ready',
+  SET_SETTINGS = 'set-settings',
 }
+
 export interface PlayerAction {
   playerId: string;
   actionType: PlayerActionType;
   timestamp: number;
-}
-
-export interface PlayerActionResult {
-  playerId: string;
-  actionType: PlayerActionType;
-  result: 'success' | 'failure';
-  message: string;
-  timestamp: number;
-}
-
-export interface GameSettings {
-  minimumPlayers: number;
-  maximumPlayers: number;
-  slapRules: SlapRule[];
-  faceCardChallengeCounts: { [key: string]: number };
-  challengeCounterCards: Partial<Card>[]; // Partial<Card> allows for a Card object with missing properties, which are treated as wild for the purpose of matching
-  turnTimeout: number;
+  data: {
+    vote?: boolean;
+    voteTopic?: string;
+    ready?: boolean;
+    settings?: GameSettings;
+  };
 }
 
 export interface ICondition {
-  field: 'pile.length' | 'pile[0].rank' | 'pile[1].rank' | 'currentPlayer' | 'currentPlayer.name';
+  field: ConditionValue;
   operator: '===' | '!==' | '>' | '<' | '>=' | '<=' | 'in';
-  value: string | number | string[];
+  value: ConditionValue;
 }
+
+export interface IDynamicValue {
+  value: string;
+  isDynamic: true;
+}
+
+export interface IStaticValue {
+  value: string | number | string[];
+  isDynamic: false;
+}
+
+export type ConditionValue = IDynamicValue | IStaticValue;
 
 export enum SlapRuleAction {
   TAKE_PILE = 'take-pile',
@@ -70,11 +76,29 @@ export interface SlapRule {
   targetPlayerName?: string;
 }
 
-export interface LocalPlayerSettings {
-  hotkeys: {
-    playCard: string;
-    slap: string;
-  };
+export interface PlayerActionResult {
+  playerId: string;
+  actionType: PlayerActionType;
+  result: 'success' | 'failure';
+  message?: string;
+  timestamp: number;
+}
+
+export interface GameSettings {
+  minimumPlayers: number;
+  maximumPlayers: number;
+  slapRules: SlapRule[];
+  faceCardChallengeCounts: { [key: string]: number };
+  challengeCounterCards: Partial<Card>[]; // Partial<Card> allows for a Card object with missing properties, which are treated as wild for the purpose of matching
+  turnTimeout: number;
+  /**
+   * The amount of time a "completed" challenge can be slapped before
+   * the game will automatically count the challenge as successful
+   *
+   * This allows any player to slap before the cards are removed due to the
+   * resolved challenge.
+   */
+  challengeCounterSlapTimeout: number;
 }
 
 export interface PlayerInfo {
@@ -82,34 +106,60 @@ export interface PlayerInfo {
   name: string;
 }
 
-export interface CardChallenge {
-  active: boolean;
-  challenger: PlayerInfo;
-  challenged: PlayerInfo;
-  remainingCounterChances: number;
-  result: 'challenger' | 'counter' | null;
+export interface GameState {
+  id: string;
+  name: string;
+  stage: GameStage;
+  maxPlayers: number;
+  players: PlayerInfo[];
+  currentPlayer: number;
+  pileSize: number;
+  pile: Card[] | null;
+  playerHandSizes: { [playerId: string]: number };
+  playerNames: { [playerId: string]: string };
+  winner: PlayerInfo | null;
+  slapRules: SlapRule[];
+}
+
+export enum GameStage {
+  PRE_GAME = 'pre-game',
+  PLAYING = 'playing',
+  GAME_OVER = 'game-over',
+  RESTARTING = 'restarting',
+  VOTING = 'voting',
+  CANCELLED = 'cancelled',
 }
 
 // A subset of GameState that is sent to the client
 // This is used to reduce the amount of data sent to the client
 // and to prevent the client from having full access to the game state
-export interface GameState {
+export interface ClientGameState {
+  // Game Metadata
   name: string;
-  pile: Card[] | null;
-  playerIds: string[]; // Also the turn order
-  playerHandSizes: { [playerId: string]: number };
-  playerNames: { [playerId: string]: string };
-  currentPlayerId: string;
-  gameStarted: boolean;
-  gameOver: boolean;
+  stage: GameStage;
   winner: PlayerInfo | null;
+
+  // Player Information
+  playerIds: string[]; // Turn order
+  playerNames: { [playerId: string]: string };
+  playerHandSizes: { [playerId: string]: number };
+  playerReadyStatus: { [playerId: string]: boolean };
+  currentPlayerId: string;
+
+  // Pile Information
+  // pileSize: number; // Total cards in the pile
+  // TODO: Only send the top card of the pile to the client
+  pileCards: Card[]; // The cards in the pile, from bottom to top
+
+  // Game Settings
   gameSettings: GameSettings;
+
+  // Ongoing Actions (active over multiple turns and thus require client-side state)
   voteState: VoteState | null;
   cardChallenge: CardChallenge | null;
 }
 
 export interface LobbyState {
-  players: PlayerInfo[];
   games: { id: string; name: string; playerCount: number; maxPlayers: number }[];
 }
 
@@ -122,4 +172,12 @@ export interface VoteState {
   topic: string;
   votes: Vote[];
   totalPlayers: number;
+}
+
+export interface CardChallenge {
+  active: boolean;
+  challenger: PlayerInfo;
+  challenged: PlayerInfo;
+  remainingCounterChances: number;
+  result: 'challenger' | 'counter' | null;
 }

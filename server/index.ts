@@ -1,10 +1,10 @@
 import express from 'express';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
 import path from 'path';
+import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
+import { SETTINGS } from './config';
 import { setupSocketHandlers } from './socketHandlers';
-import { PORT } from './config';
 
 const app = express();
 const httpServer = createServer(app);
@@ -27,6 +27,6 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.static(path.join(__dirname, '../dist')));
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+httpServer.listen(SETTINGS.PORT, () => {
+  console.log(`Server running on port ${SETTINGS.PORT}`);
 });

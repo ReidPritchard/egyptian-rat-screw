@@ -1,66 +1,84 @@
 import { io, Socket } from 'socket.io-client';
-import { GameSettings, PlayerInfo, PlayerActionType } from './types';
-import { SocketEvents } from './socketEvents';
 import { config } from './config';
+import {
+  ChangeNamePayload,
+  CreateGamePayload,
+  JoinGamePayload,
+  LeaveGamePayload,
+  PlayCardPayload,
+  SlapPilePayload,
+  SocketEvents,
+} from './socketEvents';
+import { GameSettings, PlayerAction, PlayerInfo } from './types';
 
 class Api {
-  socket: Socket;
+  private _socket: Socket | null = null;
 
-  constructor() {
-    this.socket = io(config.serverUrl, { path: '/socket.io' });
+  get socket(): Socket {
+    if (!this._socket) {
+      this._socket = io(config.serverUrl, { path: '/socket.io' });
+    }
+    return this._socket;
   }
 
-  setPlayerName(playerName: string) {
-    this.socket.emit(SocketEvents.SET_PLAYER_NAME, playerName);
+  changeName(payload: ChangeNamePayload) {
+    this.socket.emit(SocketEvents.CHANGE_NAME, payload);
   }
 
-  joinGame(gameId: string, playerName: string) {
-    this.setPlayerName(playerName);
-    this.socket.emit(SocketEvents.JOIN_GAME, gameId);
+  joinGame(payload: JoinGamePayload) {
+    this.socket.emit(SocketEvents.JOIN_GAME, payload);
   }
 
-  playCard() {
-    this.socket.emit(SocketEvents.PLAYER_ACTION, PlayerActionType.PLAY_CARD);
+  createGame(payload: CreateGamePayload) {
+    this.socket.emit(SocketEvents.CREATE_GAME, payload);
   }
 
-  slap() {
-    this.socket.emit(SocketEvents.PLAYER_ACTION, PlayerActionType.SLAP);
+  leaveGame(payload: LeaveGamePayload) {
+    this.socket.emit(SocketEvents.LEAVE_GAME, payload);
   }
 
-  updatePlayerName(newName: string) {
-    this.socket.emit(SocketEvents.SET_PLAYER_NAME, newName);
+  playCard(payload: PlayCardPayload) {
+    this.socket.emit(SocketEvents.PLAY_CARD, payload);
   }
 
-  getGameSettings(gameId: string) {
-    this.socket.emit(SocketEvents.GET_GAME_SETTINGS, gameId);
+  slapPile(payload: Partial<SlapPilePayload>) {
+    if (!payload.playerId) {
+      throw new Error('playerId is required');
+    }
+
+    this.socket.emit(SocketEvents.SLAP_PILE, payload);
+  }
+
+  playerReady(payload: PlayerInfo) {
+    this.socket.emit(SocketEvents.PLAYER_READY, payload);
+  }
+
+  playerAction(action: PlayerAction) {
+    this.socket.emit(SocketEvents.PLAYER_ACTION, action);
   }
 
   setGameSettings(gameId: string, settings: GameSettings) {
-    this.socket.emit(SocketEvents.SET_GAME_SETTINGS, gameId, settings);
+    this.socket.emit(SocketEvents.SET_GAME_SETTINGS, { gameId, settings });
   }
 
-  leaveGame() {
-    this.socket.emit(SocketEvents.LEAVE_GAME);
+  startVote(topic: string) {
+    this.socket.emit(SocketEvents.VOTE_STARTED, { topic });
+  }
+
+  submitVote(vote: boolean) {
+    this.socket.emit(SocketEvents.VOTE_UPDATED, { vote });
   }
 
   on(event: SocketEvents, callback: (...args: any[]) => void): void {
     this.socket.on(event, callback);
   }
 
-  removeAllListeners(event: 'connect'): void;
-  removeAllListeners(event: 'disconnect'): void;
-
-  removeAllListeners(event: string): void {
-    this.socket.removeAllListeners(event);
-  }
-
-  startVote(topic: string) {
-    console.log('Emitting start vote', topic);
-    this.socket.emit(SocketEvents.START_VOTE, { topic });
-  }
-
-  submitVote(vote: boolean) {
-    this.socket.emit(SocketEvents.SUBMIT_VOTE, { vote });
+  off(event: SocketEvents, callback?: (...args: any[]) => void): void {
+    if (callback) {
+      this.socket.off(event, callback);
+    } else {
+      this.socket.off(event);
+    }
   }
 }
 

@@ -1,41 +1,33 @@
-import React from 'react';
-import { Group, Tooltip, ActionIcon } from '@mantine/core';
+import { ActionIcon, Group, Tooltip } from '@mantine/core';
 import { useHotkeys } from '@mantine/hooks';
-import { IconCards, IconHandStop } from '@tabler/icons-react';
+import { IconHandStop, IconPlayCard, IconPlayerPlay, IconSettings } from '@tabler/icons-react';
+import React from 'react';
+import { api } from '../api';
+import { useApplicationContext } from '../hooks/ApplicationState';
+import { GameStage } from '../types';
 
-interface PlayerActionsProps {
-  handlePlayCard: () => void;
-  handleSlap: () => void;
-  isLocalPlayerTurn: boolean;
-  gameOver: boolean;
-  hotkeys: {
-    playCard: string;
-    slap: string;
-  };
-}
+export const PlayerActions: React.FC = () => {
+  const { isLocalPlayerTurn, gameState, localPlayerSettings, localPlayer } = useApplicationContext();
 
-export const PlayerActions: React.FC<PlayerActionsProps> = ({
-  handlePlayCard,
-  handleSlap,
-  isLocalPlayerTurn,
-  gameOver,
-  hotkeys,
-}) => {
+  const gameOver = gameState?.stage === GameStage.GAME_OVER;
+
   useHotkeys(
     [
       [
-        hotkeys.slap,
+        localPlayerSettings.hotkeys.slap,
         () => {
-          if (!gameOver) {
-            handleSlap();
+          if (!gameOver && localPlayer) {
+            api.slapPile({
+              playerId: localPlayer.id,
+            });
           }
         },
       ],
       [
-        hotkeys.playCard,
+        localPlayerSettings.hotkeys.playCard,
         () => {
           if (!gameOver && isLocalPlayerTurn) {
-            handlePlayCard();
+            api.playCard({});
           }
         },
       ],
@@ -43,24 +35,65 @@ export const PlayerActions: React.FC<PlayerActionsProps> = ({
     ['INPUT', 'TEXTAREA'],
   );
 
+  const renderGameSettingsAction = () => {
+    if (gameState?.stage === GameStage.PRE_GAME) {
+      return (
+        <Tooltip label="Game settings (g)">
+          <ActionIcon size="xl" variant="filled" color="blue" onClick={() => console.log('Game settings')}>
+            <IconSettings size="1.5rem" />
+          </ActionIcon>
+        </Tooltip>
+      );
+    }
+  };
+
+  const renderStartGameAction = () => {
+    if (gameState?.stage === GameStage.PRE_GAME && localPlayer) {
+      return (
+        <Tooltip label="Start game (s)">
+          <ActionIcon size="xl" variant="filled" color="green" onClick={() => api.playerReady(localPlayer)}>
+            <IconPlayerPlay size="1.5rem" />
+          </ActionIcon>
+        </Tooltip>
+      );
+    }
+  };
+
+  const renderPlayCardAction = () => {
+    if (gameState?.stage === GameStage.PLAYING && isLocalPlayerTurn) {
+      return (
+        <Tooltip label="Play a card (n)">
+          <ActionIcon size="xl" variant="filled" color="blue" onClick={() => api.playCard({})}>
+            <IconPlayCard size="1.5rem" />
+          </ActionIcon>
+        </Tooltip>
+      );
+    }
+  };
+
+  const renderSlapPileAction = () => {
+    if (gameState?.stage === GameStage.PLAYING && isLocalPlayerTurn) {
+      return (
+        <Tooltip label="Slap the pile if you think it's a valid slap (space)">
+          <ActionIcon
+            size="xl"
+            variant="filled"
+            color="red"
+            onClick={() => api.slapPile({ playerId: localPlayer?.id })}
+          >
+            <IconHandStop size="1.5rem" />
+          </ActionIcon>
+        </Tooltip>
+      );
+    }
+  };
+
   return (
     <Group justify="center" mt="xl">
-      <Tooltip label="Play a card from your hand (n)">
-        <ActionIcon
-          size="xl"
-          variant="filled"
-          color="blue"
-          onClick={handlePlayCard}
-          disabled={gameOver || !isLocalPlayerTurn}
-        >
-          <IconCards size="1.5rem" />
-        </ActionIcon>
-      </Tooltip>
-      <Tooltip label="Slap the pile if you think it's a valid slap (space)">
-        <ActionIcon size="xl" variant="filled" color="red" onClick={handleSlap} disabled={gameOver}>
-          <IconHandStop size="1.5rem" />
-        </ActionIcon>
-      </Tooltip>
+      {renderGameSettingsAction()}
+      {renderStartGameAction()}
+      {renderPlayCardAction()}
+      {renderSlapPileAction()}
     </Group>
   );
 };

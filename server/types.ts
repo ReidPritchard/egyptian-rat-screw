@@ -17,17 +17,22 @@ export interface Card {
 }
 
 export enum PlayerActionType {
-  PLAY_CARD = 'playCard',
-  SLAP = 'slap',
-  INVALID_SLAP = 'invalidSlap',
-  CHALLENGE_COUNTER_COMPLETE = 'challengeCounterComplete',
-  FACE_CARD_CHALLENGE = 'faceCardChallenge',
+  START_VOTE = 'start-vote',
+  CAST_VOTE = 'cast-vote',
+  SET_READY = 'set-ready',
+  SET_SETTINGS = 'set-settings',
 }
 
 export interface PlayerAction {
   playerId: string;
   actionType: PlayerActionType;
   timestamp: number;
+  data: {
+    vote?: boolean;
+    voteTopic?: string;
+    ready?: boolean;
+    settings?: GameSettings;
+  };
 }
 
 export interface ICondition {
@@ -104,6 +109,7 @@ export interface PlayerInfo {
 export interface GameState {
   id: string;
   name: string;
+  stage: GameStage;
   maxPlayers: number;
   players: PlayerInfo[];
   currentPlayer: number;
@@ -111,31 +117,49 @@ export interface GameState {
   pile: Card[] | null;
   playerHandSizes: { [playerId: string]: number };
   playerNames: { [playerId: string]: string };
-  gameOver: boolean;
   winner: PlayerInfo | null;
   slapRules: SlapRule[];
+}
+
+export enum GameStage {
+  PRE_GAME = 'pre-game',
+  PLAYING = 'playing',
+  GAME_OVER = 'game-over',
+  RESTARTING = 'restarting',
+  VOTING = 'voting',
+  CANCELLED = 'cancelled',
 }
 
 // A subset of GameState that is sent to the client
 // This is used to reduce the amount of data sent to the client
 // and to prevent the client from having full access to the game state
 export interface ClientGameState {
+  // Game Metadata
   name: string;
-  pile: Card[] | null;
-  playerIds: string[]; // Also the turn order
-  playerHandSizes: { [playerId: string]: number };
-  playerNames: { [playerId: string]: string };
-  currentPlayerId: string;
-  gameStarted: boolean;
-  gameOver: boolean;
+  stage: GameStage;
   winner: PlayerInfo | null;
+
+  // Player Information
+  playerIds: string[]; // Turn order
+  playerNames: { [playerId: string]: string };
+  playerHandSizes: { [playerId: string]: number };
+  playerReadyStatus: { [playerId: string]: boolean };
+  currentPlayerId: string;
+
+  // Pile Information
+  // pileSize: number; // Total cards in the pile
+  // TODO: Only send the top card of the pile to the client
+  pileCards: Card[]; // The cards in the pile, from bottom to top
+
+  // Game Settings
   gameSettings: GameSettings;
+
+  // Ongoing Actions (active over multiple turns and thus require client-side state)
   voteState: VoteState | null;
   cardChallenge: CardChallenge | null;
 }
 
 export interface LobbyState {
-  players: PlayerInfo[];
   games: { id: string; name: string; playerCount: number; maxPlayers: number }[];
 }
 

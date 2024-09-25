@@ -5,6 +5,7 @@ export class Player {
   public socket: Socket;
   public name: string;
   private deck: Card[] = [];
+  private ready: boolean = false;
 
   constructor(socket: Socket, name: string) {
     this.socket = socket;
@@ -45,6 +46,14 @@ export class Player {
       id: this.socket.id,
       name: this.name,
     };
+  }
+
+  public setReady(ready: boolean) {
+    this.ready = ready;
+  }
+
+  public isReady(): boolean {
+    return this.ready;
   }
 
   private shuffle(cards: Card[]): Card[] {

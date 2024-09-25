@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Group, Text, Box, ThemeIcon, Flex } from '@mantine/core';
 import { IconCircle, IconChevronRight } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GameState } from '../types';
+import { ClientGameState } from '../types';
 
 interface TurnOrderProps {
-  gameState: GameState;
+  gameState: ClientGameState;
   localPlayerId: string;
 }
 

@@ -1,6 +1,7 @@
+import { Button, Drawer, MultiSelect, NumberInput, Stack, Text } from '@mantine/core';
 import React, { useState } from 'react';
-import { Drawer, Stack, NumberInput, MultiSelect, Button, Switch, Text } from '@mantine/core';
-import { GameSettings, SlapRule, LocalPlayerSettings } from '../types';
+import { LocalPlayerSettings } from '../clientTypes';
+import { GameSettings, SlapRule } from '../types';
 
 interface SettingsDrawerProps {
   gameSettings: GameSettings;
@@ -13,9 +14,7 @@ interface SettingsDrawerProps {
 export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
   gameSettings,
   allSlapRules,
-  localPlayerSettings,
   handleGameSettingsChange,
-  handleLocalPlayerSettingsChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 

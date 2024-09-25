@@ -1,20 +1,21 @@
+import { Badge, Group, Text, Title } from '@mantine/core';
 import React from 'react';
-import { Group, Badge, Title, Text } from '@mantine/core';
-import { GameState } from '../types';
+import { useApplicationContext } from '../hooks/ApplicationState';
 
-interface GameHeaderProps {
-  gameState: GameState;
-  isLocalPlayerTurn: boolean;
-}
+export const GameHeader: React.FC = () => {
+  const { gameState, isLocalPlayerTurn } = useApplicationContext();
 
-export const GameHeader: React.FC<GameHeaderProps> = ({ gameState, isLocalPlayerTurn }) => {
   return (
     <Group justify="space-between" mb="md">
-      <Title order={3}>{gameState.name}</Title>
+      <Title order={3}>{gameState?.name}</Title>
       <Badge color={isLocalPlayerTurn ? 'green' : 'blue'} size="lg">
-        {isLocalPlayerTurn ? 'Your Turn' : `${gameState.playerNames[gameState.currentPlayerId]}'s Turn`}
+        {isLocalPlayerTurn ? 'Your Turn' : `${gameState?.playerNames[gameState.currentPlayerId]}'s Turn`}
       </Badge>
-      {gameState.cardChallenge && (
+
+      {/* TODO: Use a different UI for the card challenge */}
+      {/* something like the whole board is simplified to just show the challenge */}
+      {/* and the background color gets closer to red as the remaining counter chances get lower */}
+      {gameState?.cardChallenge && (
         <Badge color={gameState.cardChallenge.result === 'challenger' ? 'red' : 'green'} size="lg">
           {gameState.cardChallenge.active ? (
             <Group>

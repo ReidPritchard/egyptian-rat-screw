@@ -1,39 +1,65 @@
+import { Box, Grid, Group, Text } from '@mantine/core';
 import React from 'react';
-import { Grid, Box, Group, Text } from '@mantine/core';
+import { config } from '../config';
+import { useApplicationContext } from '../hooks/ApplicationState';
+import { GameStage } from '../types';
 import { BottomCard } from './BottomCard';
 import { CardStack } from './CardStack';
 import { TurnOrder } from './TurnOrder';
-import { config } from '../config';
-import { GameState, Card } from '../types';
 
-interface GameBoardProps {
-  gameState: GameState;
-  bottomCard: Card | null;
-  bottomCardTrigger: number;
-  localPlayerId: string;
-}
+export const GameBoard: React.FC = () => {
+  const { gameState, localPlayer } = useApplicationContext();
 
-export const GameBoard: React.FC<GameBoardProps> = ({ gameState, bottomCard, bottomCardTrigger, localPlayerId }) => {
-  return (
-    <Grid justify="center" align="flex-start">
-      <Grid.Col span={8}>
-        <Box my="md">
+  if (!gameState || !localPlayer) {
+    console.error('GameBoard: gameState or localPlayer is null');
+    return null;
+  }
+
+  const renderPreGameReady = () => {
+    return (
+      <Grid justify="center" align="flex-start">
+        <Grid.Col span={8}>
           <Text ta="center" size="sm" mb="xs">
-            Pile Size: {gameState.pile?.length ?? 0}
+            Waiting for players to be ready...
           </Text>
-          <Group justify="center" mb="xl">
-            <BottomCard
-              bottomCard={bottomCard}
-              duration={config.game.bottomCardDisplayDuration}
-              key={bottomCardTrigger}
-            />
-            <CardStack pile={gameState.pile} />
-          </Group>
-        </Box>
-      </Grid.Col>
-      <Grid.Col span={4}>
-        <TurnOrder gameState={gameState} localPlayerId={localPlayerId} />
-      </Grid.Col>
-    </Grid>
-  );
+
+          {/* Render the ready status of each player */}
+          {gameState.playerIds.map((playerId) => (
+            <Text ta="center" size="sm" mb="xs" key={playerId}>
+              {gameState.playerNames[playerId]}: {gameState.playerReadyStatus[playerId] ? 'Ready' : 'Not Ready'}
+            </Text>
+          ))}
+        </Grid.Col>
+      </Grid>
+    );
+  };
+
+  const renderGameBoard = () => {
+    return (
+      <Grid justify="center" align="flex-start">
+        <Grid.Col span={8}>
+          <Box my="md">
+            <Text ta="center" size="sm" mb="xs">
+              Pile Size: {gameState?.pileCards?.length ?? 0}
+            </Text>
+            <Group justify="center" mb="xl">
+              {gameState.pileCards.length > 0 && (
+                <BottomCard
+                  bottomCard={gameState.pileCards[gameState.pileCards.length - 1]}
+                  duration={config.game.bottomCardDisplayDuration}
+                  key={gameState.pileCards[gameState.pileCards.length - 1].id}
+                />
+              )}
+              <CardStack pile={gameState.pileCards} />
+            </Group>
+          </Box>
+        </Grid.Col>
+        <Grid.Col span={4}>
+          <TurnOrder gameState={gameState} localPlayerId={localPlayer.id} />
+        </Grid.Col>
+      </Grid>
+    );
+  };
+
+  return gameState.stage === GameStage.PRE_GAME ? renderPreGameReady() : renderGameBoard();
 };

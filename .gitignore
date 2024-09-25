@@ -26,3 +26,7 @@ public/dist
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+
+# Ignore the copied socketEvents.ts and types.ts files
+client/socketEvents.ts
+client/types.ts

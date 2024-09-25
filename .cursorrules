@@ -1,1 +1,1 @@
-always prefer the simplest solution. document all code. make changes in small steps, fully completing each step before moving on. never leave code in a broken state. start with the simplest solution and make it more complex if absolutely necessary. Always make the code more readable. Always use relative imports. Never import across client/server directories.
+always implement the simplest solution. document all code. make changes in small steps, fully completing each step before moving on. never leave code in a broken state.
