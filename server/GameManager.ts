@@ -133,6 +133,7 @@ export class GameManager {
   }
 
   public handlePlayCard(socket: Socket): void {
+    logger.info('Routing play card to game', socket.id);
     this.performGameAction(socket, (game) => game.handlePlayCard(socket));
   }
 

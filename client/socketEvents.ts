@@ -47,8 +47,8 @@ export enum SocketEvents {
   JOIN_LOBBY = 'joinLobby',
   PLAY_CARD = 'playCard',
   SLAP_PILE = 'slapPile',
-  PLAYER_ACTION = 'playerAction',
   SET_GAME_SETTINGS = 'setGameSettings',
+  PLAYER_ACTION = 'playerAction',
 
   // Player Action Results (Server to Client)
   CARD_PLAYED = 'cardPlayed',

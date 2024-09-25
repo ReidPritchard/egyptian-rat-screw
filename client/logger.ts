@@ -3,7 +3,7 @@ import pino from 'pino';
 const defaultLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 
 export const logger = pino({
-  name: 'server',
+  name: 'client',
   level: defaultLevel,
   formatters: {
     bindings: (bindings) => ({

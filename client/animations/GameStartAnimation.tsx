@@ -8,6 +8,8 @@ interface GameStartAnimationProps {
 }
 
 export const GameStartAnimation: React.FC<GameStartAnimationProps> = ({ isVisible, onAnimationComplete }) => {
+  const disable = true;
+
   // Timing constants
   const CHAR_REVEAL_INTERVAL = 0; // Time between each character reveal (in ms)
   const MESSAGE_PAUSE = 1000; // Pause time after each message (in ms)
@@ -23,6 +25,10 @@ export const GameStartAnimation: React.FC<GameStartAnimationProps> = ({ isVisibl
   const messages = ['Game Starting...', '3', '2', '1', 'GO!'];
 
   useEffect(() => {
+    if (disable) {
+      onAnimationComplete();
+      return;
+    }
     if (isVisible && messageIndex < messages.length) {
       // Display each character of the current message one by one
       const message = messages[messageIndex];

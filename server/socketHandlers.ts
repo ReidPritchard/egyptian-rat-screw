@@ -14,7 +14,7 @@ export function setupSocketHandlers(ioServer: Server) {
   gameManager = GameManager.getInstance(io);
 
   io.on(SocketEvents.CONNECT, (socket: Socket) => {
-    logger.info('A user connected');
+    logger.info('A user connected', socket.id);
 
     // Add the player to the lobby via GameManager
     gameManager.initPlayerInLobby(
@@ -72,6 +72,7 @@ export function setupSocketHandlers(ioServer: Server) {
     });
 
     socket.on(SocketEvents.SET_GAME_SETTINGS, (settings: GameSettings) => {
+      logger.info('Setting game settings', settings);
       gameManager.setGameSettings(socket, undefined, settings);
     });
 
@@ -82,17 +83,17 @@ export function setupSocketHandlers(ioServer: Server) {
     });
 
     socket.on(SocketEvents.ERROR, (error: Error) => {
-      console.error(error);
+      logger.error(error);
       socket.emit(SocketEvents.ERROR, error.message);
     });
 
     socket.on(SocketEvents.DISCONNECTING, () => {
-      console.log('Disconnecting player', socket.id);
+      logger.info('Disconnecting player', socket.id);
       gameManager.handleDisconnect(socket);
     });
 
     socket.on(SocketEvents.DISCONNECT, () => {
-      console.log('A user disconnected');
+      logger.info('A user disconnected');
     });
   });
 }

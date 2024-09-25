@@ -219,34 +219,41 @@ export class Game {
   }
 
   public handlePlayCard(socket: Socket) {
+    logger.info('Handling play card', socket.id);
     const player = this.getPlayerBySocket(socket);
     if (player && player.socket.id === socket.id && this.players[this.turnIndex].socket.id === socket.id) {
       this.playCard(player);
     } else {
+      logger.warn('Not players turn, skipping play card', socket.id);
       socket.emit(SocketEvents.ERROR, 'Not your turn.');
     }
   }
 
   private playCard(player: Player) {
     const card = player.playCard();
+    logger.info('Playing card', player.socket.id, card);
     if (card) {
       this.centralPile.push(card);
+      // emit card played event
+      this.io.to(this.gameId).emit(SocketEvents.CARD_PLAYED, card);
 
       const faceCardChallengeCount = this.ruleEngine.getFaceCardChallengeCount(card);
       if (faceCardChallengeCount > 0) {
+        logger.info('Starting face card challenge', player.socket.id, card, faceCardChallengeCount);
         this.handleFaceCardChallenge(player, card, faceCardChallengeCount);
       } else if (this.faceCardChallenge?.active) {
+        logger.info('Countering face card challenge', player.socket.id, card);
         this.handleFaceCardChallengeCounter(player, card);
       } else {
+        logger.info('Advancing turn', player.socket.id);
         this.advanceTurn();
       }
-      this.emitGameUpdate();
     } else {
+      logger.warn('Player is out of cards (skip turn)', player.socket.id);
       // Player is out of cards (just skip turn)
       // don't remove player from game as they can still slap
       // back in to get cards
       this.advanceTurn();
-      this.emitGameUpdate();
       this.checkForWinner();
     }
   }

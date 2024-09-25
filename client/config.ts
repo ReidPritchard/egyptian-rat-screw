@@ -6,4 +6,7 @@ export const config = {
   game: {
     bottomCardDisplayDuration: 3000,
   },
+  animation: {
+    cardPlayedAnimationDuration: 0.5,
+  },
 };

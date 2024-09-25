@@ -1,5 +1,5 @@
-import React from 'react';
 import { Box, Text } from '@mantine/core';
+import React, { forwardRef } from 'react';
 
 interface CardProps {
   suit: string;
@@ -21,12 +21,13 @@ const suitColors: { [key: string]: string } = {
   spades: 'black',
 };
 
-export function PlayingCard({ suit, value, faceUp }: CardProps) {
+export const PlayingCard = forwardRef<HTMLDivElement, CardProps>(({ suit, value, faceUp }, ref) => {
   const suitSymbol = suitSymbols[suit.toLowerCase()];
   const color = suitColors[suit.toLowerCase()];
 
   return (
     <Box
+      ref={ref}
       w={60}
       h={90}
       style={{
@@ -60,4 +61,4 @@ export function PlayingCard({ suit, value, faceUp }: CardProps) {
       )}
     </Box>
   );
-}
+});

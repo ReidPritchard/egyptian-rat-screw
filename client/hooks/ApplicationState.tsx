@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { GameStartAnimation } from '../animations/GameStartAnimation';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { CardPlayedAnimation, GameStartAnimation } from '../animations';
 import { api } from '../api';
 import { LocalPlayerSettings } from '../clientTypes';
-import { SocketEvents } from '../socketEvents';
+import { newLogger } from '../logger';
+import { CardPlayedPayload, PlayCardPayload, SocketEvents } from '../socketEvents';
 import { ClientGameState, GameSettings, LobbyState, PlayerInfo, VoteState } from '../types';
 import { useLocalPlayerSettings } from './useLocalPlayerSettings';
+
+const logger = newLogger('ApplicationState');
 
 interface ApplicationContextType {
   // UI State
@@ -30,8 +33,12 @@ interface ApplicationContextType {
   fetchLobbyState: () => void;
   handleJoinLobby: () => void;
 
-  // Game Starting State
+  // Animation States
   isGameStarting: boolean;
+  isCardPlayedAnimationVisible: boolean;
+
+  // Card Stack Reference
+  cardStackRef: React.RefObject<HTMLDivElement>;
 }
 
 export const ApplicationContext = createContext<ApplicationContextType>({
@@ -65,20 +72,20 @@ export const ApplicationContext = createContext<ApplicationContextType>({
   fetchLobbyState: () => {},
   handleJoinLobby: () => {},
   isGameStarting: false,
+  isCardPlayedAnimationVisible: false,
+  cardStackRef: { current: null },
 });
 
 export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const handleConnection = () => {
     if (api.socket.connected) {
-      console.log('Connected to server');
+      logger.info('Connected to server');
       setIsConnected(true);
 
       if (api.socket.id) {
         setLocalPlayer({ id: api.socket.id, name: localPlayerSettings.name });
-        // Emit change name event to ensure server has the correct name
-        api.changeName({ name: localPlayerSettings.name });
       } else {
-        console.error('Socket ID not available');
+        logger.error('Socket ID not available');
       }
     }
   };
@@ -91,71 +98,90 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
 
     // Handle disconnection
     api.socket.on(SocketEvents.DISCONNECT, () => {
-      console.log('Disconnected from server');
+      logger.info('Disconnected from server');
       setIsConnected(false);
       setGameState(null);
       setLobbyState(null);
       setLobbyPlayers([]);
       setLocalPlayer(null);
+      logger.info('Reset all state due to disconnection');
     });
 
     api.socket.on(SocketEvents.GAME_STARTED, () => {
       setUserLocation('game');
-      console.log('Game started');
+      logger.info('Game started, user moved to game view');
       setIsGameStarting(true);
       // The animation will automatically hide after it's complete
     });
 
     // Handle game state updates
     api.socket.on(SocketEvents.GAME_STATE_UPDATED, (updatedGameState: ClientGameState) => {
-      console.log('Game state updated', updatedGameState);
+      logger.info('Game state updated', { updatedGameState });
       setUserLocation('game');
       setGameState(updatedGameState);
     });
 
+    api.socket.on(SocketEvents.CARD_PLAYED, (payload: CardPlayedPayload) => {
+      logger.info('Card played', { payload });
+      setIsCardPlayedAnimationVisible(true);
+    });
+
+    api.socket.on(SocketEvents.PLAY_CARD, (payload: PlayCardPayload) => {
+      logger.info('Play card', { payload });
+      setIsCardPlayedAnimationVisible(true);
+    });
+
     // Handle game settings changes
     api.socket.on(SocketEvents.GAME_SETTINGS_CHANGED, (settings: GameSettings) => {
+      logger.info('Game settings changed', { settings });
       setGameState((prevState) => (prevState ? { ...prevState, gameSettings: settings } : null));
     });
 
     // Handle vote updates
     api.socket.on(SocketEvents.VOTE_UPDATED, (voteState: VoteState) => {
+      logger.info('Vote state updated', { voteState });
       setGameState((prevState) => (prevState ? { ...prevState, voteState } : null));
     });
 
     // Handle lobby state updates
     api.socket.on(SocketEvents.LOBBY_UPDATE, (updatedLobbyState: LobbyState) => {
+      logger.info('Lobby state updated', { updatedLobbyState });
       setUserLocation('lobby');
       setLobbyState(updatedLobbyState);
     });
 
     api.socket.on(SocketEvents.PLAYER_NAME_CHANGED, (player: PlayerInfo) => {
+      logger.info('Player name changed', { player });
       setLobbyPlayers((prevState) => prevState.map((p) => (p.id === player.id ? player : p)));
     });
 
     api.socket.on(SocketEvents.PLAYER_JOINED_LOBBY, (player: PlayerInfo) => {
+      logger.info('Player joined lobby', { player });
       setLobbyPlayers((prevState) => [...prevState, player]);
     });
 
     api.socket.on(SocketEvents.PLAYER_LEFT_LOBBY, (playerId: string) => {
+      logger.info('Player left lobby', { playerId });
       setLobbyPlayers((prevState) => prevState.filter((player) => player.id !== playerId));
     });
 
     // Handle player ready status updates
     api.socket.on(SocketEvents.PLAYER_READY, (playerId: string, ready: boolean) => {
+      logger.info('Player ready status changed', { playerId, ready });
       setGameState((prevState) =>
         prevState ? { ...prevState, playerReadyStatus: { ...prevState.playerReadyStatus, [playerId]: ready } } : null,
       );
     });
 
     api.socket.on(SocketEvents.PLAYER_NOT_READY, (playerId: string) => {
+      logger.info('Player not ready', { playerId });
       setGameState((prevState) =>
         prevState ? { ...prevState, playerReadyStatus: { ...prevState.playerReadyStatus, [playerId]: false } } : null,
       );
     });
 
     api.socket.on(SocketEvents.ERROR, (error: string) => {
-      console.error('Error:', error);
+      logger.error('Error:', error);
     });
 
     // Cleanup on unmount
@@ -177,10 +203,12 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
    * Lobby Actions
    */
   const fetchLobbyState = () => {
+    logger.info('Fetching lobby state');
     api.socket.emit(SocketEvents.LOBBY_UPDATE);
   };
 
   const handleJoinLobby = () => {
+    logger.info('Joining lobby');
     api.socket.emit(SocketEvents.JOIN_LOBBY);
     setUserLocation('lobby');
   };
@@ -205,14 +233,22 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
   // Determine if it's the local player's turn
   const isLocalPlayerTurn = gameState?.currentPlayerId === localPlayer?.id;
 
+  // Animation States
   // Game Starting State
   const [isGameStarting, setIsGameStarting] = useState(false);
+
+  // Player Action Animations
+  const [isCardPlayedAnimationVisible, setIsCardPlayedAnimationVisible] = useState(false);
+
+  // Card Stack Reference
+  const cardStackRef = useRef<HTMLDivElement>(null);
 
   /**
    * Fetch initial lobby state on mount
    */
   useEffect(() => {
     if (isConnected) {
+      logger.info('Connected, fetching initial lobby state');
       fetchLobbyState();
       handleJoinLobby();
     }
@@ -220,6 +256,7 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
 
   // Call handleConnection whenever localPlayerSettings change
   useEffect(() => {
+    logger.info('Local player settings changed, reconnecting', { localPlayerSettings });
     handleConnection();
   }, [localPlayerSettings]);
 
@@ -238,10 +275,20 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
         fetchLobbyState,
         handleJoinLobby,
         isGameStarting,
+        isCardPlayedAnimationVisible,
+        cardStackRef,
       }}
     >
       {children}
       <GameStartAnimation isVisible={isGameStarting} onAnimationComplete={() => setIsGameStarting(false)} />
+      <CardPlayedAnimation
+        isVisible={isCardPlayedAnimationVisible}
+        card={gameState?.pileCards[gameState.pileCards.length - 1] ?? null}
+        onAnimationComplete={() => {
+          setIsCardPlayedAnimationVisible(false);
+        }}
+        targetRef={cardStackRef}
+      />
     </ApplicationContext.Provider>
   );
 };

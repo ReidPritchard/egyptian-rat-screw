@@ -8,7 +8,7 @@ import { CardStack } from './CardStack';
 import { TurnOrder } from './TurnOrder';
 
 export const GameBoard: React.FC = () => {
-  const { gameState, localPlayer } = useApplicationContext();
+  const { gameState, localPlayer, cardStackRef } = useApplicationContext();
 
   if (!gameState || !localPlayer) {
     console.error('GameBoard: gameState or localPlayer is null');
@@ -45,12 +45,12 @@ export const GameBoard: React.FC = () => {
             <Group justify="center" mb="xl">
               {gameState.pileCards.length > 0 && (
                 <BottomCard
-                  bottomCard={gameState.pileCards[gameState.pileCards.length - 1]}
+                  bottomCard={gameState.pileCards[0]}
                   duration={config.game.bottomCardDisplayDuration}
-                  key={gameState.pileCards[gameState.pileCards.length - 1].id}
+                  key={gameState.pileCards[0].id}
                 />
               )}
-              <CardStack pile={gameState.pileCards} />
+              <CardStack ref={cardStackRef} pile={gameState.pileCards} />
             </Group>
           </Box>
         </Grid.Col>
