@@ -22,7 +22,6 @@
     "@mantine/core": "^7.12.2",
     "@mantine/notifications": "^7.12.2",
     "@tabler/icons-react": "^3.17.0",
-    "@types/pino": "^7.0.5",
     "express": "^4.17.1",
     "framer-motion": "^11.5.4",
     "pino": "^9.4.0",
