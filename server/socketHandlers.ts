@@ -1,8 +1,8 @@
 import { Server, Socket } from 'socket.io';
-import { GameManager } from './GameManager.js';
-import { newLogger } from './logger.js';
-import { MessagePayload, SocketEvents, SocketPayloads } from './socketEvents.js';
-import { GameSettings, PlayerAction } from './types.js';
+import { GameManager } from './GameManager';
+import { newLogger } from './logger';
+import { MessagePayload, SocketEvents, SocketPayloads } from './socketEvents';
+import { GameSettings, PlayerAction } from './types';
 
 const logger = newLogger('socketHandlers');
 

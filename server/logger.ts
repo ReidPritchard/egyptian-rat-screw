@@ -6,7 +6,7 @@ export const logger = pino({
   name: 'server',
   level: defaultLevel,
   formatters: {
-    bindings: (bindings) => ({
+    bindings: (bindings: pino.Bindings) => ({
       ...bindings,
       module: bindings.module,
     }),
