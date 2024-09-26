@@ -7,7 +7,7 @@ import {
   PlayerAction,
   PlayerInfo,
   VoteState,
-} from './types';
+} from './types.js';
 
 /**
  * @enum SocketEvents

@@ -1,18 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "esnext",
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ESNext"],
     "outDir": "dist/server",
+    "rootDir": "./server",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "baseUrl": "./",
-    "paths": {
-      // Remove the @shared path alias
-      // "@shared/*": ["../shared/*"]
-    },
-    "declaration": true,
-    "declarationMap": true
+    "allowSyntheticDefaultImports": true,
+    "declaration": false,
+    "declarationMap": false
   },
-  "include": ["server/**/*", "shared/**/*"]
+  "include": ["server/**/*"]
 }

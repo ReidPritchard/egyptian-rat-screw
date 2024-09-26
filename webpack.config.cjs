@@ -1,10 +1,13 @@
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 module.exports = {
-  mode: 'development',
+  mode: isProduction ? 'production' : 'development',
   entry: './client/client.tsx',
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'dist/public'),
     filename: 'bundle.js',
   },
   resolve: {
@@ -19,4 +22,9 @@ module.exports = {
       },
     ],
   },
+  plugins: [
+    new CopyPlugin({
+      patterns: [{ from: 'public', to: 'public' }],
+    }),
+  ],
 };

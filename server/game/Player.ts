@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { Card, PlayerInfo } from '../types'; // Updated import path
+import { Card, PlayerInfo } from '../types.js'; // Updated import path
 
 export class Player {
   public socket: Socket;

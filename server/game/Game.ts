@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
-import { newLogger } from '../logger';
-import { GameEndedPayload, GameStartedPayload, SocketEvents, VoteCount } from '../socketEvents';
+import { newLogger } from '../logger.js';
+import { GameEndedPayload, GameStartedPayload, SocketEvents, VoteCount } from '../socketEvents.js';
 import {
   Card,
   CardChallenge,
@@ -13,11 +13,11 @@ import {
   SlapRule,
   SlapRuleAction,
   VoteState,
-} from '../types';
-import { Deck } from './Deck';
-import { Player } from './Player';
-import { RuleEngine } from './rules/RuleEngine';
-import { defaultSlapRules } from './rules/SlapRules';
+} from '../types.js';
+import { Deck } from './Deck.js';
+import { Player } from './Player.js';
+import { RuleEngine } from './rules/RuleEngine.js';
+import { defaultSlapRules } from './rules/SlapRules.js';
 
 const logger = newLogger('Game');
 

@@ -3,9 +3,9 @@ import { createServer } from 'http';
 import path from 'path';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
-import { SETTINGS } from './config';
-import { newLogger } from './logger';
-import { setupSocketHandlers } from './socketHandlers';
+import { SETTINGS } from './config.js';
+import { newLogger } from './logger.js';
+import { setupSocketHandlers } from './socketHandlers.js';
 
 const logger = newLogger('server');
 

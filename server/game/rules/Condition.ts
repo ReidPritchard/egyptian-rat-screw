@@ -1,5 +1,5 @@
-import { Card, ICondition, ConditionValue } from '../../types';
-import { Player } from '../Player';
+import { Card, ConditionValue, ICondition } from '../../types.js';
+import { Player } from '../Player.js';
 
 export class Condition {
   private field: ConditionValue;

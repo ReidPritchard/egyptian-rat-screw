@@ -8,7 +8,7 @@ interface GameStartAnimationProps {
 }
 
 export const GameStartAnimation: React.FC<GameStartAnimationProps> = ({ isVisible, onAnimationComplete }) => {
-  const disable = true;
+  const disable = false;
 
   // Timing constants
   const CHAR_REVEAL_INTERVAL = 0; // Time between each character reveal (in ms)

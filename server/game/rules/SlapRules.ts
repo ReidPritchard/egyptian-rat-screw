@@ -1,4 +1,4 @@
-import { SlapRule, SlapRuleAction } from '../../types';
+import { SlapRule, SlapRuleAction } from '../../types.js';
 
 export const defaultSlapRules: SlapRule[] = [
   {

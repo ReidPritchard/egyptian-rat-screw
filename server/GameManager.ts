@@ -1,9 +1,9 @@
 import { Server, Socket } from 'socket.io';
-import { SETTINGS } from './config';
-import { Game } from './game/Game';
-import { newLogger } from './logger';
-import { SocketEvents } from './socketEvents';
-import { GameSettings, PlayerAction, PlayerActionType, PlayerInfo } from './types';
+import { SETTINGS } from './config.js';
+import { Game } from './game/Game.js';
+import { newLogger } from './logger.js';
+import { SocketEvents } from './socketEvents.js';
+import { GameSettings, PlayerAction, PlayerActionType, PlayerInfo } from './types.js';
 
 const logger = newLogger('GameManager');
 

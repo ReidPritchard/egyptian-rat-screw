@@ -1,6 +1,6 @@
-import { Card, GameSettings, SlapRule } from '../../types';
-import { Player } from '../Player';
-import { Condition } from './Condition';
+import { Card, GameSettings, SlapRule } from '../../types.js';
+import { Player } from '../Player.js';
+import { Condition } from './Condition.js';
 
 export class RuleEngine {
   private rules: GameSettings;

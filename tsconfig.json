@@ -7,13 +7,9 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "baseUrl": "./",
-    "paths": {
-      // Remove the @shared path alias
-      // "@shared/*": ["shared/*"]
-    },
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist"
+    "declaration": false,
+    "declarationMap": false,
+    "outDir": "./dist/client"
   },
   "include": ["client/**/*"]
 }

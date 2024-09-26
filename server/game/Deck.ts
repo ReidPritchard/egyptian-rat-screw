@@ -1,5 +1,5 @@
-import { Player } from './Player';
-import { Card, Ranks, Suits } from '../types';
+import { Card, Ranks, Suits } from '../types.js';
+import { Player } from './Player.js';
 
 export class Deck {
   private static suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
