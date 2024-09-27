@@ -1,6 +1,9 @@
 # Online Egyptian Rat Screw
 
-![Current UI](./docs/images/current-ui.png)
+![Current UI](https://github.com/user-attachments/assets/196acbd3-534a-470d-998d-07f2a80402cc)
+
+![Current In-Game](https://github.com/user-attachments/assets/a767c5d1-40fd-4613-be59-7c6bf2692726)
+
 
 ## Project Structure
 
