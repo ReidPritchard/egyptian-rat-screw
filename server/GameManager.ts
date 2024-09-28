@@ -39,7 +39,6 @@ export class GameManager {
       return;
     }
 
-    logger.info('Getting or creating game', gameId);
     const game = this.getOrCreateGame(gameId);
 
     logger.info('Game stage before joining', game.getStage());
@@ -48,7 +47,7 @@ export class GameManager {
     socket.leave(SETTINGS.LOBBY_ROOM);
     socket.join(game.gameId);
 
-    logger.info('Player removed from lobby and joined game', game.gameId);
+    logger.info(`Player removed from lobby and joined game id:"${game.gameId}"`);
 
     const playerAdditionResult = game.addPlayer(socket, player);
 
@@ -61,6 +60,8 @@ export class GameManager {
       logger.error('Player addition failed', playerAdditionResult);
       this.initPlayerInLobby(player, socket);
     }
+    // Update the lobby with the new game
+    this.emitLobbyUpdate();
   }
 
   public leaveGame(socket: Socket): void {
@@ -122,6 +123,10 @@ export class GameManager {
       const game = this.games.get(room);
       if (game) {
         game.removePlayer(socket);
+        // If the game is empty, remove it
+        if (game.getPlayerCount() === 0) {
+          this.games.delete(game.gameId);
+        }
       }
       socket.leave(room);
     });
@@ -204,13 +209,12 @@ export class GameManager {
   }
 
   private getOrCreateGame(gameId: string): Game {
-    logger.info('Getting or creating game', gameId);
+    logger.info(`Getting or creating game id:"${gameId}"`);
     if (!this.games.has(gameId) || gameId === '') {
       logger.info('Generating new game', gameId);
       gameId = gameId || this.generateGameId();
       this.games.set(gameId, new Game(GameManager.io, gameId));
     }
-    logger.info('Game', gameId, this.games.get(gameId));
     return this.games.get(gameId)!;
   }
 
@@ -232,6 +236,17 @@ export class GameManager {
     GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.PLAYER_JOINED_LOBBY, {
       id,
       name,
+    });
+  }
+
+  private emitLobbyUpdate(): void {
+    GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.LOBBY_UPDATE, {
+      games: Array.from(this.games.values()).map((game) => ({
+        id: game.gameId,
+        name: game.gameId,
+        playerCount: game.getPlayerCount(),
+        maxPlayers: game.getGameSettings().maximumPlayers,
+      })),
     });
   }
 
@@ -257,10 +272,16 @@ export class GameManager {
   }
 
   private generateGameId(): string {
-    // Generate a random human-readable game ID
     const nouns = SETTINGS.GENERATORS.GAME_ID.NOUNS;
     const adjectives = SETTINGS.GENERATORS.GAME_ID.ADJECTIVES;
-    return `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${nouns[Math.floor(Math.random() * nouns.length)]}`;
+
+    let gameId: string;
+    do {
+      // Generate a random game ID
+      gameId = `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${nouns[Math.floor(Math.random() * nouns.length)]}`;
+    } while (this.games.has(gameId)); // Check if the ID already exists
+
+    return gameId;
   }
 
   private generatePlayerName(): string {

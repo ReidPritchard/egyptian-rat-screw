@@ -49,6 +49,11 @@ export const Lobby: React.FC = () => {
     api.createGame({ playerName });
   };
 
+  // Re-render when a player joins or leaves the lobby
+  useEffect(() => {
+    console.log('lobbyPlayers', lobbyPlayers);
+  }, [lobbyPlayers]);
+
   return (
     <Container w="100%">
       <Flex direction={'row'} align={'flex-end'} justify={'center'}>

@@ -50,7 +50,7 @@ export const PlayerActions: React.FC = () => {
   const renderStartGameAction = () => {
     if (gameState?.stage === GameStage.PRE_GAME && localPlayer) {
       return (
-        <Tooltip label="Start game (s)">
+        <Tooltip label="Ready up">
           <ActionIcon size="xl" variant="filled" color="green" onClick={() => api.playerReady(localPlayer)}>
             <IconPlayerPlay size="1.5rem" />
           </ActionIcon>
@@ -60,10 +60,16 @@ export const PlayerActions: React.FC = () => {
   };
 
   const renderPlayCardAction = () => {
-    if (gameState?.stage === GameStage.PLAYING && isLocalPlayerTurn) {
+    if (gameState?.stage === GameStage.PLAYING) {
       return (
         <Tooltip label="Play a card (n)">
-          <ActionIcon size="xl" variant="filled" color="blue" onClick={() => api.playCard({})}>
+          <ActionIcon
+            size="xl"
+            variant="filled"
+            color="blue"
+            onClick={() => api.playCard({})}
+            disabled={!isLocalPlayerTurn}
+          >
             <IconPlayCard size="1.5rem" />
           </ActionIcon>
         </Tooltip>
@@ -72,7 +78,7 @@ export const PlayerActions: React.FC = () => {
   };
 
   const renderSlapPileAction = () => {
-    if (gameState?.stage === GameStage.PLAYING && isLocalPlayerTurn) {
+    if (gameState?.stage === GameStage.PLAYING) {
       return (
         <Tooltip label="Slap the pile if you think it's a valid slap (space)">
           <ActionIcon

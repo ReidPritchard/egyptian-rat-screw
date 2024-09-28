@@ -17,7 +17,7 @@ export const GameBoard: React.FC = () => {
 
   const renderPreGameReady = () => {
     return (
-      <Grid justify="center" align="flex-start">
+      <Grid justify="center" align="flex-start" h="100%">
         <Grid.Col span={8}>
           <Text ta="center" size="sm" mb="xs">
             Waiting for players to be ready...
@@ -36,7 +36,7 @@ export const GameBoard: React.FC = () => {
 
   const renderGameBoard = () => {
     return (
-      <Grid justify="center" align="flex-start">
+      <Grid justify="center" align="flex-start" h="100%">
         <Grid.Col span={8}>
           <Box my="md">
             <Text ta="center" size="sm" mb="xs">

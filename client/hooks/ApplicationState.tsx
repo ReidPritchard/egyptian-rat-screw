@@ -3,7 +3,7 @@ import { CardPlayedAnimation, GameStartAnimation } from '../animations';
 import { api } from '../api';
 import { LocalPlayerSettings } from '../clientTypes';
 import { newLogger } from '../logger';
-import { CardPlayedPayload, PlayCardPayload, SocketEvents } from '../socketEvents';
+import { CardPlayedPayload, GameStartedPayload, PlayCardPayload, SocketEvents } from '../socketEvents';
 import { ClientGameState, GameSettings, LobbyState, PlayerInfo, VoteState } from '../types';
 import { useLocalPlayerSettings } from './useLocalPlayerSettings';
 
@@ -107,9 +107,9 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
       logger.info('Reset all state due to disconnection');
     });
 
-    api.socket.on(SocketEvents.GAME_STARTED, () => {
+    api.socket.on(SocketEvents.GAME_STARTED, (payload: GameStartedPayload) => {
       setUserLocation('game');
-      logger.info('Game started, user moved to game view');
+      logger.info('Game started, user moved to game view', payload);
       setIsGameStarting(true);
       // The animation will automatically hide after it's complete
     });
@@ -160,23 +160,23 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
       setLobbyPlayers((prevState) => [...prevState, player]);
     });
 
-    api.socket.on(SocketEvents.PLAYER_LEFT_LOBBY, (playerId: string) => {
-      logger.info('Player left lobby', { playerId });
-      setLobbyPlayers((prevState) => prevState.filter((player) => player.id !== playerId));
+    api.socket.on(SocketEvents.PLAYER_LEFT_LOBBY, (player: PlayerInfo) => {
+      logger.info('Player left lobby', { player });
+      setLobbyPlayers((prevState) => prevState.filter((p) => p.id !== player.id));
     });
 
     // Handle player ready status updates
-    api.socket.on(SocketEvents.PLAYER_READY, (playerId: string, ready: boolean) => {
-      logger.info('Player ready status changed', { playerId, ready });
+    api.socket.on(SocketEvents.PLAYER_READY, (player: PlayerInfo) => {
+      logger.info('Player ready status changed', { player });
       setGameState((prevState) =>
-        prevState ? { ...prevState, playerReadyStatus: { ...prevState.playerReadyStatus, [playerId]: ready } } : null,
+        prevState ? { ...prevState, playerReadyStatus: { ...prevState.playerReadyStatus, [player.id]: true } } : null,
       );
     });
 
-    api.socket.on(SocketEvents.PLAYER_NOT_READY, (playerId: string) => {
-      logger.info('Player not ready', { playerId });
+    api.socket.on(SocketEvents.PLAYER_NOT_READY, (player: PlayerInfo) => {
+      logger.info('Player not ready', { player });
       setGameState((prevState) =>
-        prevState ? { ...prevState, playerReadyStatus: { ...prevState.playerReadyStatus, [playerId]: false } } : null,
+        prevState ? { ...prevState, playerReadyStatus: { ...prevState.playerReadyStatus, [player.id]: false } } : null,
       );
     });
 

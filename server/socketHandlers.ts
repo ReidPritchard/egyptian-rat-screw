@@ -30,7 +30,7 @@ export function setupSocketHandlers(ioServer: Server) {
       gameManager.setPlayerName(socket.id, name);
     });
 
-    socket.on(SocketEvents.JOIN_GAME, (gameId: string) => {
+    socket.on(SocketEvents.JOIN_GAME, ({ gameId }: SocketPayloads[SocketEvents.JOIN_GAME]) => {
       const player = gameManager.getLobbyPlayer(socket.id);
       if (player) {
         logger.info('Joining game', player.name, 'in game', gameId);
