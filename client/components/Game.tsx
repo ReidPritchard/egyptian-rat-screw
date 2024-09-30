@@ -1,4 +1,4 @@
-import { Paper } from '@mantine/core';
+import { Flex, Paper } from '@mantine/core';
 import React, { useEffect, useState } from 'react';
 import { useApplicationContext } from '../hooks/ApplicationState';
 import { newLogger } from '../logger';
@@ -33,10 +33,19 @@ export const Game: React.FC = () => {
   }, [gameState?.cardChallenge]);
 
   return (
-    <Paper p="lg" radius="md" bg={cardChallengeStyle.backgroundColor}>
-      <GameHeader />
-      <GameBoard />
-      <PlayerActions />
-    </Paper>
+    <Flex direction="column" style={{ height: '100%', width: '100%' }}>
+      <Paper
+        p="lg"
+        radius="md"
+        bg={cardChallengeStyle.backgroundColor}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+      >
+        <GameHeader />
+        <Flex style={{ overflow: 'hidden', flexGrow: 1 }}>
+          <GameBoard />
+        </Flex>
+        <PlayerActions />
+      </Paper>
+    </Flex>
   );
 };

@@ -54,7 +54,7 @@ export const App: React.FC = () => {
 
   return (
     <MantineProvider theme={theme}>
-      <Container>
+      <Container h="100vh" w="100vw" p={0} m={0}>
         <LoadingOverlay visible={!isConnected} />
         <ApplicationProvider>
           <AppContainer />

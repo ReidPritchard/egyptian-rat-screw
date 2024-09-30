@@ -55,7 +55,7 @@ export const Lobby: React.FC = () => {
   }, [lobbyPlayers]);
 
   return (
-    <Container w="100%">
+    <Container style={{ height: '100%', width: '100%' }}>
       <Flex direction={'row'} align={'flex-end'} justify={'center'}>
         <TextInput
           label={'Name'}

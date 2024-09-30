@@ -17,13 +17,11 @@ export const GameBoard: React.FC = () => {
 
   const renderPreGameReady = () => {
     return (
-      <Grid justify="center" align="flex-start" h="100%">
-        <Grid.Col span={8}>
+      <Grid style={{ height: '100%' }}>
+        <Grid.Col span={12}>
           <Text ta="center" size="sm" mb="xs">
             Waiting for players to be ready...
           </Text>
-
-          {/* Render the ready status of each player */}
           {gameState.playerIds.map((playerId) => (
             <Text ta="center" size="sm" mb="xs" key={playerId}>
               {gameState.playerNames[playerId]}: {gameState.playerReadyStatus[playerId] ? 'Ready' : 'Not Ready'}
@@ -36,13 +34,13 @@ export const GameBoard: React.FC = () => {
 
   const renderGameBoard = () => {
     return (
-      <Grid justify="center" align="flex-start" h="100%">
-        <Grid.Col span={8}>
-          <Box my="md">
+      <Grid style={{ height: '100%' }}>
+        <Grid.Col span={8} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Box my="md" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Text ta="center" size="sm" mb="xs">
               Pile Size: {gameState?.pileCards?.length ?? 0}
             </Text>
-            <Group justify="center" mb="xl">
+            <Group justify="center" mb="xl" style={{ flex: 1, width: '100%', height: '100%' }}>
               {gameState.pileCards.length > 0 && (
                 <BottomCard
                   bottomCard={gameState.pileCards[0]}
@@ -61,5 +59,9 @@ export const GameBoard: React.FC = () => {
     );
   };
 
-  return gameState.stage === GameStage.PRE_GAME ? renderPreGameReady() : renderGameBoard();
+  return (
+    <Box style={{ height: '100%', width: '100%' }}>
+      {gameState.stage === GameStage.PRE_GAME ? renderPreGameReady() : renderGameBoard()}
+    </Box>
+  );
 };

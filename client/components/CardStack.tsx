@@ -12,8 +12,20 @@ interface CardStackProps {
 export const CardStack = forwardRef<HTMLDivElement, CardStackProps>(({ pile }, ref) => {
   if (!pile) return null;
 
+  // Let the parent flex grow to fill the space
   return (
-    <Box style={{ position: 'relative', width: '60px', height: '90px' }}>
+    <Box
+      style={{
+        position: 'relative',
+        flexGrow: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+      }}
+    >
       <AnimatePresence>
         {pile.map((card, index) => (
           <motion.div
@@ -29,8 +41,6 @@ export const CardStack = forwardRef<HTMLDivElement, CardStackProps>(({ pile }, r
             transition={{ duration: 0.3, delay: config.animation.cardPlayedAnimationDuration }}
             style={{
               position: 'absolute',
-              width: '60px',
-              height: '90px',
             }}
           >
             <PlayingCard ref={ref} suit={card.suit} value={card.rank} faceUp={true} />
