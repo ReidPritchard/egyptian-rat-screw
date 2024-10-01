@@ -143,6 +143,7 @@ export class GameManager {
   }
 
   public handleSlapPile(socket: Socket): void {
+    logger.info('Routing slap pile to game', socket.id);
     this.performGameAction(socket, (game) => game.handleSlapAttempt(socket));
   }
 

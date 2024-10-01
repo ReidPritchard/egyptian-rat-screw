@@ -56,7 +56,6 @@ export class RuleEngine {
   }
 
   public getFaceCardChallengeCount(card: Card): number {
-    // Customizable face card challenge counts
     const faceCardValues = this.rules.faceCardChallengeCounts || {
       J: 1,
       Q: 2,

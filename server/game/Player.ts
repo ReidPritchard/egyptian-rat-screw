@@ -12,6 +12,11 @@ export class Player {
     this.name = name;
   }
 
+  public reset(): void {
+    this.deck = [];
+    this.ready = false;
+  }
+
   public receiveCards(cards: Card[]) {
     this.deck.push(...cards);
   }

@@ -3,7 +3,7 @@ import { CardPlayedAnimation, GameStartAnimation } from '../animations';
 import { api } from '../api';
 import { LocalPlayerSettings } from '../clientTypes';
 import { newLogger } from '../logger';
-import { CardPlayedPayload, GameStartedPayload, PlayCardPayload, SocketEvents } from '../socketEvents';
+import { CardPlayedPayload, GameStartedPayload, SocketEvents, TurnChangedPayload } from '../socketEvents';
 import { ClientGameState, GameSettings, LobbyState, PlayerInfo, VoteState } from '../types';
 import { useLocalPlayerSettings } from './useLocalPlayerSettings';
 
@@ -124,11 +124,27 @@ export const ApplicationProvider: React.FC<React.PropsWithChildren> = ({ childre
     api.socket.on(SocketEvents.CARD_PLAYED, (payload: CardPlayedPayload) => {
       logger.info('Card played', { payload });
       setIsCardPlayedAnimationVisible(true);
+      // Add the card to the pile & remove a card from the player's hand
+      setGameState((prevState: ClientGameState | null) => {
+        if (!prevState) return null;
+
+        const updatedPileCards = [...prevState.pileCards, payload.card];
+        const updatedPlayerHands = Object.fromEntries(
+          Object.entries(prevState.playerHandSizes).map(([playerId, cards]) => {
+            if (playerId === payload.playerId) {
+              return [playerId, cards - 1];
+            }
+            return [playerId, cards];
+          }),
+        );
+        return { ...prevState, pileCards: updatedPileCards, playerHandSizes: updatedPlayerHands };
+      });
     });
 
-    api.socket.on(SocketEvents.PLAY_CARD, (payload: PlayCardPayload) => {
-      logger.info('Play card', { payload });
-      setIsCardPlayedAnimationVisible(true);
+    api.socket.on(SocketEvents.TURN_CHANGED, (payload: TurnChangedPayload) => {
+      logger.info('Turn changed', { payload });
+      setIsCardPlayedAnimationVisible(false);
+      setGameState((prevState) => (prevState ? { ...prevState, currentPlayerId: payload.currentPlayerId } : null));
     });
 
     // Handle game settings changes
