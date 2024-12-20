@@ -1,63 +1,83 @@
-import { Box, Flex, Text } from '@mantine/core';
 import React from 'react';
 import { config } from '../config';
-import { useApplicationContext } from '../hooks/ApplicationState';
+import useApplicationStore, { ApplicationStore } from '../hooks/useApplicationStore';
 import { GameStage } from '../types';
 import { BottomCard } from './BottomCard';
 import { CardStack } from './CardStack';
 import { TurnOrder } from './TurnOrder';
+import { useGameStore } from '../hooks/useGameStore';
 
 export const GameBoard: React.FC = () => {
-  const { gameState, localPlayer, cardStackRef } = useApplicationContext();
+  const { localPlayer } = useApplicationStore();
+  const { gameState } = useGameStore();
 
   if (!gameState || !localPlayer) {
-    console.error('GameBoard: gameState or localPlayer is null');
+    if (!gameState) {
+      console.error('GameBoard: gameState is null');
+      return (
+        <div className="flex flex-col items-center h-full gap-4">
+          <p className="text-center text-sm mb-2">Waiting for game to start...</p>
+        </div>
+      );
+    }
+
+    if (!localPlayer) {
+      console.error('GameBoard: localPlayer is null');
+      return (
+        <div className="flex flex-col items-center h-full gap-4">
+          <p className="text-center text-sm mb-2">Waiting for player to join...</p>
+        </div>
+      );
+    }
+
     return null;
   }
 
   const renderPreGameReady = () => {
     return (
-      <Flex direction="column" align="center" style={{ height: '100%' }}>
-        <Text ta="center" size="sm" mb="xs">
-          Waiting for players to be ready...
-        </Text>
-        {gameState.playerIds.map((playerId) => (
-          <Text ta="center" size="sm" mb="xs" key={playerId}>
-            {gameState.playerNames[playerId]}: {gameState.playerReadyStatus[playerId] ? 'Ready' : 'Not Ready'}
-          </Text>
-        ))}
-      </Flex>
+      <div className="flex flex-col items-center h-full gap-4">
+        {gameState.playerReadyStatus[localPlayer.id] ? 'Ready' : 'Not Ready'}
+
+        {gameState.playerReadyStatus[localPlayer.id] == true && (
+          <>
+            <span className="loading loading-dots loading-lg"></span>
+            <p className="text-center text-sm mb-2">Waiting for all players to be ready...</p>
+          </>
+        )}
+
+        {gameState.playerReadyStatus[localPlayer.id] == true && (
+          <div className="flex flex-col items-start">
+            {gameState.playerIds
+              .filter((playerId: string) => playerId !== localPlayer.id)
+              .map((playerId: string) => (
+                <div
+                  key={playerId}
+                  className={`badge badge-${gameState.playerReadyStatus[playerId] ? 'success' : 'error'}`}
+                >
+                  {gameState.playerNames[playerId]}: {gameState.playerReadyStatus[playerId] ? 'Ready' : 'Not Ready'}
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
     );
   };
 
   const renderGameBoard = () => {
     return (
-      <Flex style={{ height: '100%' }}>
-        <Flex direction="column" justify="center" style={{ flex: 2, padding: '1rem' }}>
-          <Text ta="center" size="sm" mb="xs">
-            Pile Size: {gameState?.pileCards?.length ?? 0}
-          </Text>
-          <Flex justify="center" align="center" style={{ flex: 1 }}>
-            {gameState.pileCards.length > 0 && (
-              <BottomCard
-                bottomCard={gameState.pileCards[0]}
-                duration={config.game.bottomCardDisplayDuration}
-                key={gameState.pileCards[0].id}
-              />
-            )}
-            <CardStack ref={cardStackRef} pile={gameState.pileCards} />
-          </Flex>
-        </Flex>
-        <Box style={{ flex: 1, padding: '1rem' }}>
-          <TurnOrder gameState={gameState} localPlayerId={localPlayer.id} />
-        </Box>
-      </Flex>
+      <div className="flex flex-col h-full max-w-screen-lg m-auto">
+        <TurnOrder gameState={gameState} localPlayerId={localPlayer.id} />
+        <div className="flex-1 flex flex-col justify-center p-4">
+          <p className="text-center text-sm mb-2">Pile Size: {gameState?.pileCards?.length ?? 0}</p>
+          <CardStack pile={gameState.pileCards} />
+        </div>
+      </div>
     );
   };
 
   return (
-    <Box style={{ height: '100%', width: '100%' }}>
+    <div className="h-full w-full">
       {gameState.stage === GameStage.PRE_GAME ? renderPreGameReady() : renderGameBoard()}
-    </Box>
+    </div>
   );
 };

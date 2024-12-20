@@ -1,4 +1,5 @@
-import { AspectRatio, Box, Text } from '@mantine/core';
+import { useLocalPlayerSettings } from '../hooks/useLocalPlayerSettings';
+import { useApplicationStore } from '../hooks/useApplicationStore';
 import React, { forwardRef } from 'react';
 
 interface CardProps {
@@ -14,56 +15,38 @@ const suitSymbols: { [key: string]: string } = {
   spades: '♠',
 };
 
-const suitColors: { [key: string]: string } = {
-  hearts: 'red',
-  diamonds: 'red',
-  clubs: 'black',
-  spades: 'black',
-};
-
 export const PlayingCard = forwardRef<HTMLDivElement, CardProps>(({ suit, value, faceUp }, ref) => {
+  const { highContrast } = useLocalPlayerSettings((state) => state.settings.ui);
+
   const suitSymbol = suitSymbols[suit.toLowerCase()];
+
+  // For high-contrast mode, use different colors for each suit
+  const suitColors: { [key: string]: string } = {
+    hearts: highContrast ? 'text-red-500' : 'text-red-500',
+    diamonds: highContrast ? 'text-yellow-500' : 'text-red-500',
+    clubs: highContrast ? 'text-blue-500' : 'text-black',
+    spades: highContrast ? 'text-black' : 'text-black',
+  };
   const color = suitColors[suit.toLowerCase()];
 
-  // Keep the card aspect ratio, but let it grow to fill the space
-  const aspectRatio = 60 / 90;
-
   return (
-    <AspectRatio ratio={aspectRatio} style={{ width: '100%', height: '100%' }}>
-      <Box
-        ref={ref}
-        style={{
-          border: '1px solid #ccc',
-          borderRadius: '5px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: '5px',
-          backgroundColor: faceUp ? 'white' : 'gray.3',
-          color: faceUp ? color : 'gray.3',
-          userSelect: 'none',
-          width: '100%',
-          height: '100%',
-        }}
-      >
-        {faceUp ? (
-          <>
-            <Text fz="sm" fw="bold" ta="left">
-              {value}
-            </Text>
-            <Text fz="xl" ta="center">
-              {suitSymbol}
-            </Text>
-            <Text fz="sm" fw="bold" ta="left" style={{ transform: 'rotate(180deg)' }}>
-              {value}
-            </Text>
-          </>
-        ) : (
-          <Text fz="xl" ta="center" c="gray.3">
-            ?
-          </Text>
-        )}
-      </Box>
-    </AspectRatio>
+    <div
+      ref={ref}
+      className={`${faceUp ? 'bg-white' : 'bg-gray-300'} ${color} ${
+        faceUp ? 'border-2 border-black' : 'border-2 border-gray-300'
+      } rounded-lg p-2 flex flex-col justify-between aspect-playing-card min-w-24 min-h-36`}
+    >
+      {faceUp ? (
+        <>
+          <p className="text-sm font-bold text-left">{value}</p>
+          <p className="text-xl text-center">{suitSymbol}</p>
+          <p className="text-sm font-bold text-left" style={{ transform: 'rotate(180deg)' }}>
+            {value}
+          </p>
+        </>
+      ) : (
+        <p className="text-xl text-center text-gray-300">?</p>
+      )}
+    </div>
   );
 });

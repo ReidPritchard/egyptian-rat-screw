@@ -1,10 +1,11 @@
 import { Button, Container, Group, Paper, Text, Title } from '@mantine/core';
 import React from 'react';
 import { api } from '../api';
-import { useApplicationContext } from '../hooks/ApplicationState';
+import { ApplicationStore, useApplicationStore } from '../hooks/useApplicationStore';
+import { useGameStore } from '../hooks/useGameStore';
 
 export const PreGame: React.FC = () => {
-  const { gameState } = useApplicationContext();
+  const { gameState } = useGameStore();
 
   const handleStartVote = () => {
     api.startVote('startGame');

@@ -1,14 +1,13 @@
 import { AspectRatio, Image, Text } from '@mantine/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
+import useApplicationStore, { ApplicationStore } from '../hooks/useApplicationStore';
+import { useGameStore } from '../hooks/useGameStore';
 
-interface GameStartAnimationProps {
-  isVisible: boolean;
-  onAnimationComplete: () => void;
-}
+export const GameStartAnimation: React.FC = () => {
+  const { isGameStarting, setIsGameStarting } = useGameStore();
 
-export const GameStartAnimation: React.FC<GameStartAnimationProps> = ({ isVisible, onAnimationComplete }) => {
-  const disable = false;
+  const disable = true;
 
   // Timing constants
   const CHAR_REVEAL_INTERVAL = 0; // Time between each character reveal (in ms)
@@ -26,10 +25,10 @@ export const GameStartAnimation: React.FC<GameStartAnimationProps> = ({ isVisibl
 
   useEffect(() => {
     if (disable) {
-      onAnimationComplete();
+      setIsGameStarting(false);
       return;
     }
-    if (isVisible && messageIndex < messages.length) {
+    if (isGameStarting && messageIndex < messages.length) {
       // Display each character of the current message one by one
       const message = messages[messageIndex];
       let charIndex = 0;
@@ -49,13 +48,13 @@ export const GameStartAnimation: React.FC<GameStartAnimationProps> = ({ isVisibl
       return () => clearInterval(intervalId);
     } else if (messageIndex === messages.length) {
       // All messages have been displayed
-      onAnimationComplete();
+      setIsGameStarting(false);
     }
-  }, [isVisible, messageIndex]);
+  }, [isGameStarting, messageIndex]);
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {isGameStarting && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

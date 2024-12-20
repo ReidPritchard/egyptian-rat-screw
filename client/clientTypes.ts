@@ -15,5 +15,6 @@ export interface LocalPlayerSettings {
     actionLog: {
       expanded: boolean;
     };
+    highContrast: boolean;
   };
 }

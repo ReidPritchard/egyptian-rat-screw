@@ -38,6 +38,7 @@ export enum SocketEvents {
   PLAYER_LEFT_GAME = 'playerLeftGame',
   PLAYER_READY = 'playerReady',
   PLAYER_NOT_READY = 'playerNotReady',
+  PLAYER_READY_UPDATE = 'playerReadyUpdate',
 
   // Player Actions (Client to Server)
   CHANGE_NAME = 'changeName',
@@ -92,6 +93,7 @@ export interface SocketPayloads {
   [SocketEvents.PLAYER_LEFT_GAME]: PlayerInfo;
   [SocketEvents.PLAYER_READY]: PlayerInfo;
   [SocketEvents.PLAYER_NOT_READY]: PlayerInfo;
+  [SocketEvents.PLAYER_READY_UPDATE]: PlayerReadyUpdatePayload;
 
   // Player Actions
   [SocketEvents.CHANGE_NAME]: ChangeNamePayload;
@@ -199,4 +201,9 @@ export interface VoteCount {
 export interface MessagePayload {
   message: string;
   timestamp: number;
+}
+
+export interface PlayerReadyUpdatePayload {
+  playerId: string;
+  isReady: boolean;
 }

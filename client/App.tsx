@@ -1,65 +1,49 @@
-import { Container, createTheme, LoadingOverlay, MantineProvider } from '@mantine/core';
-import React, { useEffect, useState } from 'react';
-import { api } from './api';
+import React, { StrictMode, Suspense, useEffect } from 'react';
 import { AppContainer } from './components/AppContainer';
-import { ApplicationProvider } from './hooks/ApplicationState';
-import { SocketEvents } from './socketEvents';
+import useApplicationStore, { ApplicationStore, initializeSocketListeners } from './hooks/useApplicationStore';
+import './index.css';
 
 export const App: React.FC = () => {
-  // Track connection state
-  const [isConnected, setIsConnected] = useState(false);
-
   useEffect(() => {
-    api.on(SocketEvents.CONNECT, () => {
-      setIsConnected(true);
-    });
-
-    api.on(SocketEvents.DISCONNECT, () => {
-      setIsConnected(false);
-    });
+    initializeSocketListeners();
   }, []);
 
-  const theme = createTheme({
-    primaryColor: 'rat-blue',
-    colors: {
-      // Light pink #FFC0CB
-      'rat-ears-pink': [
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-        '#FFC0CB',
-      ],
-      // Start at #9BC0E1
-      'rat-blue': [
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-        '#9BC0E1',
-      ],
-    },
-  });
+  const isConnected = useApplicationStore((state: ApplicationStore) => state.isConnected);
+
+  //   'rat-ears-pink': [
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //     '#FFC0CB',
+  //   ],
+  //   'rat-blue': [
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //     '#9BC0E1',
+  //   ],
+  // }
 
   return (
-    <MantineProvider theme={theme}>
-      <Container h="100vh" w="100vw" p={0} m={0}>
-        <LoadingOverlay visible={!isConnected} />
-        <ApplicationProvider>
+    <StrictMode>
+      <div className="h-screen w-screen p-0 m-0 transition-all duration-150">
+        <Suspense fallback={<span className="loading loading-infinity loading-lg"></span>}>
           <AppContainer />
-        </ApplicationProvider>
-      </Container>
-    </MantineProvider>
+        </Suspense>
+      </div>
+    </StrictMode>
   );
 };

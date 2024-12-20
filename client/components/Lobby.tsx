@@ -1,25 +1,28 @@
-import { Button, Container, Flex, Paper, Space, Stack, Text, TextInput, Title, Tooltip } from '@mantine/core';
-import { useLocalStorage, useThrottledCallback } from '@mantine/hooks';
-import { IconPlus } from '@tabler/icons-react';
+import { IconArrowRight, IconId, IconPlus, IconUser } from '@tabler/icons-react';
 import { ChangeNamePayload } from 'client/socketEvents';
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { config } from '../config';
-import { useApplicationContext } from '../hooks/ApplicationState';
+import { useApplicationStore } from '../hooks/useApplicationStore';
+import { useLobbyStore } from '../hooks/useLobbyStore';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useThrottledCallback } from '../hooks/useThrottledCallback';
+import { useLocalPlayerSettings } from '../hooks/useLocalPlayerSettings';
 
 export const Lobby: React.FC = () => {
-  const { lobbyState, lobbyPlayers, localPlayer } = useApplicationContext();
+  const { changeName } = useLocalPlayerSettings();
+  const { lobbyState, lobbyPlayers, handleJoinGame, handleCreateGame } = useLobbyStore();
+  const { localPlayer } = useApplicationStore();
 
-  const [playerName, setPlayerName] = useLocalStorage({
-    key: config.localStoragePlayerNameKey,
-    defaultValue: localPlayer?.name || '',
-  });
+  const [playerName, setPlayerName] = useLocalStorage(config.localStoragePlayerNameKey, localPlayer?.name || '');
+  const [joinGameCode, setJoinGameCode] = useState('');
 
   useEffect(() => {
     const handleConnect = () => {
       if (playerName) {
         api.changeName({ name: playerName });
+        changeName(playerName);
       }
     };
 
@@ -36,49 +39,56 @@ export const Lobby: React.FC = () => {
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setPlayerName(newName);
+    changeName(newName);
     if (api.socket.connected) {
       throttledChangeName({ name: newName });
     }
   };
 
-  const handleJoinGame = (gameId: string) => {
-    api.joinGame({ gameId });
+  const handleJoinGameCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newGameCode = e.target.value;
+    setJoinGameCode(newGameCode);
   };
-
-  const handleCreateGame = () => {
-    api.createGame({ playerName });
-  };
-
-  // Re-render when a player joins or leaves the lobby
-  useEffect(() => {
-    console.log('lobbyPlayers', lobbyPlayers);
-  }, [lobbyPlayers]);
 
   return (
-    <Container style={{ height: '100%', width: '100%' }}>
-      <Flex direction={'row'} align={'flex-end'} justify={'center'}>
-        <TextInput
-          label={'Name'}
-          description={'This is your name that will be displayed to other players'}
-          placeholder="Your Name"
-          value={playerName}
-          onChange={handleNameChange}
-          style={{ flex: 1 }}
-          withAsterisk
-        />
-        <Space w="10px" />
-        <Tooltip label="Create Game">
-          <Button onClick={handleCreateGame} disabled={!playerName} leftSection={<IconPlus size="1.1rem" />}>
+    <section className="flex flex-col md:flex-row items-start justify-around h-full w-full">
+      <div className="flex flex-col items-stretch justify-between gap-4">
+        <label className="input input-bordered flex items-center gap-2">
+          <IconUser size="1.1rem" />
+          <input type="text" className="grow" placeholder="Username" value={playerName} onChange={handleNameChange} />
+        </label>
+        <label className="input input-bordered flex items-center gap-2">
+          <IconId size="1.1rem" />
+          <input
+            type="text"
+            className="grow"
+            placeholder="Join Game Code"
+            value={joinGameCode}
+            onChange={handleJoinGameCodeChange}
+          />
+        </label>
+
+        <div className="join">
+          <button className="btn btn-primary join-item" onClick={handleCreateGame} disabled={!playerName}>
+            <IconPlus size="1.1rem" />
             Create Game
-          </Button>
-        </Tooltip>
-      </Flex>
+          </button>
+          <button
+            className="btn btn-secondary join-item"
+            onClick={() => handleJoinGame(joinGameCode)}
+            disabled={!playerName || !joinGameCode}
+          >
+            <IconArrowRight size="1.1rem" />
+            Join Game
+          </button>
+        </div>
+      </div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Paper style={{ marginTop: '20px', padding: '10px' }}>
-          <Title order={3}>Players ({lobbyPlayers.length})</Title>
+        <section className="p-4 pt-0">
+          <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">Players ({lobbyPlayers.length})</h3>
           <br />
-          <Flex direction="column" align="flex-start">
+          <div className="flex flex-col items-start">
             <AnimatePresence>
               {lobbyPlayers.map((player) => (
                 <motion.div
@@ -88,25 +98,26 @@ export const Lobby: React.FC = () => {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Text>
+                  <p className="flex flex-row items-center justify-center gap-3">
                     {player.name}
-                    {player.id === localPlayer?.id && ' (You)'}
-                  </Text>
+                    {player.id === localPlayer?.id && <span className="badge badge-primary">You</span>}
+                  </p>
                 </motion.div>
               ))}
             </AnimatePresence>
-          </Flex>
-        </Paper>
+          </div>
+        </section>
       </motion.div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Paper style={{ marginTop: '20px', padding: '10px' }}>
-          <Title order={3}>Games</Title>
+        <section className="p-4 pt-0">
+          <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">Games</h3>
           <br />
-          <Stack>
+          <div className="flex flex-col items-center">
             <AnimatePresence>
               {lobbyState?.games.map((game) => (
                 <motion.div
@@ -116,27 +127,26 @@ export const Lobby: React.FC = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Flex align="center" justify="center" w="100%">
-                    <Paper withBorder p={10} w="80%">
-                      <Flex justify="space-between" align="center" w="100%">
-                        <div>
-                          <Text size="lg" p={3}>
-                            {game.name}
-                          </Text>
-                          <Text size="xs" p={3}>
-                            Players: {game.playerCount}/{game.maxPlayers}
-                          </Text>
-                        </div>
-                        <Button onClick={() => handleJoinGame(game.id)}>Join</Button>
-                      </Flex>
-                    </Paper>
-                  </Flex>
+                  <div className="card bg-base-100 w-28 shadow-xl">
+                    <section className="card-body">
+                      <h2 className="card-title">{game.name}</h2>
+                      <p className="text-xs p-3">
+                        Players: {game.playerCount}/{game.maxPlayers}
+                      </p>
+                      <div className="card-actions justify-end">
+                        <button className="btn btn-primary" onClick={() => handleJoinGame(game.id)}>
+                          <IconArrowRight size="1.1rem" />
+                          Join
+                        </button>
+                      </div>
+                    </section>
+                  </div>
                 </motion.div>
               ))}
             </AnimatePresence>
-          </Stack>
-        </Paper>
+          </div>
+        </section>
       </motion.div>
-    </Container>
+    </section>
   );
 };

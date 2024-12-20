@@ -1,13 +1,16 @@
-import { ActionIcon, Group, Tooltip } from '@mantine/core';
 import { useHotkeys } from '@mantine/hooks';
 import { IconHandStop, IconPlayCard, IconPlayerPlay, IconSettings } from '@tabler/icons-react';
 import React from 'react';
 import { api } from '../api';
-import { useApplicationContext } from '../hooks/ApplicationState';
 import { GameStage } from '../types';
+import { useApplicationStore } from '../hooks/useApplicationStore';
+import { useGameStore } from '../hooks/useGameStore';
+import { useLocalPlayerSettings } from '../hooks/useLocalPlayerSettings';
 
 export const PlayerActions: React.FC = () => {
-  const { isLocalPlayerTurn, gameState, localPlayerSettings, localPlayer } = useApplicationContext();
+  const { localPlayer } = useApplicationStore();
+  const { isLocalPlayerTurn, gameState } = useGameStore();
+  const { settings: localPlayerSettings } = useLocalPlayerSettings();
 
   const gameOver = gameState?.stage === GameStage.GAME_OVER;
 
@@ -38,11 +41,11 @@ export const PlayerActions: React.FC = () => {
   const renderGameSettingsAction = () => {
     if (gameState?.stage === GameStage.PRE_GAME) {
       return (
-        <Tooltip label="Game settings (g)">
-          <ActionIcon size="xl" variant="filled" color="blue" onClick={() => console.log('Game settings')}>
+        <div className="tooltip tooltip-primary" data-tip="Game settings (g)">
+          <button className="btn btn-outline btn-lg" onClick={() => console.log('Game settings')}>
             <IconSettings size="1.5rem" />
-          </ActionIcon>
-        </Tooltip>
+          </button>
+        </div>
       );
     }
   };
@@ -50,11 +53,11 @@ export const PlayerActions: React.FC = () => {
   const renderStartGameAction = () => {
     if (gameState?.stage === GameStage.PRE_GAME && localPlayer) {
       return (
-        <Tooltip label="Ready up">
-          <ActionIcon size="xl" variant="filled" color="green" onClick={() => api.playerReady(localPlayer)}>
+        <div className="tooltip tooltip-primary" data-tip="Ready up">
+          <button className="btn btn-lg btn-success" onClick={() => api.playerReady(localPlayer)}>
             <IconPlayerPlay size="1.5rem" />
-          </ActionIcon>
-        </Tooltip>
+          </button>
+        </div>
       );
     }
   };
@@ -62,17 +65,11 @@ export const PlayerActions: React.FC = () => {
   const renderPlayCardAction = () => {
     if (gameState?.stage === GameStage.PLAYING) {
       return (
-        <Tooltip label="Play a card (n)">
-          <ActionIcon
-            size="xl"
-            variant="filled"
-            color="blue"
-            onClick={() => api.playCard({})}
-            disabled={!isLocalPlayerTurn}
-          >
+        <div className="tooltip tooltip-primary" data-tip="Play a card (n)">
+          <button className="btn btn-outline btn-lg" onClick={() => api.playCard({})} disabled={!isLocalPlayerTurn}>
             <IconPlayCard size="1.5rem" />
-          </ActionIcon>
-        </Tooltip>
+          </button>
+        </div>
       );
     }
   };
@@ -80,26 +77,25 @@ export const PlayerActions: React.FC = () => {
   const renderSlapPileAction = () => {
     if (gameState?.stage === GameStage.PLAYING) {
       return (
-        <Tooltip label="Slap the pile if you think it's a valid slap (space)">
-          <ActionIcon
-            size="xl"
-            variant="filled"
-            color="red"
-            onClick={() => api.slapPile({ playerId: localPlayer?.id })}
-          >
+        <div className="tooltip tooltip-primary" data-tip="Slap the pile if you think it's a valid slap (space)">
+          <button className="btn btn-outline btn-lg" onClick={() => api.slapPile({ playerId: localPlayer?.id })}>
             <IconHandStop size="1.5rem" />
-          </ActionIcon>
-        </Tooltip>
+          </button>
+        </div>
       );
     }
   };
 
   return (
-    <Group justify="center" mt="xl">
-      {renderGameSettingsAction()}
-      {renderStartGameAction()}
-      {renderPlayCardAction()}
-      {renderSlapPileAction()}
-    </Group>
+    <div className="navbar bg-base-100">
+      <div className="navbar-start flex-1"></div>
+      <div className="navbar-center gap-2">
+        {renderGameSettingsAction()}
+        {renderStartGameAction()}
+        {renderPlayCardAction()}
+        {renderSlapPileAction()}
+      </div>
+      <div className="navbar-end flex-1"></div>
+    </div>
   );
 };

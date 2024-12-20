@@ -1,16 +1,17 @@
-import { Badge, Group, Title } from '@mantine/core';
 import React from 'react';
-import { useApplicationContext } from '../hooks/ApplicationState';
+import { useGameStore } from '../hooks/useGameStore';
+import { GameStage } from '../types';
 
 export const GameHeader: React.FC = () => {
-  const { gameState, isLocalPlayerTurn } = useApplicationContext();
+  const { gameState, isLocalPlayerTurn } = useGameStore();
 
   return (
-    <Group justify="space-between" mb="md">
-      <Title order={3}>{gameState?.name}</Title>
-      <Badge color={isLocalPlayerTurn ? 'green' : 'blue'} size="lg">
-        {isLocalPlayerTurn ? 'Your Turn' : `${gameState?.playerNames[gameState.currentPlayerId]}'s Turn`}
-      </Badge>
-    </Group>
+    <div className="flex flex-row justify-between mb-4">
+      {gameState?.stage === GameStage.PLAYING && (
+        <div className={`badge ${isLocalPlayerTurn ? 'badge-accent' : 'badge-outline'}`}>
+          {isLocalPlayerTurn ? 'Your Turn' : `${gameState?.playerNames[gameState.currentPlayerId]}'s Turn`}
+        </div>
+      )}
+    </div>
   );
 };

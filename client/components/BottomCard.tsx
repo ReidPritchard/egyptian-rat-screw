@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Text, Transition } from '@mantine/core';
 import { PlayingCard } from './PlayingCard';
 import { Card } from '../types';
+import { motion } from 'framer-motion';
 
 interface BottomCardProps {
   bottomCard: Card | null;
@@ -22,13 +22,13 @@ export const BottomCard: React.FC<BottomCardProps> = ({ bottomCard, duration }) 
   }, [duration]);
 
   return (
-    <Transition mounted={isVisible} transition="fade" duration={50} timingFunction="ease">
-      {(styles) => (
-        <Box style={{ ...styles, position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)' }}>
-          <Text mb="xs">Bottom card (invalid slap):</Text>
-          <PlayingCard suit={bottomCard.suit} value={bottomCard.rank} faceUp={true} />
-        </Box>
-      )}
-    </Transition>
+    <motion.div
+      animate={{ opacity: isVisible ? 1 : 0 }}
+      transition={{ duration: 0.5, ease: 'easeInOut' }}
+      className="fixed bottom-4 left-1/2 transform -translate-x-1/2"
+    >
+      <p className="mb-2">Bottom card (invalid slap):</p>
+      <PlayingCard suit={bottomCard.suit} value={bottomCard.rank} faceUp={true} />
+    </motion.div>
   );
 };

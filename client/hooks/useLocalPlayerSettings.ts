@@ -1,11 +1,13 @@
-// Custom hook to get and set the player's settings
-
-import { useLocalStorage } from '@mantine/hooks';
+import { create } from 'zustand';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { LocalPlayerSettings } from '../clientTypes';
 import { api } from '../api';
+import { newLogger } from '../logger';
+
+const logger = newLogger('LocalPlayerSettings');
 
 const DEFAULT_SETTINGS: LocalPlayerSettings = {
-  name: '', // If the player's name is empty, the server will assign a random name
+  name: '',
   hotkeys: {
     enable: true,
     playCard: 'Space',
@@ -21,35 +23,51 @@ const DEFAULT_SETTINGS: LocalPlayerSettings = {
     actionLog: {
       expanded: false,
     },
+    highContrast: false,
   },
 };
 
-export function useLocalPlayerSettings() {
-  const [settings, setSettings] = useLocalStorage<LocalPlayerSettings>({
-    key: 'localPlayerSettings',
-    defaultValue: DEFAULT_SETTINGS,
-  });
-
-  const updateSettings = (newSettings: Partial<LocalPlayerSettings>) => {
-    setSettings((prevSettings) => {
-      const updatedSettings = { ...prevSettings, ...newSettings };
-
-      // If the name has changed, update it on the server
-      if (newSettings.name && newSettings.name !== prevSettings.name) {
-        api.changeName({ name: newSettings.name });
-      }
-
-      return updatedSettings;
-    });
-  };
-
-  const changeName = (name: string) => {
-    updateSettings({ name });
-  };
-
-  return {
-    settings,
-    updateSettings,
-    changeName,
-  };
+interface LocalPlayerSettingsState {
+  settings: LocalPlayerSettings;
 }
+
+interface LocalPlayerSettingsActions {
+  updateSettings: (newSettings: Partial<LocalPlayerSettings>) => void;
+  changeName: (name: string) => void;
+}
+
+type LocalPlayerSettingsStore = LocalPlayerSettingsState & LocalPlayerSettingsActions;
+
+export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
+  devtools(
+    persist(
+      (set) => ({
+        settings: DEFAULT_SETTINGS,
+
+        updateSettings: (newSettings: Partial<LocalPlayerSettings>) => {
+          set((state) => {
+            const updatedSettings = { ...state.settings, ...newSettings };
+
+            // If the name has changed, update it on the server
+            if (newSettings.name && newSettings.name !== state.settings.name) {
+              api.changeName({ name: newSettings.name });
+            }
+
+            return { settings: updatedSettings };
+          });
+        },
+
+        changeName: (name: string) => {
+          set((state) => ({
+            settings: { ...state.settings, name },
+          }));
+          api.changeName({ name });
+        },
+      }),
+      {
+        name: 'player-settings',
+        storage: createJSONStorage(() => localStorage),
+      },
+    ),
+  ),
+);
