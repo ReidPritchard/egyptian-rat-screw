@@ -35,6 +35,40 @@ export interface PlayerAction {
   };
 }
 
+// Types of events that occur during the game, used for logging
+// and to calculate game statistics
+export enum GameEventType {
+  ADD_PLAYER = 'ADD_PLAYER',
+  REMOVE_PLAYER = 'REMOVE_PLAYER',
+
+  PLAY_CARD = 'PLAY_CARD',
+  SLAP = 'SLAP',
+
+  GAME_STARTED = 'GAME_STARTED',
+  GAME_ENDED = 'GAME_ENDED',
+
+  START_CHALLENGE = 'START_CHALLENGE',
+  COUNTER_CHALLENGE = 'COUNTER_CHALLENGE',
+  FAILED_COUNTER = 'FAILED_COUNTER',
+  CHALLENGE_FAILED = 'CHALLENGE_FAILED',
+
+  TURN_CHANGED = 'TURN_CHANGED',
+
+  START_VOTE = 'START_VOTE',
+  CAST_VOTE = 'CAST_VOTE',
+  VOTE_RESOLVED = 'VOTE_RESOLVED',
+
+  SET_READY = 'SET_READY',
+  SET_SETTINGS = 'SET_SETTINGS',
+}
+
+export interface GameEvent {
+  playerId: string;
+  eventType: GameEventType;
+  timestamp: number;
+  data: any;
+}
+
 export interface ICondition {
   field: ConditionValue;
   operator: '===' | '!==' | '>' | '<' | '>=' | '<=' | 'in';
@@ -105,6 +139,10 @@ export interface PlayerInfo {
   id: string;
   name: string;
 }
+
+export type PlayerInfoUpdate = PlayerInfo & {
+  action: 'join' | 'leave' | 'update';
+};
 
 export interface GameState {
   id: string;

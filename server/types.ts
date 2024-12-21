@@ -140,6 +140,10 @@ export interface PlayerInfo {
   name: string;
 }
 
+export type PlayerInfoUpdate = PlayerInfo & {
+  action: 'join' | 'leave' | 'update';
+};
+
 export interface GameState {
   id: string;
   name: string;

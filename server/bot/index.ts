@@ -8,16 +8,13 @@ const logger = newLogger('Bot');
 export class Bot {
   private game: Game | null = null;
   public playerInfo: PlayerInfo;
-  private socket: Socket | null = null;
+  public socket: Socket | null = null;
 
   constructor(name: string = 'Bot') {
     this.playerInfo = {
       id: `bot-${Math.random().toString(36).substr(2, 9)}`,
       name: name,
     };
-  }
-
-  public joinGame(gameId: string): void {
     // Create a mock socket for the bot
     this.socket = {
       id: this.playerInfo.id,
@@ -25,8 +22,11 @@ export class Bot {
       leave: () => {},
       emit: () => {},
       on: () => {},
+      rooms: new Set(),
     } as unknown as Socket;
+  }
 
+  public joinGame(gameId: string): void {
     if (this.game) {
       logger.info(`Bot ${this.playerInfo.name} joined game ${gameId}`);
       this.setupGameListeners();

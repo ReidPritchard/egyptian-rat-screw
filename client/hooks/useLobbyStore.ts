@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { api } from '../api';
 import { newLogger } from '../logger';
-import { LobbyState, PlayerInfo } from '../types';
+import { LobbyState, PlayerInfo, PlayerInfoUpdate } from '../types';
 import useApplicationStore from './useApplicationStore';
 import { useLocalPlayerSettings } from './useLocalPlayerSettings';
 
@@ -16,9 +16,7 @@ interface LobbyStoreState {
 interface LobbyActions {
   setLobbyState: (lobbyState: LobbyState | null) => void;
   setLobbyPlayers: (players: PlayerInfo[]) => void;
-  handlePlayerNameChanged: (player: PlayerInfo) => void;
-  handlePlayerJoinedLobby: (player: PlayerInfo) => void;
-  handlePlayerLeftLobby: (player: PlayerInfo) => void;
+  handleLobbyPlayerUpdate: (playerUpdates: PlayerInfoUpdate[]) => void;
   fetchLobbyState: () => void;
   handleJoinLobby: () => void;
   handleJoinGame: (gameId: string) => void;
@@ -37,23 +35,20 @@ export const useLobbyStore = create<LobbyStore>()(
     setLobbyState: (lobbyState: LobbyState | null) => set({ lobbyState }),
     setLobbyPlayers: (players: PlayerInfo[]) => set({ lobbyPlayers: players }),
 
-    handlePlayerNameChanged: (player: PlayerInfo) => {
-      logger.info('Player name changed', { player });
-      const prevPlayers = get().lobbyPlayers;
-      const updatedPlayers = prevPlayers.map((p) => (p.id === player.id ? player : p));
-      get().setLobbyPlayers(updatedPlayers);
-    },
+    handleLobbyPlayerUpdate: (playerUpdates: PlayerInfoUpdate[]) => {
+      logger.info('Lobby player update', playerUpdates);
 
-    handlePlayerJoinedLobby: (player: PlayerInfo) => {
-      logger.info('Player joined lobby', { player });
-      const prevPlayers = get().lobbyPlayers;
-      get().setLobbyPlayers([...prevPlayers, player]);
-    },
-
-    handlePlayerLeftLobby: (player: PlayerInfo) => {
-      logger.info('Player left lobby', { player });
-      const prevPlayers = get().lobbyPlayers;
-      const updatedPlayers = prevPlayers.filter((p) => p.id !== player.id);
+      const prevPlayers = get().lobbyPlayers || [];
+      const updatedPlayers = playerUpdates.reduce((acc, player) => {
+        switch (player.action) {
+          case 'join':
+            return [...acc, player];
+          case 'leave':
+            return acc.filter((p) => p.id !== player.id);
+          case 'update':
+            return acc.map((p) => (p.id === player.id ? player : p));
+        }
+      }, prevPlayers);
       get().setLobbyPlayers(updatedPlayers);
     },
 

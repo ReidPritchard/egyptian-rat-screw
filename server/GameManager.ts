@@ -4,6 +4,7 @@ import { Game } from './game/Game';
 import { newLogger } from './logger';
 import { SocketEvents } from './socketEvents';
 import { GameSettings, PlayerAction, PlayerActionType, PlayerInfo } from './types';
+import { Bot } from './bot';
 
 const logger = newLogger('GameManager');
 
@@ -62,6 +63,9 @@ export class GameManager {
     }
     // Update the lobby with the new game
     this.emitLobbyUpdate();
+
+    // FIXME: Add bot player
+    this.addBotPlayer(gameId);
   }
 
   public leaveGame(socket: Socket): void {
@@ -104,7 +108,13 @@ export class GameManager {
     // Emit all lobby players to the new player
     this.socketPlayerMap.forEach((player) => {
       if (player.id !== socket.id) {
-        GameManager.io.to(socket.id).emit(SocketEvents.PLAYER_JOINED_LOBBY, player);
+        GameManager.io.to(socket.id).emit(SocketEvents.LOBBY_PLAYER_UPDATE, [
+          {
+            id: player.id,
+            name: player.name,
+            action: 'join',
+          },
+        ]);
       }
     });
   }
@@ -187,10 +197,13 @@ export class GameManager {
       player.name = playerName;
       this.socketPlayerMap.set(socketId, player);
 
-      GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.PLAYER_NAME_CHANGED, {
-        id: socketId,
-        name: playerName,
-      });
+      GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.LOBBY_PLAYER_UPDATE, [
+        {
+          id: socketId,
+          name: playerName,
+          action: 'update',
+        },
+      ]);
     }
   }
 
@@ -227,21 +240,27 @@ export class GameManager {
 
     logger.info('Emitting player left lobby', id, name);
 
-    GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.PLAYER_LEFT_LOBBY, {
-      id,
-      name,
-    });
+    GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.LOBBY_PLAYER_UPDATE, [
+      {
+        id,
+        name,
+        action: 'leave',
+      },
+    ]);
   }
 
   private emitPlayerJoinedLobby(id: string, name: string): void {
-    GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.PLAYER_JOINED_LOBBY, {
-      id,
-      name,
-    });
+    GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.LOBBY_PLAYER_UPDATE, [
+      {
+        id,
+        name,
+        action: 'join',
+      },
+    ]);
   }
 
   private emitLobbyUpdate(): void {
-    GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.LOBBY_UPDATE, {
+    GameManager.io.to(SETTINGS.LOBBY_ROOM).emit(SocketEvents.LOBBY_GAME_UPDATE, {
       games: Array.from(this.games.values()).map((game) => ({
         id: game.gameId,
         name: game.gameId,
@@ -289,5 +308,14 @@ export class GameManager {
     const adjectives = SETTINGS.GENERATORS.PLAYER_NAME.ADJECTIVES;
     const names = SETTINGS.GENERATORS.PLAYER_NAME.NOUNS;
     return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
+  }
+
+  private addBotPlayer(gameId: string): void {
+    logger.info('Adding bot player to game', gameId);
+    const bot = new Bot();
+    if (bot.socket) {
+      this.joinGame(gameId, bot.playerInfo, bot.socket);
+      logger.info('Bot player added to game', gameId);
+    }
   }
 }

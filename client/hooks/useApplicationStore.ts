@@ -96,8 +96,7 @@ export const initializeSocketListeners = () => {
     setIsCardPlayedAnimationVisible,
   } = useGameStore.getState();
 
-  const { setLobbyState, setLobbyPlayers, handlePlayerNameChanged, handlePlayerJoinedLobby, handlePlayerLeftLobby } =
-    useLobbyStore.getState();
+  const { setLobbyState, setLobbyPlayers, handleLobbyPlayerUpdate } = useLobbyStore.getState();
 
   // Connection events
   api.socket.on(SocketEvents.CONNECT, handleConnection);
@@ -126,15 +125,13 @@ export const initializeSocketListeners = () => {
   api.socket.on(SocketEvents.VOTE_UPDATED, handleVoteUpdated);
 
   // Lobby events
-  api.socket.on(SocketEvents.LOBBY_UPDATE, (updatedLobbyState) => {
+  api.socket.on(SocketEvents.LOBBY_GAME_UPDATE, (updatedLobbyState) => {
     logger.info('Lobby state updated', { updatedLobbyState });
     useApplicationStore.getState().setUserLocation('lobby');
     setLobbyState(updatedLobbyState);
   });
 
-  api.socket.on(SocketEvents.PLAYER_NAME_CHANGED, handlePlayerNameChanged);
-  api.socket.on(SocketEvents.PLAYER_JOINED_LOBBY, handlePlayerJoinedLobby);
-  api.socket.on(SocketEvents.PLAYER_LEFT_LOBBY, handlePlayerLeftLobby);
+  api.socket.on(SocketEvents.LOBBY_PLAYER_UPDATE, handleLobbyPlayerUpdate);
 
   api.socket.on(SocketEvents.ERROR, (error: string) => {
     logger.error('Error:', error);

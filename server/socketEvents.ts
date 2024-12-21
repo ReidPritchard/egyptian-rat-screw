@@ -6,6 +6,7 @@ import {
   LobbyState,
   PlayerAction,
   PlayerInfo,
+  PlayerInfoUpdate,
   VoteState,
 } from './types';
 
@@ -14,18 +15,51 @@ import {
  * @description Centralizes all socket event names and their corresponding types.
  */
 export enum SocketEvents {
-  // Connection Events
+  ///////////////////////
+  // Connection Events //
+  ///////////////////////
+
+  /**
+   * @description Emitted to both the client and server when a client connects
+   * for the first time.
+   */
   CONNECT = 'connect',
+
+  /**
+   * @description Used by the server to clean up client related state when they
+   * disconnect.
+   */
   DISCONNECTING = 'disconnecting',
+
+  /**
+   * @description Used by both the client and server when disconnected
+   */
   DISCONNECT = 'disconnect',
 
-  // Lobby Events
-  LOBBY_UPDATE = 'lobbyUpdate',
-  PLAYER_NAME_CHANGED = 'playerNameChanged',
-  PLAYER_JOINED_LOBBY = 'playerJoinedLobby',
-  PLAYER_LEFT_LOBBY = 'playerLeftLobby',
+  ///////////////////////
+  // Lobby Events //
+  ///////////////////////
 
-  // Game Events
+  /**
+   * @description Emitted to the lobby room to update the active games.
+   * @see GameManager.emitLobbyUpdate
+   */
+  LOBBY_GAME_UPDATE = 'lobbyGameUpdate',
+
+  /**
+   * @description Emitted to the lobby room to update the lobby players.
+   * @see GameManager.emitLobbyUpdate
+   */
+  LOBBY_PLAYER_UPDATE = 'lobbyPlayerUpdate',
+
+  ///////////////////////
+  // Game Events //
+  ///////////////////////
+
+  /**
+   * @description Emitted to the game room to update the game state.
+   * @see GameManager.setGameState
+   */
   GAME_STATE_UPDATED = 'gameStateUpdated',
   GAME_PILE_UPDATED = 'gamePileUpdated',
   GAME_SETTINGS_CHANGED = 'gameSettingsChanged',
@@ -74,10 +108,8 @@ export interface SocketPayloads {
   [SocketEvents.DISCONNECT]: void;
 
   // Lobby Events
-  [SocketEvents.LOBBY_UPDATE]: LobbyState;
-  [SocketEvents.PLAYER_NAME_CHANGED]: PlayerInfo;
-  [SocketEvents.PLAYER_JOINED_LOBBY]: PlayerInfo;
-  [SocketEvents.PLAYER_LEFT_LOBBY]: PlayerInfo;
+  [SocketEvents.LOBBY_GAME_UPDATE]: LobbyState;
+  [SocketEvents.LOBBY_PLAYER_UPDATE]: PlayerInfoUpdate[];
 
   // Game Events
   [SocketEvents.GAME_STATE_UPDATED]: ClientGameState;
