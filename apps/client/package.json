@@ -1,0 +1,45 @@
+{
+  "name": "@oers/client",
+  "description": "Online Egyptian Rat Screw Game Client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:build": "esbuild --bundle --watch --sourcemap --format=esm --jsx=automatic --tsconfig=tsconfig.json --outdir=dist src/client.tsx --loader:.css=css",
+    "dev:css": "tailwindcss -i ./src/index.css -o ./dist/index.css --watch",
+    "dev:html": "nodemon --watch src/index.html --exec 'pnpm run copy-html'",
+    "dev": "pnpm run clean && mkdir -p dist && pnpm run copy-html && concurrently --kill-others \"pnpm run dev:build\" \"pnpm run dev:css\" \"pnpm run dev:html\"",
+    "build": "pnpm run clean && mkdir -p dist && tailwindcss -i ./src/index.css -o ./dist/index.css && esbuild --bundle --sourcemap --format=esm --jsx=automatic --tsconfig=tsconfig.json --minify --outdir=dist src/client.tsx --loader:.css=css && pnpm run copy-html",
+    "copy-html": "cp src/index.html dist/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "clean:full": "pnpm run clean && rm -rf node_modules"
+  },
+  "dependencies": {
+    "@oer/configuration": "workspace:*",
+    "@oer/message": "workspace:*",
+    "@mantine/core": "^7.12.2",
+    "@mantine/notifications": "^7.12.2",
+    "@tabler/icons-react": "^3.17.0",
+    "@trpc/client": "^10.45.2",
+    "framer-motion": "^11.5.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "socket.io-client": "^4.7.0",
+    "zustand": "^5.0.0-rc.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/node": "^20.0.0",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.1",
+    "esbuild": "^0.19.0",
+    "nodemon": "^3.1.7",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.0.0",
+    "daisyui": "^3.1.1"
+  }
+}

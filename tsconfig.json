@@ -1,15 +1,20 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "esnext",
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "strict": true,
-    "jsx": "react",
+    "skipLibCheck": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "baseUrl": "./",
-    "declaration": false,
-    "declarationMap": false,
-    "outDir": "./dist/client"
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
   },
-  "include": ["client/**/*"]
+  "files": [],
+  "references": [
+    { "path": "packages/configuration" },
+    { "path": "packages/message" },
+    { "path": "apps/server" },
+    { "path": "apps/client" }
+  ]
 }
