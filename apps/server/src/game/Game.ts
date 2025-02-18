@@ -27,7 +27,7 @@ import { Player } from "./Player.js";
 import { RuleEngine } from "./rules/RuleEngine.js";
 import { defaultSlapRules } from "./rules/SlapRules.js";
 import type { Messenger } from "@oer/message";
-import { Room } from "@oer/message";
+import type { Room } from "@oer/message";
 
 const logger = newLogger("Game");
 
@@ -69,6 +69,7 @@ export class Game {
 
   constructor(
     gameId: string,
+    gameRoom: Room,
     rules: SlapRule[] = defaultSlapRules,
     initialSettings?: Partial<GameSettings>
   ) {
@@ -78,11 +79,7 @@ export class Game {
       ...DEFAULT_GAME_SETTINGS,
       ...initialSettings,
     };
-    this.gameRoom = new Room(
-      gameId,
-      `Game ${gameId}`,
-      this.settings.maximumPlayers
-    );
+    this.gameRoom = gameRoom;
   }
 
   private createDefaultGameSettings(rules: SlapRule[]): GameSettings {
@@ -119,7 +116,6 @@ export class Game {
 
     const player = new Player(messenger, playerInfo.name);
     this.players.push(player);
-    this.emitGameUpdate();
 
     // Log the player addition event
     this.logEvent({
@@ -128,6 +124,8 @@ export class Game {
       timestamp: Date.now(),
       data: { playerInfo },
     });
+
+    this.emitGameUpdate();
 
     return true;
   }

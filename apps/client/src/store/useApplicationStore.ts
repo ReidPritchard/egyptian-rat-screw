@@ -76,6 +76,10 @@ export const useApplicationStore = create<ApplicationStore>()(
               get().setUserLocation("game");
             }
           });
+
+          api.on(SocketEvents.ERROR, (data: { message: string }) => {
+            logger.error("Error", { data });
+          });
         },
 
         setIsConnected: (isConnected: boolean) => set({ isConnected }),

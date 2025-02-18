@@ -211,6 +211,27 @@ export class MessageServer implements IMessageServer {
   }
 
   /**
+   * Broadcasts an event to all messengers in a specific room.
+   */
+  public broadcastToRoom(
+    event: string,
+    data: any,
+    roomId: string,
+    excludeMessengers?: Messenger[]
+  ): void {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      return;
+    }
+
+    for (const messenger of room.getMessengers()) {
+      if (!excludeMessengers || !excludeMessengers.includes(messenger)) {
+        messenger.emit(event, data);
+      }
+    }
+  }
+
+  /**
    * Disconnects all registered messengers and cleans up all rooms.
    */
   public disconnectAll(): void {

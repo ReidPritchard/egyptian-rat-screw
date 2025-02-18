@@ -50,79 +50,93 @@ export class GameManager {
     return this.playerMap.get(playerId);
   }
 
+  // GameManager.ts - Modified methods only
+
+  private isPlayerInGameRoom(messenger: Messenger): boolean {
+    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
+    return (
+      !!currentRoom &&
+      currentRoom.getId() !== GameManager.messageServer.getGlobalRoom().getId()
+    );
+  }
+
+  private handleJoinError(messenger: Messenger, message: string): void {
+    logger.error(message, messenger.id);
+    this.emitError(messenger, message);
+  }
+
+  private addPlayerToGameRoom(
+    messenger: Messenger,
+    gameRoom: Room,
+    player: PlayerInfo
+  ): boolean {
+    const wasAdded = GameManager.messageServer.moveMessengerToRoom(
+      messenger,
+      gameRoom.getId()
+    );
+
+    if (!wasAdded) {
+      this.handleJoinError(
+        messenger,
+        "Failed to join game room - room might be full."
+      );
+      this.initPlayerInLobby(player, messenger);
+      return false;
+    }
+
+    logger.info(`Player successfully added to room: ${gameRoom.getId()}`);
+    return true;
+  }
+
+  private addPlayerToGame(
+    messenger: Messenger,
+    game: Game,
+    player: PlayerInfo
+  ): boolean {
+    const playerAdditionResult = game.addPlayer(messenger, player);
+    this.playerMap.set(messenger.id, player);
+
+    if (!playerAdditionResult) {
+      logger.error("Player failed to join game");
+      GameManager.messageServer.moveMessengerToRoom(
+        messenger,
+        GameManager.messageServer.getGlobalRoom().getId()
+      );
+      this.initPlayerInLobby(player, messenger);
+      return false;
+    }
+
+    logger.info(`Player successfully added to game: ${player.name}`);
+    this.emitPlayerLeftLobby(messenger.id, player.name);
+    return true;
+  }
+
   public joinGame(
     gameId: string,
     player: PlayerInfo,
     messenger: Messenger
   ): void {
-    logger.info(
-      `Joining game: ${gameId} for player: ${JSON.stringify(player)} with id: ${
-        messenger.id
-      }`
-    );
-
-    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
-    if (
-      currentRoom &&
-      currentRoom.getId() !== GameManager.messageServer.getGlobalRoom().getId()
-    ) {
-      logger.error("Player is already in a game.", messenger.id);
-      messenger.emit(SocketEvents.ERROR, {
-        data: "Player is already in a game.",
-      });
+    if (this.isPlayerInGameRoom(messenger)) {
+      this.handleJoinError(messenger, "Player is already in a game.");
       return;
     }
 
     const { game, gameRoom } = this.getOrCreateGame(gameId);
 
     if (!game) {
-      logger.error("Failed to find game.", messenger.id);
-      messenger.emit(SocketEvents.ERROR, {
-        data: "Failed to find game.",
-      });
+      this.handleJoinError(messenger, "Failed to find game.");
       return;
     }
 
-    // Move player to game room using MessageServer
-    const wasAdded = GameManager.messageServer.moveMessengerToRoom(
-      messenger,
-      gameRoom.getId()
-    );
-    if (!wasAdded) {
-      messenger.emit(
-        SocketEvents.ERROR,
-        "Failed to join game room - room might be full."
-      );
-      this.initPlayerInLobby(player, messenger);
+    if (!this.addPlayerToGameRoom(messenger, gameRoom, player)) {
       return;
     }
 
-    logger.info(
-      `Player removed from lobby and joined game id:"${game.gameId}"`
-    );
-
-    const playerAdditionResult = game.addPlayer(messenger, player);
-    this.playerMap.set(messenger.id, player);
-
-    if (playerAdditionResult) {
-      logger.info(`Player successfully added to game: ${player.name}`);
-      this.emitPlayerLeftLobby(messenger.id, player.name);
-    } else {
-      logger.error(`Player addition failed: ${playerAdditionResult}`);
-      GameManager.messageServer.moveMessengerToRoom(
-        messenger,
-        GameManager.messageServer.getGlobalRoom().getId()
-      );
-      this.initPlayerInLobby(player, messenger);
+    if (!this.addPlayerToGame(messenger, game, player)) {
+      return;
     }
 
-    // Update the lobby with the new game
     this.emitLobbyUpdate();
-
-    // If there is only one player, add a bot
-    if (game.getPlayerCount() === 1) {
-      this.addBotPlayer(game.gameId);
-    }
   }
 
   public leaveGame(messenger: Messenger): void {
@@ -291,39 +305,18 @@ export class GameManager {
     );
   }
 
-  private getOrCreateGame(gameId: string): {
-    game: Game;
-    gameRoom: Room;
-  } {
-    logger.info(`Getting or creating game id:"${gameId}"`);
-    let finalGameId = gameId;
+  private getOrCreateGame(gameId: string): { game: Game; gameRoom: Room } {
+    let game = this.games.get(gameId);
+    let gameRoom = GameManager.messageServer.getRoom(gameId);
 
-    if (!this.games.has(gameId) || gameId === "") {
-      finalGameId = gameId || this.generateGameId();
-      logger.info("Generating new game", finalGameId);
-
-      const game = new Game(finalGameId, defaultSlapRules, {
-        maximumPlayers: 4,
-        minimumPlayers: 2,
-      });
-      this.games.set(finalGameId, game);
-
-      // Create a new room for the game using MessageServer
-      const gameRoom = GameManager.messageServer.createRoom(
-        finalGameId,
-        `Game ${finalGameId}`,
-        game.getGameSettings().maximumPlayers
+    if (!game || !gameRoom) {
+      gameRoom = GameManager.messageServer.createRoom(
+        gameId,
+        `Game ${gameId}`,
+        4 // Default max players
       );
-    }
-
-    const game = this.games.get(finalGameId);
-    if (!game) {
-      throw new Error(`Failed to create/get game with ID: ${finalGameId}`);
-    }
-
-    const gameRoom = GameManager.messageServer.getRoom(finalGameId);
-    if (!gameRoom) {
-      throw new Error(`Failed to create/get game room with ID: ${finalGameId}`);
+      game = new Game(gameId, gameRoom, defaultSlapRules);
+      this.games.set(gameId, game);
     }
 
     return { game, gameRoom };

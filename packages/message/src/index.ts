@@ -299,6 +299,11 @@ export class Room {
     if (canAdd) {
       this.messengers.add(messenger);
       messenger.join(this.id);
+
+      console.log("Added messenger to room:", {
+        room: this.id,
+        messenger: messenger.id,
+      });
       return true;
     }
     return false;
@@ -344,15 +349,16 @@ export class Room {
    * Broadcasts an event to all messengers in the room, with an option to exclude a specific messenger.
    * @param event - The event name.
    * @param data - The event data.
-   * @param excludeMessenger - Optional messenger to exclude from the broadcast.
+   * @param excludeMessengers - Optional messenger(s) to exclude from the broadcast.
    */
   public emit(
     event: string,
     data: EventData,
-    excludeMessenger?: Messenger
+    excludeMessengers?: Messenger[]
   ): void {
     for (const messenger of this.messengers) {
-      if (messenger !== excludeMessenger) {
+      if (!excludeMessengers || !excludeMessengers.includes(messenger)) {
+        console.log("ROOM: Emitting to messenger:", messenger.id);
         messenger.emit(event, data);
       }
     }

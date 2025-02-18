@@ -1,100 +1,111 @@
 import type React from "react";
+import { Suspense } from "react";
 import { config } from "../config";
-import useApplicationStore, {
-  ApplicationStore,
-} from "../store/useApplicationStore";
+import useApplicationStore from "../store/useApplicationStore";
+import { useGameStore } from "../store/useGameStore";
 import { GameStage } from "../types";
+import type { ClientGameState } from "../types";
 import { BottomCard } from "./BottomCard";
 import { CardStack } from "./CardStack";
 import { TurnOrder } from "./TurnOrder";
-import { useGameStore } from "../store/useGameStore";
+
+// Loading state component for consistent loading UI
+const LoadingState: React.FC<{ message: string }> = ({ message }) => (
+  <div className="flex flex-col items-center h-full gap-4">
+    <span className="loading loading-infinity loading-lg" />
+    <p className="text-center text-sm mb-2">{message}</p>
+  </div>
+);
+
+// Component to display player ready status
+const PlayerReadyStatus: React.FC<{
+  playerId: string;
+  playerName: string;
+  isReady: boolean;
+}> = ({ playerId, playerName, isReady }) => (
+  <div
+    key={playerId}
+    className={`badge badge-${isReady ? "success" : "error"}`}
+  >
+    {playerName}: {isReady ? "Ready" : "Not Ready"}
+  </div>
+);
+
+interface GameComponentProps {
+  gameState: ClientGameState;
+  localPlayerId: string;
+}
+
+// Pre-game component showing ready status
+const PreGameReady: React.FC<GameComponentProps> = ({
+  gameState,
+  localPlayerId,
+}) => {
+  const isLocalPlayerReady = gameState.playerReadyStatus[localPlayerId];
+
+  return (
+    <div className="flex flex-col items-center h-full gap-4">
+      {isLocalPlayerReady ? "Ready" : "Not Ready"}
+
+      {isLocalPlayerReady && (
+        <>
+          <LoadingState message="Waiting for all players to be ready..." />
+          <div className="flex flex-col items-start">
+            {gameState.playerIds
+              .filter((id: string) => id !== localPlayerId)
+              .map((playerId: string) => (
+                <PlayerReadyStatus
+                  key={playerId}
+                  playerId={playerId}
+                  playerName={gameState.playerNames[playerId]}
+                  isReady={gameState.playerReadyStatus[playerId]}
+                />
+              ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Main game board component showing cards and turn order
+const MainGameBoard: React.FC<GameComponentProps> = ({
+  gameState,
+  localPlayerId,
+}) => (
+  <div className="flex flex-col h-full max-w-screen-lg m-auto">
+    <TurnOrder gameState={gameState} localPlayerId={localPlayerId} />
+    <div className="flex-1 flex flex-col justify-center p-4">
+      <p className="text-center text-sm mb-2">
+        Pile Size: {gameState.pileCards?.length ?? 0}
+      </p>
+      <CardStack pile={gameState.pileCards} />
+    </div>
+  </div>
+);
 
 export const GameBoard: React.FC = () => {
   const { localPlayer } = useApplicationStore();
   const { gameState } = useGameStore();
 
-  if (!gameState || !localPlayer) {
-    if (!gameState) {
-      console.error("GameBoard: gameState is null");
-      return (
-        <div className="flex flex-col items-center h-full gap-4">
-          <p className="text-center text-sm mb-2">
-            Waiting for game to start...
-          </p>
-        </div>
-      );
-    }
-
-    if (!localPlayer) {
-      console.error("GameBoard: localPlayer is null");
-      return (
-        <div className="flex flex-col items-center h-full gap-4">
-          <p className="text-center text-sm mb-2">
-            Waiting for player to join...
-          </p>
-        </div>
-      );
-    }
-
-    return null;
+  // Early return for loading states
+  if (!gameState) {
+    return <LoadingState message="Waiting for game initialization..." />;
   }
 
-  const renderPreGameReady = () => {
-    return (
-      <div className="flex flex-col items-center h-full gap-4">
-        {gameState.playerReadyStatus[localPlayer.id] ? "Ready" : "Not Ready"}
-
-        {gameState.playerReadyStatus[localPlayer.id] === true && (
-          <>
-            <span className="loading loading-dots loading-lg" />
-            <p className="text-center text-sm mb-2">
-              Waiting for all players to be ready...
-            </p>
-          </>
-        )}
-
-        {gameState.playerReadyStatus[localPlayer.id] === true && (
-          <div className="flex flex-col items-start">
-            {gameState.playerIds
-              .filter((playerId: string) => playerId !== localPlayer.id)
-              .map((playerId: string) => (
-                <div
-                  key={playerId}
-                  className={`badge badge-${
-                    gameState.playerReadyStatus[playerId] ? "success" : "error"
-                  }`}
-                >
-                  {gameState.playerNames[playerId]}:{" "}
-                  {gameState.playerReadyStatus[playerId]
-                    ? "Ready"
-                    : "Not Ready"}
-                </div>
-              ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderGameBoard = () => {
-    return (
-      <div className="flex flex-col h-full max-w-screen-lg m-auto">
-        <TurnOrder gameState={gameState} localPlayerId={localPlayer.id} />
-        <div className="flex-1 flex flex-col justify-center p-4">
-          <p className="text-center text-sm mb-2">
-            Pile Size: {gameState?.pileCards?.length ?? 0}
-          </p>
-          <CardStack pile={gameState.pileCards} />
-        </div>
-      </div>
-    );
-  };
+  if (!localPlayer) {
+    return <LoadingState message="Waiting for player to join..." />;
+  }
 
   return (
-    <div className="h-full w-full">
-      {gameState.stage === GameStage.PRE_GAME
-        ? renderPreGameReady()
-        : renderGameBoard()}
-    </div>
+    <Suspense fallback={<LoadingState message="Loading game..." />}>
+      <div className="h-full w-full">
+        {gameState.stage === GameStage.PRE_GAME ? (
+          <PreGameReady gameState={gameState} localPlayerId={localPlayer.id} />
+        ) : (
+          <MainGameBoard gameState={gameState} localPlayerId={localPlayer.id} />
+        )}
+      </div>
+    </Suspense>
   );
 };
