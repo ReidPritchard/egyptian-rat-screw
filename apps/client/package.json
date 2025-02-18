@@ -18,6 +18,7 @@
   "dependencies": {
     "@oer/configuration": "workspace:*",
     "@oer/message": "workspace:*",
+    "@oer/shared": "workspace:*",
     "@mantine/core": "^7.16.0",
     "@mantine/hooks": "^7.16.0",
     "@mantine/notifications": "^7.16.0",

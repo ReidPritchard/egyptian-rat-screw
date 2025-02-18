@@ -35,6 +35,7 @@
   "dependencies": {
     "@oer/configuration": "workspace:*",
     "@oer/message": "workspace:*",
+    "@oer/shared": "workspace:*",
     "express": "^4.18.2",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",

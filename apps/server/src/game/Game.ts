@@ -6,7 +6,7 @@ import {
   type GameStartedPayload,
   SocketEvents,
   type VoteCount,
-} from "../socketEvents.js";
+} from "@oer/shared";
 import {
   type Card,
   type ClientGameState,

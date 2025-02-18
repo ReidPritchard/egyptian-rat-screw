@@ -1,6 +1,5 @@
 import type React from "react";
 import { Suspense } from "react";
-import { config } from "../config";
 import useApplicationStore from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
 import { GameStage } from "../types";
@@ -8,6 +7,9 @@ import type { ClientGameState } from "../types";
 import { BottomCard } from "./BottomCard";
 import { CardStack } from "./CardStack";
 import { TurnOrder } from "./TurnOrder";
+import { newLogger } from "@/logger";
+
+const logger = newLogger("GameBoard");
 
 // Loading state component for consistent loading UI
 const LoadingState: React.FC<{ message: string }> = ({ message }) => (
@@ -41,6 +43,10 @@ const PreGameReady: React.FC<GameComponentProps> = ({
   gameState,
   localPlayerId,
 }) => {
+  logger.info("PreGameReady", {
+    data: JSON.stringify(gameState, null, 2),
+  });
+
   const isLocalPlayerReady = gameState.playerReadyStatus[localPlayerId];
 
   return (
