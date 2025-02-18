@@ -30,3 +30,6 @@ public/dist
 # Ignore the copied socketEvents.ts and types.ts files
 ./client/socketEvents.ts
 ./client/types.ts
+
+# Ignore client files copied to server's public folder
+apps/server/public

@@ -1,8 +1,11 @@
-import { AspectRatio, Image, Text } from '@mantine/core';
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
-import useApplicationStore, { ApplicationStore } from '../hooks/useApplicationStore';
-import { useGameStore } from '../hooks/useGameStore';
+import { AspectRatio, Image, Text } from "@mantine/core";
+import { AnimatePresence, motion } from "framer-motion";
+import type React from "react";
+import { useEffect, useState } from "react";
+import useApplicationStore, {
+  ApplicationStore,
+} from "../store/useApplicationStore";
+import { useGameStore } from "../store/useGameStore";
 
 export const GameStartAnimation: React.FC = () => {
   const { isGameStarting, setIsGameStarting } = useGameStore();
@@ -19,9 +22,9 @@ export const GameStartAnimation: React.FC = () => {
   // messageLength * CHAR_REVEAL_INTERVAL + MESSAGE_PAUSE * (messageLength - 1) + FADE_DURATION + SCALE_DURATION
 
   const [messageIndex, setMessageIndex] = useState(0);
-  const [currentMessage, setCurrentMessage] = useState('');
+  const [currentMessage, setCurrentMessage] = useState("");
 
-  const messages = ['Game Starting...', '3', '2', '1', 'GO!'];
+  const messages = ["Game Starting...", "3", "2", "1", "GO!"];
 
   useEffect(() => {
     if (disable) {
@@ -46,11 +49,12 @@ export const GameStartAnimation: React.FC = () => {
       }, CHAR_REVEAL_INTERVAL);
 
       return () => clearInterval(intervalId);
-    } else if (messageIndex === messages.length) {
+    }
+    if (messageIndex === messages.length) {
       // All messages have been displayed
       setIsGameStarting(false);
     }
-  }, [isGameStarting, messageIndex]);
+  }, [isGameStarting, messageIndex, setIsGameStarting]);
 
   return (
     <AnimatePresence>
@@ -61,26 +65,36 @@ export const GameStartAnimation: React.FC = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: FADE_DURATION }}
           style={{
-            position: 'fixed',
+            position: "fixed",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#000000',
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "#000000",
             zIndex: 9999,
           }}
         >
           {/* Fullscreen image (keep aspect ratio) */}
-          <AspectRatio ratio={4 / 3} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}>
+          <AspectRatio
+            ratio={4 / 3}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: -1,
+            }}
+          >
             <Image
-              src={'/assets/hearts.png'}
-              width={'100%'}
-              height={'100%'}
+              src={"/assets/hearts.png"}
+              width={"100%"}
+              height={"100%"}
               // Improve pixel art rendering
-              style={{ imageRendering: 'pixelated' }}
+              style={{ imageRendering: "pixelated" }}
             />
           </AspectRatio>
           <motion.div

@@ -1,4 +1,5 @@
-import type { Server, Socket } from "socket.io";
+import type { WebSocketServer } from "ws";
+import { SETTINGS } from "@oer/configuration";
 import { newLogger } from "../logger.js";
 import {
   type GameEndedPayload,
@@ -8,7 +9,6 @@ import {
 } from "../socketEvents.js";
 import {
   type Card,
-  type CardChallenge,
   type ClientGameState,
   type GameEvent,
   GameEventType,
@@ -18,28 +18,44 @@ import {
   PlayerActionType,
   type PlayerInfo,
   type SlapRule,
-  SlapRuleAction,
+  type Vote,
   type VoteState,
 } from "../types.js";
 import { Deck } from "./Deck.js";
+import { FaceCardChallenge } from "./FaceCardChallenge.js";
 import { Player } from "./Player.js";
 import { RuleEngine } from "./rules/RuleEngine.js";
 import { defaultSlapRules } from "./rules/SlapRules.js";
-import type { Messenger } from "./Messenger.js";
+import type { Messenger } from "@oer/message";
+import { Room } from "@oer/message";
 
 const logger = newLogger("Game");
 
+const DEFAULT_GAME_SETTINGS: GameSettings = {
+  minimumPlayers: 2,
+  maximumPlayers: 4,
+  slapRules: [],
+  faceCardChallengeCounts: {
+    J: 1,
+    Q: 2,
+    K: 3,
+    A: 4,
+  },
+  challengeCounterCards: [],
+  turnTimeout: 30000,
+  challengeCounterSlapTimeout: 2000,
+};
+
 export class Game {
   public gameId: string;
-
-  private io: Server;
 
   private players: Player[] = [];
   private turnIndex = 0;
   private centralPile: Card[] = [];
   private stage = GameStage.PRE_GAME;
 
-  private faceCardChallenge: CardChallenge | null = null;
+  private faceCardChallenge: FaceCardChallenge | null = null;
+
   private ruleEngine: RuleEngine;
 
   private winner: PlayerInfo | null = null;
@@ -47,14 +63,26 @@ export class Game {
   private voteState: VoteState | null = null;
   private gameEventLog: GameEvent[] = [];
 
+  private gameRoom: Room;
+
+  private readonly settings: GameSettings;
+
   constructor(
-    io: Server,
     gameId: string,
-    rules: SlapRule[] = defaultSlapRules
+    rules: SlapRule[] = defaultSlapRules,
+    initialSettings?: Partial<GameSettings>
   ) {
-    this.io = io;
     this.gameId = gameId;
     this.ruleEngine = new RuleEngine(this.createDefaultGameSettings(rules));
+    this.settings = {
+      ...DEFAULT_GAME_SETTINGS,
+      ...initialSettings,
+    };
+    this.gameRoom = new Room(
+      gameId,
+      `Game ${gameId}`,
+      this.settings.maximumPlayers
+    );
   }
 
   private createDefaultGameSettings(rules: SlapRule[]): GameSettings {
@@ -73,29 +101,29 @@ export class Game {
     logger.info(`Adding player to game: ${playerInfo.name}`);
 
     if (this.stage !== GameStage.PRE_GAME) {
-      this.emitErrorToSocket(socket, "Game has already started.");
+      messenger.emit(SocketEvents.ERROR, "Game has already started.");
       return false;
     }
 
     if (this.isGameFull()) {
-      this.emitErrorToSocket(socket, "Game is full.");
+      messenger.emit(SocketEvents.ERROR, "Game is full.");
       return false;
     }
 
     if (!this.isValidPlayerName(playerInfo.name)) {
-      this.emitErrorToSocket(socket, "Invalid player name.");
+      messenger.emit(SocketEvents.ERROR, "Invalid player name.");
       return false;
     }
 
     logger.info(`Player ${playerInfo.name} added to game: ${this.gameId}`);
 
-    const player = new Player(socket, playerInfo.name);
+    const player = new Player(messenger, playerInfo.name);
     this.players.push(player);
     this.emitGameUpdate();
 
     // Log the player addition event
     this.logEvent({
-      playerId: socket.id,
+      playerId: messenger.id,
       eventType: GameEventType.ADD_PLAYER,
       timestamp: Date.now(),
       data: { playerInfo },
@@ -157,34 +185,25 @@ export class Game {
       case PlayerActionType.START_VOTE:
         data.voteTopic
           ? this.startVote(data.voteTopic)
-          : player.messenger.emitToPlayer(
-              SocketEvents.ERROR,
-              "Invalid vote topic."
-            );
+          : player.messenger.emit(SocketEvents.ERROR, "Invalid vote topic.");
         break;
 
       case PlayerActionType.CAST_VOTE:
         typeof data.vote === "boolean"
           ? this.submitVote(action.playerId, data.vote)
-          : player.messenger.emitToPlayer(SocketEvents.ERROR, "Invalid vote.");
+          : player.messenger.emit(SocketEvents.ERROR, "Invalid vote.");
         break;
 
       case PlayerActionType.SET_READY:
         typeof data.ready === "boolean"
           ? this.setReady(action.playerId, data.ready)
-          : player.messenger.emitToPlayer(
-              SocketEvents.ERROR,
-              "Invalid ready status."
-            );
+          : player.messenger.emit(SocketEvents.ERROR, "Invalid ready status.");
         break;
 
       case PlayerActionType.SET_SETTINGS:
         data.settings
           ? this.setGameSettings(data.settings)
-          : player.messenger.emitToPlayer(
-              SocketEvents.ERROR,
-              "Invalid settings."
-            );
+          : player.messenger.emit(SocketEvents.ERROR, "Invalid settings.");
         break;
 
       default:
@@ -193,7 +212,7 @@ export class Game {
   }
 
   public getGameSettings(): GameSettings {
-    return this.ruleEngine.getGameSettings();
+    return { ...this.settings };
   }
 
   public setGameSettings(settings: GameSettings): void {
@@ -226,8 +245,9 @@ export class Game {
   private startGame(): void {
     this.resetGameState();
 
-    const deck = Deck.createShuffledDeck();
-    Deck.dealCards(deck, this.players);
+    const deck = new Deck({ numDecks: 1 });
+    deck.shuffle();
+    deck.dealCards(this.players);
 
     this.stage = GameStage.PLAYING;
     this.emitGameStarted();
@@ -244,136 +264,145 @@ export class Game {
     this.voteState = null;
     this.centralPile = [];
     this.turnIndex = 0;
-    this.players.forEach((player) => player.reset());
     this.gameEventLog = [];
+
+    for (const player of this.players) {
+      player.reset();
+    }
   }
 
   private endGame(): void {
-    this.stage = GameStage.PRE_GAME;
-    this.emitGameUpdate();
+    this.stage = GameStage.GAME_OVER;
+    this.emitGameEnded();
   }
 
-  public handlePlayCard(socket: Socket): void {
-    const player = this.getPlayerBySocket(socket);
-
-    if (player && this.players[this.turnIndex].socket.id === socket.id) {
+  public handlePlayCard(messenger: Messenger): void {
+    const player = this.getPlayerByMessenger(messenger);
+    if (player) {
       this.playCard(player);
-    } else {
-      this.emitErrorToSocket(socket, "Not your turn.");
     }
   }
 
   private playCard(player: Player): void {
-    const card = player.playCard();
-    const timestamp = Date.now();
+    if (this.stage !== GameStage.PLAYING) {
+      player.messenger.emit(SocketEvents.ERROR, "Game is not in progress.");
+      return;
+    }
 
+    if (player !== this.players[this.turnIndex]) {
+      player.messenger.emit(SocketEvents.ERROR, "Not your turn.");
+      return;
+    }
+
+    const card = player.playCard();
     if (!card) {
-      this.logEvent({
-        playerId: player.socket.id,
-        eventType: GameEventType.PLAY_CARD,
-        timestamp,
-        data: { card: null, message: "No card to play" },
-      });
-      this.advanceTurn();
-      this.checkForWinner();
+      player.messenger.emit(SocketEvents.ERROR, "No cards to play.");
       return;
     }
 
     this.centralPile.push(card);
-    this.io
-      .to(this.gameId)
-      .emit(SocketEvents.CARD_PLAYED, { playerId: player.socket.id, card });
 
+    // Log the play card event
     this.logEvent({
-      playerId: player.socket.id,
+      playerId: player.messenger.id,
       eventType: GameEventType.PLAY_CARD,
-      timestamp,
+      timestamp: Date.now(),
       data: { card },
     });
 
+    // Check if the played card is a face card
     const challengeCount = this.ruleEngine.getFaceCardChallengeCount(card);
-
     if (challengeCount > 0) {
       this.startFaceCardChallenge(player, challengeCount);
-    } else if (this.faceCardChallenge?.active) {
-      this.handleFaceCardChallengeCounter(player, card);
     } else {
       this.advanceTurn();
     }
+
+    this.emitGameUpdate();
+  }
+
+  private getNextPlayerId(): string {
+    const nextIndex = (this.turnIndex + 1) % this.players.length;
+    return this.players[nextIndex].messenger.id;
   }
 
   private startFaceCardChallenge(
     challenger: Player,
     challengeCount: number
   ): void {
-    const challengedIndex = (this.turnIndex + 1) % this.players.length;
-    const challenged = this.players[challengedIndex];
-
-    this.faceCardChallenge = {
-      active: true,
-      challenger: challenger.getPlayerInfo(),
-      challenged: challenged.getPlayerInfo(),
-      remainingCounterChances: challengeCount,
-      result: null,
+    const challengerInfo: PlayerInfo = {
+      id: challenger.messenger.id,
+      name: challenger.name,
+      isBot: challenger.messenger.isBot,
     };
 
-    this.io.to(this.gameId).emit(SocketEvents.CHALLENGE_STARTED, {
-      challengerId: challenger.socket.id,
-      challengedId: challenged.socket.id,
-      remainingCounterChances: challengeCount,
-    });
+    this.faceCardChallenge = new FaceCardChallenge(
+      challengerInfo,
+      challengeCount,
+      this.getNextPlayerId()
+    );
 
-    // Log the challenge start event
+    // Log the face card challenge start event
     this.logEvent({
-      playerId: challenger.socket.id,
+      playerId: challenger.messenger.id,
       eventType: GameEventType.START_CHALLENGE,
       timestamp: Date.now(),
-      data: {
-        challengedId: challenged.socket.id,
-        remainingCounterChances: challengeCount,
-      },
+      data: {},
     });
 
-    this.advanceTurn(challengedIndex);
+    this.emitGameUpdate();
   }
 
   private handleFaceCardChallengeCounter(player: Player, card: Card): void {
     if (!this.faceCardChallenge) return;
 
-    const timestamp = Date.now();
+    const isCounterCard = this.ruleEngine.isCounterCard(card);
+    const challengeCount = this.ruleEngine.getFaceCardChallengeCount(card);
 
-    if (this.ruleEngine.isCounterCard(card)) {
-      this.faceCardChallenge.result = "counter";
-      this.faceCardChallenge.active = false;
-      this.io.to(this.gameId).emit(SocketEvents.CHALLENGE_RESULT, {
-        winnerId: player.socket.id,
-        loserId: this.faceCardChallenge.challenger.id,
-        message: `${player.name} has survived the card challenge!`,
-      });
+    if (isCounterCard || challengeCount > 0) {
+      // Counter successful - next player must respond
+      const playerInfo: PlayerInfo = {
+        id: player.messenger.id,
+        name: player.name,
+        isBot: player.messenger.isBot,
+      };
 
-      // Log the challenge counter event
+      this.faceCardChallenge.updateCounter(
+        playerInfo,
+        challengeCount,
+        this.getNextPlayerId()
+      );
+
+      // Log the face card challenge counter event
       this.logEvent({
-        playerId: player.socket.id,
-        eventType: GameEventType.COUNTER_CHALLENGE,
-        timestamp,
+        playerId: player.messenger.id,
+        eventType: GameEventType.COUNTER_FACE_CARD_CHALLENGE,
+        timestamp: Date.now(),
         data: { card },
       });
-
-      this.advanceTurn();
     } else {
-      this.faceCardChallenge.remainingCounterChances--;
+      const isComplete = this.faceCardChallenge.decrementPlays(
+        this.getNextPlayerId()
+      );
 
-      // Log the failed counter attempt
-      this.logEvent({
-        playerId: player.socket.id,
-        eventType: GameEventType.FAILED_COUNTER,
-        timestamp,
-        data: { card },
-      });
+      if (isComplete) {
+        // Challenge completed successfully
+        const challenger = this.players.find(
+          (p) => p.messenger.id === this.faceCardChallenge?.getChallenger().id
+        );
+        if (challenger) {
+          challenger.addCards(this.centralPile);
+          this.centralPile = [];
 
-      if (this.faceCardChallenge.remainingCounterChances === 0) {
-        this.resolveFaceCardChallengeFailure(player);
-      } else {
+          // Log the face card challenge success event
+          this.logEvent({
+            playerId: challenger.messenger.id,
+            eventType: GameEventType.WIN_FACE_CARD_CHALLENGE,
+            timestamp: Date.now(),
+            data: {},
+          });
+        }
+        this.faceCardChallenge = null;
         this.advanceTurn();
       }
     }
@@ -382,46 +411,36 @@ export class Game {
   private resolveFaceCardChallengeFailure(player: Player): void {
     if (!this.faceCardChallenge) return;
 
+    // Failed to counter - challenger wins
     const challenger = this.players.find(
-      (p) => p.socket.id === this.faceCardChallenge?.challenger.id
+      (p) => p.messenger.id === this.faceCardChallenge?.getChallenger().id
     );
-    if (!challenger) return;
+    if (challenger) {
+      challenger.addCards(this.centralPile);
+      this.centralPile = [];
 
-    challenger.collectPile(this.centralPile);
-    this.centralPile = [];
+      // Log the face card challenge failure event
+      this.logEvent({
+        playerId: player.messenger.id,
+        eventType: GameEventType.LOSE_FACE_CARD_CHALLENGE,
+        timestamp: Date.now(),
+        data: {},
+      });
+    }
 
-    this.io.to(this.gameId).emit(SocketEvents.CHALLENGE_RESULT, {
-      winnerId: challenger.socket.id,
-      loserId: player.socket.id,
-      message: `${challenger.name} has won the challenge and taken the pile!`,
-    });
-
-    // Log the challenge failure event
-    this.logEvent({
-      playerId: player.socket.id,
-      eventType: GameEventType.CHALLENGE_FAILED,
-      timestamp: Date.now(),
-      data: { winnerId: challenger.socket.id },
-    });
-
-    this.faceCardChallenge.result = "challenger";
-    this.faceCardChallenge.active = false;
-    this.turnIndex = this.players.indexOf(challenger) - 1;
+    this.faceCardChallenge = null;
     this.advanceTurn();
   }
 
-  public handleSlapAttempt(socket: Socket): void {
-    const player = this.getPlayerBySocket(socket);
+  public handleSlapAttempt(messenger: Messenger): void {
+    const player = this.getPlayerByMessenger(messenger);
     if (!player) return;
 
     const timestamp = Date.now();
-    const validRules = this.ruleEngine.getValidSlapRules(
-      this.centralPile,
-      player
-    );
+    const validSlap = this.ruleEngine.checkSlap(this.centralPile, player);
 
-    if (validRules.length > 0) {
-      this.processValidSlap(player, validRules[0], timestamp);
+    if (validSlap) {
+      this.processValidSlap(player, validSlap, timestamp);
     } else {
       this.processInvalidSlap(player, timestamp);
     }
@@ -432,228 +451,191 @@ export class Game {
     rule: SlapRule,
     timestamp: number
   ): void {
-    if (rule.action === SlapRuleAction.TAKE_PILE) {
-      player.collectPile(this.centralPile);
-      this.centralPile = [];
-      this.faceCardChallenge = null;
+    // Award cards to the player
+    player.addCards(this.centralPile);
+    this.centralPile = [];
+
+    // Reset any ongoing face card challenge
+    this.faceCardChallenge = null;
+
+    // Log the successful slap event
+    this.logEvent({
+      playerId: player.messenger.id,
+      eventType: GameEventType.VALID_SLAP,
+      timestamp,
+      data: { rule },
+    });
+
+    // Check if this player has won
+    this.checkForWinner();
+
+    // If no winner, continue with the next player
+    if (!this.winner) {
+      this.advanceTurn();
     }
 
-    this.io.to(this.gameId).emit(SocketEvents.SLAP_RESULT, {
-      playerId: player.socket.id,
-      result: "valid",
-      message: `Slap successful: ${player.name} ${rule.action}`,
-    });
-
-    this.io
-      .to(this.gameId)
-      .emit(SocketEvents.GAME_PILE_UPDATED, this.centralPile);
-
-    // Log the valid slap event
-    this.logEvent({
-      playerId: player.socket.id,
-      eventType: GameEventType.SLAP,
-      timestamp,
-      data: { result: "valid", rule: rule.name },
-    });
-
-    this.turnIndex = this.players.indexOf(player) - 1;
-    this.advanceTurn();
+    this.emitGameUpdate();
   }
 
   private processInvalidSlap(player: Player, timestamp: number): void {
-    const penaltyCard = player.givePenaltyCard();
-    if (penaltyCard) {
-      this.centralPile.unshift(penaltyCard);
+    // Burn a card for invalid slap
+    const burnedCard = player.playCard();
+    if (burnedCard) {
+      this.centralPile.push(burnedCard);
+
+      // Log the invalid slap event
+      this.logEvent({
+        playerId: player.messenger.id,
+        eventType: GameEventType.INVALID_SLAP,
+        timestamp,
+        data: { burnedCard },
+      });
+
+      this.emitGameUpdate();
     }
-
-    this.io.to(this.gameId).emit(SocketEvents.SLAP_RESULT, {
-      playerId: player.socket.id,
-      result: "invalid",
-      message: "Slap unsuccessful",
-    });
-
-    this.io
-      .to(this.gameId)
-      .emit(SocketEvents.GAME_PILE_UPDATED, this.centralPile);
-
-    // Log the invalid slap event
-    this.logEvent({
-      playerId: player.socket.id,
-      eventType: GameEventType.SLAP,
-      timestamp,
-      data: { result: "invalid" },
-    });
   }
 
   private advanceTurn(overrideTurnIndex?: number): void {
-    this.turnIndex =
-      overrideTurnIndex ?? (this.turnIndex + 1) % this.players.length;
-    this.io.to(this.gameId).emit(SocketEvents.TURN_CHANGED, {
-      currentPlayerId: this.getCurrentPlayerId(),
-    });
+    if (typeof overrideTurnIndex === "number") {
+      this.turnIndex = overrideTurnIndex;
+    } else {
+      do {
+        this.turnIndex = (this.turnIndex + 1) % this.players.length;
+      } while (this.players[this.turnIndex].getCardCount() === 0);
+    }
 
-    // Log the turn change event
+    // Log the turn advance event
     this.logEvent({
-      playerId: "", // System event
-      eventType: GameEventType.TURN_CHANGED,
+      playerId: this.getCurrentPlayerId(),
+      eventType: GameEventType.ADVANCE_TURN,
       timestamp: Date.now(),
-      data: { currentPlayerId: this.getCurrentPlayerId() },
+      data: {},
     });
   }
 
-  private getPlayerBySocket(socket: Socket): Player | undefined {
-    return this.players.find((p) => p.socket.id === socket.id);
+  private getPlayerByMessenger(messenger: Messenger): Player | undefined {
+    return this.players.find((p) => p.messenger.id === messenger.id);
   }
 
   private checkForWinner(): void {
-    if (this.stage !== GameStage.PLAYING) return;
+    const activePlayers = this.players.filter((p) => p.getCardCount() > 0);
 
-    const totalCards =
-      this.players.reduce((sum, p) => sum + p.getDeckSize(), 0) +
-      this.centralPile.length;
+    if (activePlayers.length === 1) {
+      const winner = activePlayers[0];
+      this.winner = {
+        id: winner.messenger.id,
+        name: winner.name,
+        isBot: winner.messenger.isBot,
+      };
 
-    if (totalCards === 0) return;
+      // Log the game end event
+      this.logEvent({
+        playerId: winner.messenger.id,
+        eventType: GameEventType.END_GAME,
+        timestamp: Date.now(),
+        data: { winner: this.winner },
+      });
 
-    for (const player of this.players) {
-      if (player.getDeckSize() === totalCards) {
-        this.stage = GameStage.GAME_OVER;
-        this.winner = player.getPlayerInfo();
-        this.emitGameEnded();
-
-        // Log the game end event
-        this.logEvent({
-          playerId: player.socket.id,
-          eventType: GameEventType.GAME_ENDED,
-          timestamp: Date.now(),
-          data: { winner: this.winner },
-        });
-
-        return;
-      }
+      this.endGame();
     }
   }
 
   public getGameState(): ClientGameState {
-    const playerData = this.players.reduce<{
-      handSizes: Record<string, number>;
-      playerNames: Record<string, string>;
-      playerReadyStatus: Record<string, boolean>;
-    }>(
-      (acc, player) => {
-        acc.handSizes[player.socket.id] = player.getDeckSize();
-        acc.playerNames[player.socket.id] = player.name;
-        acc.playerReadyStatus[player.socket.id] = player.isReady();
-        return acc;
-      },
-      {
-        handSizes: {},
-        playerNames: {},
-        playerReadyStatus: {},
-      }
-    );
-
     return {
-      name: this.gameId,
+      gameId: this.gameId,
       stage: this.stage,
-      pileCards: this.centralPile,
-      playerIds: this.players.map((p) => p.socket.id),
-      playerHandSizes: playerData.handSizes,
-      playerNames: playerData.playerNames,
-      playerReadyStatus: playerData.playerReadyStatus,
+      players: this.players.map((player) => ({
+        id: player.messenger.id,
+        name: player.name,
+        cardCount: player.getCardCount(),
+        isBot: player.messenger.isBot,
+        isReady: player.isReady(),
+      })),
       currentPlayerId: this.getCurrentPlayerId(),
-      winner: this.winner,
-      gameSettings: this.ruleEngine.getGameSettings(),
-      voteState: this.voteState,
-      cardChallenge: this.faceCardChallenge?.active
-        ? this.faceCardChallenge
+      centralPileCount: this.centralPile.length,
+      topCards: this.centralPile.slice(-3).reverse(),
+      faceCardChallenge: this.faceCardChallenge
+        ? {
+            challenger: this.faceCardChallenge.getChallenger(),
+            currentPlayerId: this.faceCardChallenge.getCurrentPlayerId(),
+            remainingPlays: this.faceCardChallenge.getRemainingPlays(),
+          }
         : null,
+      winner: this.winner,
+      voteState: this.voteState,
+      settings: this.ruleEngine.getGameSettings(),
+      eventLog: this.gameEventLog,
     };
   }
 
   private getCurrentPlayerId(): string {
-    return this.players[this.turnIndex]?.socket.id ?? "";
+    return this.players[this.turnIndex]?.messenger.id;
   }
 
   private emitSettingsChanged(): void {
-    this.io
-      .to(this.gameId)
-      .emit(
-        SocketEvents.GAME_SETTINGS_CHANGED,
-        this.ruleEngine.getGameSettings()
-      );
+    this.gameRoom.emit(SocketEvents.SET_GAME_SETTINGS, {
+      ...this.ruleEngine.getGameSettings(),
+    });
   }
 
   private emitGameStarted(): void {
     const payload: GameStartedPayload = {
-      startTime: Date.now(),
+      gameId: this.gameId,
+      players: this.players.map((player) => ({
+        id: player.messenger.id,
+        name: player.name,
+        isBot: player.messenger.isBot,
+      })),
     };
-    this.io.to(this.gameId).emit(SocketEvents.GAME_STARTED, payload);
-
-    // Log the game start event
-    this.logEvent({
-      playerId: "", // System event
-      eventType: GameEventType.GAME_STARTED,
-      timestamp: Date.now(),
-      data: { startTime: payload.startTime },
-    });
+    this.gameRoom.emit(SocketEvents.GAME_STARTED, payload);
   }
 
   private emitGameEnded(): void {
+    if (!this.winner) return;
+
     const payload: GameEndedPayload = {
       winner: this.winner,
     };
-    this.io.to(this.gameId).emit(SocketEvents.GAME_ENDED, payload);
+    this.gameRoom.emit(SocketEvents.GAME_ENDED, payload);
   }
 
   private emitGameUpdate(): void {
-    this.io
-      .to(this.gameId)
-      .emit(SocketEvents.GAME_STATE_UPDATED, this.getGameState());
-  }
-
-  private emitErrorToSocket(socket: Socket, message: string): void {
-    socket.emit(SocketEvents.ERROR, message);
+    this.gameRoom.emit(SocketEvents.GAME_STATE_UPDATED, this.getGameState());
   }
 
   private emitError(message: string): void {
-    this.io.to(this.gameId).emit(SocketEvents.ERROR, message);
+    this.gameRoom.emit(SocketEvents.ERROR, message);
   }
 
   private setReady(playerId: string, ready: boolean): void {
-    const player = this.players.find((p) => p.socket.id === playerId);
+    const player = this.players.find((p) => p.messenger.id === playerId);
     if (!player) return;
 
     player.setReady(ready);
 
-    const event = ready
-      ? SocketEvents.PLAYER_READY
-      : SocketEvents.PLAYER_NOT_READY;
-
-    this.io.to(this.gameId).emit(event, player.getPlayerInfo());
-
-    // Log the readiness change event
+    // Log the ready status change event
     this.logEvent({
-      playerId: player.socket.id,
+      playerId,
       eventType: GameEventType.SET_READY,
       timestamp: Date.now(),
       data: { ready },
     });
 
     this.checkForStart();
+    this.emitGameUpdate();
   }
 
   public startVote(topic: string): void {
-    if (this.stage === GameStage.VOTING) {
-      logger.info("Vote already in progress");
+    if (this.voteState) {
+      this.emitError("A vote is already in progress.");
       return;
     }
 
     this.voteState = {
       topic,
       votes: [],
-      totalPlayers: this.players.length,
+      startTime: Date.now(),
     };
-    this.io.to(this.gameId).emit(SocketEvents.VOTE_STARTED, this.voteState);
 
     // Log the vote start event
     this.logEvent({
@@ -662,67 +644,64 @@ export class Game {
       timestamp: Date.now(),
       data: { topic },
     });
+
+    this.emitGameUpdate();
   }
 
   public submitVote(playerId: string, vote: boolean): void {
-    if (!this.voteState) return;
-
-    const existingVote = this.voteState.votes.find(
-      (v) => v.playerId === playerId
-    );
-
-    if (existingVote) {
-      existingVote.vote = vote;
-    } else {
-      this.voteState.votes.push({ playerId, vote });
+    if (!this.voteState) {
+      this.emitError("No vote in progress.");
+      return;
     }
 
-    this.io.to(this.gameId).emit(SocketEvents.VOTE_UPDATED, this.voteState);
+    this.voteState.votes.push({ playerId, vote });
 
     // Log the vote submission event
     this.logEvent({
       playerId,
-      eventType: GameEventType.CAST_VOTE,
+      eventType: GameEventType.SUBMIT_VOTE,
       timestamp: Date.now(),
       data: { vote },
     });
 
-    if (this.voteState.votes.length === this.voteState.totalPlayers) {
+    // Check if all players have voted
+    if (this.voteState.votes.length === this.players.length) {
       this.resolveVote();
     }
+
+    this.emitGameUpdate();
   }
 
   private resolveVote(): void {
     if (!this.voteState) return;
 
-    const yesVotes = this.voteState.votes.filter((v) => v.vote).length;
-    const result = yesVotes > this.voteState.totalPlayers / 2;
-
-    if (this.voteState.topic === "startGame" && result) {
-      this.startGame();
-    } else if (this.voteState.topic === "endGame" && result) {
-      this.endGame();
-    }
-
     const voteCount: VoteCount = {
-      yes: yesVotes,
-      no: this.voteState.totalPlayers - yesVotes,
+      yes: 0,
+      no: 0,
     };
 
-    this.io.to(this.gameId).emit(SocketEvents.VOTE_ENDED, {
-      voteResult: result,
-      voteCount,
-    });
+    for (const vote of this.voteState.votes) {
+      vote.vote ? voteCount.yes++ : voteCount.no++;
+    }
+
+    const passed = voteCount.yes > voteCount.no;
 
     // Log the vote resolution event
     this.logEvent({
       playerId: "", // System event
-      eventType: GameEventType.VOTE_RESOLVED,
+      eventType: GameEventType.RESOLVE_VOTE,
       timestamp: Date.now(),
-      data: { result, voteCount },
+      data: { voteCount, passed },
+    });
+
+    this.gameRoom.emit(SocketEvents.VOTE_RESOLVED, {
+      topic: this.voteState.topic,
+      voteCount,
+      passed,
     });
 
     this.voteState = null;
+    this.emitGameUpdate();
   }
 
   public getStage(): GameStage {

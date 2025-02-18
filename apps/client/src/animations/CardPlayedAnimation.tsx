@@ -1,11 +1,12 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useRef, useState } from 'react';
-import { PlayingCard } from '../components/PlayingCard';
-import { config } from '../config';
-import { newLogger } from '../logger';
-import { Card } from '../types';
+import { AnimatePresence, motion } from "framer-motion";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { PlayingCard } from "../components/PlayingCard";
+import { config } from "../config";
+import { newLogger } from "../logger";
+import type { Card } from "../types";
 
-const logger = newLogger('CardPlayedAnimation');
+const logger = newLogger("CardPlayedAnimation");
 
 interface CardPlayedAnimationProps {
   isVisible: boolean;
@@ -27,8 +28,8 @@ export const CardPlayedAnimation: React.FC<CardPlayedAnimationProps> = ({
   useEffect(() => {
     if (isVisible && card) {
       // Pick a random direction outside the screen to start the animation
-      //   const randomX = Math.random() < 0.5 ? -100 : 100;
-      //   const randomY = Math.random() < 0.5 ? -100 : 100;
+      // const randomX = Math.random() < 0.5 ? -100 : 100;
+      // const randomY = Math.random() < 0.5 ? -100 : 100;
       //   setStartPosition({ x: randomX, y: randomY });
       setStartPosition({ x: 0, y: 0 });
 
@@ -36,12 +37,14 @@ export const CardPlayedAnimation: React.FC<CardPlayedAnimationProps> = ({
 
       setTimeout(() => {
         onAnimationComplete();
-        logger.info('Card played animation complete');
+        logger.info("Card played animation complete");
       }, config.animation.cardPlayedAnimationDuration * 1000);
 
-      logger.info('Starting card played animation', card);
+      logger.info("Starting card played animation", {
+        data: { card },
+      });
     }
-  }, [isVisible, card?.code]);
+  }, [isVisible, card, onAnimationComplete, targetRef]);
 
   const calculateEndPosition = (targetRef: React.RefObject<HTMLDivElement>) => {
     if (!cardRef.current || !targetRef.current) return { x: 0, y: 0 };
@@ -53,19 +56,25 @@ export const CardPlayedAnimation: React.FC<CardPlayedAnimationProps> = ({
     const cardCenterX = cardRect.left + cardRect.width / 2;
     const cardCenterY = cardRect.top + cardRect.height / 2;
 
-    logger.info('Card center', cardCenterX, cardCenterY);
+    logger.info("Card center", {
+      data: { cardCenterX, cardCenterY },
+    });
 
     // Calculate the center of the target
     const targetCenterX = targetRect.left + targetRect.width / 2;
     const targetCenterY = targetRect.top + targetRect.height / 2;
 
-    logger.info('Target center', targetCenterX, targetCenterY);
+    logger.info("Target center", {
+      data: { targetCenterX, targetCenterY },
+    });
 
     // Calculate the offset
     const offsetX = targetCenterX - cardCenterX;
     const offsetY = targetCenterY - cardCenterY;
 
-    logger.info('Offset', offsetX, offsetY);
+    logger.info("Offset", {
+      data: { offsetX, offsetY },
+    });
 
     return { x: offsetX, y: offsetY };
   };
@@ -75,20 +84,33 @@ export const CardPlayedAnimation: React.FC<CardPlayedAnimationProps> = ({
       {isVisible && card && (
         <motion.div
           key={`${card.code}`}
-          initial={{ opacity: 0, scale: 0.5, x: startPosition.x, y: startPosition.y }}
+          initial={{
+            opacity: 0,
+            scale: 0.5,
+            x: startPosition.x,
+            y: startPosition.y,
+          }}
           animate={{ opacity: 1, scale: 1, ...endPosition }}
           exit={{ opacity: 0, scale: 0.5, x: endPosition.x, y: endPosition.y }}
           transition={{
             duration: config.animation.cardPlayedAnimationDuration,
-            opacity: { duration: config.animation.cardPlayedAnimationDuration / 2 },
+            opacity: {
+              duration: config.animation.cardPlayedAnimationDuration / 2,
+            },
           }}
           style={{
-            position: 'fixed',
+            position: "fixed",
             zIndex: 9999,
-            transformOrigin: 'top left',
+            transformOrigin: "top left",
           }}
         >
-          <PlayingCard ref={cardRef} key={card.id} suit={card.suit} value={card.rank} faceUp={true} />
+          <PlayingCard
+            ref={cardRef}
+            key={card.id}
+            suit={card.suit}
+            value={card.rank}
+            faceUp={true}
+          />
         </motion.div>
       )}
     </AnimatePresence>

@@ -1,6 +1,9 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect } from "react";
 
-export const useThrottledCallback = (callback: (...args: any[]) => void, delay: number) => {
+export const useThrottledCallback = (
+  callback: (...args: any[]) => void,
+  delay: number
+) => {
   // Keep track of the last time the callback was called
   const lastCallTime = useRef<number>(0);
   // Store the latest arguments to be called after delay
@@ -46,6 +49,6 @@ export const useThrottledCallback = (callback: (...args: any[]) => void, delay: 
         }, remainingDelay);
       }
     },
-    [callback, delay],
+    [callback, delay]
   );
 };

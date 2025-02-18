@@ -1,6 +1,6 @@
-import { Card, GameSettings, SlapRule } from '../../types';
-import { Player } from '../Player';
-import { Condition } from './Condition';
+import type { Card, GameSettings, SlapRule } from "../../types.js";
+import type { Player } from "../Player.js";
+import { Condition } from "./Condition.js";
 
 export class RuleEngine {
   private rules: GameSettings;
@@ -30,7 +30,9 @@ export class RuleEngine {
   }
 
   public getValidSlapRules(pile: Card[], slapper: Player): SlapRule[] {
-    return this.rules.slapRules.filter((rule) => this.evaluateRule(rule, pile, slapper));
+    return this.rules.slapRules.filter((rule) =>
+      this.evaluateRule(rule, pile, slapper)
+    );
   }
 
   public validateSlap(pile: Card[], slapper: Player): boolean {
@@ -51,7 +53,9 @@ export class RuleEngine {
   }
 
   public isChallengeCard(card: Card): boolean {
-    const challengeCards = Object.keys(this.rules.faceCardChallengeCounts || {});
+    const challengeCards = Object.keys(
+      this.rules.faceCardChallengeCounts || {}
+    );
     return challengeCards.includes(card.rank);
   }
 
@@ -71,7 +75,7 @@ export class RuleEngine {
 
   public isCounterCard(card: Card): boolean {
     // Custom rule: A '10' can counter a face card
-    if (this.rules.challengeCounterCards && this.rules.challengeCounterCards.includes(card)) {
+    if (this.rules.challengeCounterCards?.includes(card)) {
       return true;
     }
     return false;
@@ -83,5 +87,37 @@ export class RuleEngine {
 
   public setGameSettings(settings: GameSettings) {
     this.rules = settings;
+  }
+
+  private evaluateSlapRule(
+    rule: SlapRule,
+    pile: Card[],
+    slapper: Player
+  ): boolean {
+    for (const condition of rule.conditions) {
+      const checkableCondition = new Condition(condition);
+      if (!checkableCondition.check(pile, slapper)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Checks if a slap is valid according to the game rules
+   * @param pile - The central pile of cards to check for a valid slap
+   * @param slapper - The player who is slapping
+   * @returns The matching slap rule if the slap is valid, null otherwise
+   */
+  public checkSlap(pile: Card[], slapper: Player): SlapRule | null {
+    if (pile.length < 2) return null;
+
+    for (const rule of this.rules.slapRules) {
+      if (this.evaluateSlapRule(rule, pile, slapper)) {
+        return rule;
+      }
+    }
+
+    return null;
   }
 }

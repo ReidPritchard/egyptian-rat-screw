@@ -1,11 +1,11 @@
 import type { Card, PlayerInfo } from "../types.js";
-import type { Messenger } from "./Messenger.js";
+import type { Messenger } from "@oer/message";
 
 export class Player {
-  public messenger: Messenger;
-  public name: string;
+  public readonly messenger: Messenger;
+  public readonly name: string;
   public isBot = false;
-  private deck: Card[] = [];
+  private cards: Card[] = [];
   private ready = false;
 
   constructor(messenger: Messenger, name: string, isBot = false) {
@@ -14,17 +14,29 @@ export class Player {
     this.isBot = isBot;
   }
 
-  public reset(): void {
-    this.deck = [];
-    this.ready = false;
+  public isReady(): boolean {
+    return this.ready;
   }
 
-  public receiveCards(cards: Card[]) {
-    this.deck.push(...cards);
+  public setReady(ready: boolean): void {
+    this.ready = ready;
+  }
+
+  public addCards(cards: Card[]): void {
+    this.cards.push(...cards);
   }
 
   public playCard(): Card | undefined {
-    return this.deck.shift();
+    return this.cards.shift();
+  }
+
+  public getCardCount(): number {
+    return this.cards.length;
+  }
+
+  public reset(): void {
+    this.cards = [];
+    this.ready = false;
   }
 
   public collectPile(pile: Card[]) {
@@ -34,19 +46,19 @@ export class Player {
     if (pile.length < 10) {
       shuffledPile = this.shuffle(pile);
     }
-    this.deck.push(...shuffledPile);
+    this.cards.push(...shuffledPile);
   }
 
   public givePenaltyCard(): Card | undefined {
-    return this.deck.shift();
+    return this.cards.shift();
   }
 
   public hasCards(): boolean {
-    return this.deck.length > 0;
+    return this.cards.length > 0;
   }
 
   public getDeckSize(): number {
-    return this.deck.length;
+    return this.cards.length;
   }
 
   public getPlayerInfo(): PlayerInfo {
@@ -55,14 +67,6 @@ export class Player {
       name: this.name,
       isBot: this.isBot,
     };
-  }
-
-  public setReady(ready: boolean) {
-    this.ready = ready;
-  }
-
-  public isReady(): boolean {
-    return this.ready;
   }
 
   private shuffle(cards: Card[]): Card[] {

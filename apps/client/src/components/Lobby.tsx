@@ -1,60 +1,69 @@
-import { IconArrowRight, IconId, IconPlus, IconUser } from '@tabler/icons-react';
-import { ChangeNamePayload } from 'client/socketEvents';
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect, useState } from 'react';
-import { api } from '../api';
-import { config } from '../config';
-import { useApplicationStore } from '../hooks/useApplicationStore';
-import { useLobbyStore } from '../hooks/useLobbyStore';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import { useThrottledCallback } from '../hooks/useThrottledCallback';
-import { useLocalPlayerSettings } from '../hooks/useLocalPlayerSettings';
+import type React from "react";
+import { useEffect, useState } from "react";
+import {
+  IconArrowRight,
+  IconId,
+  IconPlus,
+  IconUser,
+} from "@tabler/icons-react";
+import { config } from "../config";
+import { useApplicationStore } from "../store/useApplicationStore";
+import { useLobbyStore } from "../store/useLobbyStore";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
+import { useApi } from "../contexts/ApiContext";
+import { newLogger } from "../logger";
+
+const logger = newLogger("Lobby");
 
 export const Lobby: React.FC = () => {
   const { changeName } = useLocalPlayerSettings();
-  const { lobbyState, lobbyPlayers, handleJoinGame, handleCreateGame } = useLobbyStore();
+  const { lobbyState, lobbyPlayers, handleJoinGame, handleCreateGame } =
+    useLobbyStore();
   const { localPlayer } = useApplicationStore();
+  const api = useApi();
 
-  const [playerName, setPlayerName] = useLocalStorage(config.localStoragePlayerNameKey, localPlayer?.name || '');
-  const [joinGameCode, setJoinGameCode] = useState('');
+  const [playerName, setPlayerName] = useLocalStorage<string>(
+    config.localStoragePlayerNameKey,
+    localPlayer?.name || ""
+  );
+  const [joinGameCode, setJoinGameCode] = useState<string>("");
 
   useEffect(() => {
-    const handleConnect = () => {
-      if (playerName) {
-        changeName(playerName);
-      }
-    };
+    if (playerName) {
+      logger.info("Setting player name", { data: { playerName } });
+      changeName(playerName, api);
+    }
+  }, [playerName, changeName, api]);
 
-    api.socket.on('connect', handleConnect);
-
-    return () => {
-      api.socket.off('connect', handleConnect);
-    };
-  }, [playerName]);
-
-  // throttle name change
-  const throttledChangeName = useThrottledCallback((payload: ChangeNamePayload) => api.changeName(payload), 1000);
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNameInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setPlayerName(newName);
-    changeName(newName);
-    if (api.socket.connected) {
-      throttledChangeName({ name: newName });
-    }
   };
 
   const handleJoinGameCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newGameCode = e.target.value;
-    setJoinGameCode(newGameCode);
+    setJoinGameCode(e.target.value);
+  };
+
+  const getPlayerDisplayName = (player: { id: string; name?: string }) => {
+    return (
+      player.name ||
+      player.id.replace("-", " ").replace(/\b\w/g, (char) => char.toUpperCase())
+    );
   };
 
   return (
     <section className="flex flex-col md:flex-row items-start justify-around h-full w-full">
-      <div className="flex flex-col items-stretch justify-between gap-4">
+      <div className="animate-fadeInScale flex flex-col items-stretch justify-between gap-4">
         <label className="input input-bordered flex items-center gap-2">
           <IconUser size="1.1rem" />
-          <input type="text" className="grow" placeholder="Username" value={playerName} onChange={handleNameChange} />
+          <input
+            type="text"
+            className="grow"
+            placeholder="Username"
+            value={playerName}
+            onChange={handleNameInputChange}
+          />
         </label>
         <label className="input input-bordered flex items-center gap-2">
           <IconId size="1.1rem" />
@@ -68,13 +77,19 @@ export const Lobby: React.FC = () => {
         </label>
 
         <div className="join">
-          <button className="btn btn-primary join-item" onClick={handleCreateGame} disabled={!playerName}>
+          <button
+            type="button"
+            className="btn btn-primary join-item"
+            onClick={() => api && handleCreateGame(api, playerName)}
+            disabled={!playerName}
+          >
             <IconPlus size="1.1rem" />
             Create Game
           </button>
           <button
+            type="button"
             className="btn btn-secondary join-item"
-            onClick={() => handleJoinGame(joinGameCode)}
+            onClick={() => api && handleJoinGame(api, joinGameCode)}
             disabled={!playerName || !joinGameCode}
           >
             <IconArrowRight size="1.1rem" />
@@ -83,69 +98,57 @@ export const Lobby: React.FC = () => {
         </div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <div className="animate-fadeInUp">
         <section className="p-4 pt-0">
-          <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">Players ({lobbyPlayers.length})</h3>
-          <br />
-          <div className="flex flex-col items-start">
-            <AnimatePresence>
-              {lobbyPlayers.map((player) => (
-                <motion.div
-                  key={player.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <p className="flex flex-row items-center justify-center gap-3">
-                    {player.name}
-                    {player.id === localPlayer?.id && <span className="badge badge-primary">You</span>}
-                  </p>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+          <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">
+            Players ({lobbyPlayers.length})
+          </h3>
+          <div className="flex flex-col items-start mt-4 gap-2">
+            {lobbyPlayers.map((player) => (
+              <div key={player.id} className="animate-fadeInLeft">
+                <p className="flex items-center gap-3">
+                  {getPlayerDisplayName(player)}
+                  {player.id === localPlayer?.id && (
+                    <span className="badge badge-primary">You</span>
+                  )}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
+      <div className="animate-fadeInUp">
         <section className="p-4 pt-0">
-          <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">Games</h3>
-          <br />
-          <div className="flex flex-col items-center">
-            <AnimatePresence>
-              {lobbyState?.games.map((game) => (
-                <motion.div
-                  key={game.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="card bg-base-100 w-28 shadow-xl">
-                    <section className="card-body">
-                      <h2 className="card-title">{game.name}</h2>
-                      <p className="text-xs p-3">
-                        Players: {game.playerCount}/{game.maxPlayers}
-                      </p>
-                      <div className="card-actions justify-end">
-                        <button className="btn btn-primary" onClick={() => handleJoinGame(game.id)}>
-                          <IconArrowRight size="1.1rem" />
-                          Join
-                        </button>
-                      </div>
-                    </section>
+          <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">
+            Games
+          </h3>
+          <div className="flex flex-col items-center mt-4 gap-4">
+            {lobbyState?.games.map((game) => (
+              <div key={game.id} className="animate-fadeInScale">
+                <div className="card bg-base-100 w-28 shadow-xl">
+                  <div className="card-body p-3">
+                    <h2 className="card-title text-center">{game.name}</h2>
+                    <p className="text-xs text-center">
+                      Players: {game.playerCount}/{game.maxPlayers}
+                    </p>
+                    <div className="card-actions justify-center mt-2">
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => api && handleJoinGame(api, game.id)}
+                      >
+                        <IconArrowRight size="1.1rem" />
+                        Join
+                      </button>
+                    </div>
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
-      </motion.div>
+      </div>
     </section>
   );
 };

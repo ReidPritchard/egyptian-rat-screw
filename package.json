@@ -6,14 +6,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm run build:packages && turbo run dev",
-    "build:packages": "turbo run build --filter=./packages/*",
+    "dev": "turbo run dev",
     "build": "turbo run build",
     "start": "turbo run start",
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check . --write",
     "clean": "turbo run clean",
-    "clean:full": "turbo run clean:full"
+    "clean:full": "turbo run clean:full && rm -rf node_modules"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

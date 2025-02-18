@@ -1,4 +1,4 @@
-import {
+import type {
   Card,
   ClientGameState,
   GameSettings,
@@ -8,7 +8,7 @@ import {
   PlayerInfo,
   PlayerInfoUpdate,
   VoteState,
-} from './types';
+} from "./types";
 
 /**
  * @enum SocketEvents
@@ -23,18 +23,18 @@ export enum SocketEvents {
    * @description Emitted to both the client and server when a client connects
    * for the first time.
    */
-  CONNECT = 'connect',
+  CONNECT = "connect",
 
   /**
    * @description Used by the server to clean up client related state when they
    * disconnect.
    */
-  DISCONNECTING = 'disconnecting',
+  DISCONNECTING = "disconnecting",
 
   /**
    * @description Used by both the client and server when disconnected
    */
-  DISCONNECT = 'disconnect',
+  DISCONNECT = "disconnect",
 
   ///////////////////////
   // Lobby Events //
@@ -44,13 +44,13 @@ export enum SocketEvents {
    * @description Emitted to the lobby room to update the active games.
    * @see GameManager.emitLobbyUpdate
    */
-  LOBBY_GAME_UPDATE = 'lobbyGameUpdate',
+  LOBBY_GAME_UPDATE = "lobbyGameUpdate",
 
   /**
    * @description Emitted to the lobby room to update the lobby players.
    * @see GameManager.emitLobbyUpdate
    */
-  LOBBY_PLAYER_UPDATE = 'lobbyPlayerUpdate',
+  LOBBY_PLAYER_UPDATE = "lobbyPlayerUpdate",
 
   ///////////////////////
   // Game Events //
@@ -60,52 +60,52 @@ export enum SocketEvents {
    * @description Emitted to the game room to update the game state.
    * @see GameManager.setGameState
    */
-  GAME_STATE_UPDATED = 'gameStateUpdated',
-  GAME_PILE_UPDATED = 'gamePileUpdated',
-  GAME_SETTINGS_CHANGED = 'gameSettingsChanged',
-  GAME_STAGE_CHANGED = 'gameStageChanged',
-  GAME_STARTED = 'gameStarted',
-  GAME_ENDED = 'gameEnded',
+  GAME_STATE_UPDATED = "gameStateUpdated",
+  GAME_PILE_UPDATED = "gamePileUpdated",
+  GAME_SETTINGS_CHANGED = "gameSettingsChanged",
+  GAME_STAGE_CHANGED = "gameStageChanged",
+  GAME_STARTED = "gameStarted",
+  GAME_ENDED = "gameEnded",
 
   // Player Events
-  PLAYER_JOINED_GAME = 'playerJoinedGame',
-  PLAYER_LEFT_GAME = 'playerLeftGame',
-  PLAYER_READY = 'playerReady',
-  PLAYER_NOT_READY = 'playerNotReady',
+  PLAYER_JOINED_GAME = "playerJoinedGame",
+  PLAYER_LEFT_GAME = "playerLeftGame",
+  PLAYER_READY = "playerReady",
+  PLAYER_NOT_READY = "playerNotReady",
 
   // Player Actions (Client to Server)
-  CHANGE_NAME = 'changeName',
-  JOIN_GAME = 'joinGame',
-  CREATE_GAME = 'createGame',
-  LEAVE_GAME = 'leaveGame',
-  JOIN_LOBBY = 'joinLobby',
-  PLAY_CARD = 'playCard',
-  SLAP_PILE = 'slapPile',
-  SET_GAME_SETTINGS = 'setGameSettings',
-  PLAYER_ACTION = 'playerAction',
+  CHANGE_NAME = "changeName",
+  JOIN_GAME = "joinGame",
+  CREATE_GAME = "createGame",
+  LEAVE_GAME = "leaveGame",
+  JOIN_LOBBY = "joinLobby",
+  PLAY_CARD = "playCard",
+  SLAP_PILE = "slapPile",
+  SET_GAME_SETTINGS = "setGameSettings",
+  PLAYER_ACTION = "playerAction",
 
   // Player Action Results (Server to Client)
-  CARD_PLAYED = 'cardPlayed',
-  SLAP_RESULT = 'slapResult',
-  CHALLENGE_STARTED = 'challengeStarted',
-  CHALLENGE_RESULT = 'challengeResult',
-  TURN_CHANGED = 'turnChanged',
+  CARD_PLAYED = "cardPlayed",
+  SLAP_RESULT = "slapResult",
+  CHALLENGE_STARTED = "challengeStarted",
+  CHALLENGE_RESULT = "challengeResult",
+  TURN_CHANGED = "turnChanged",
 
   // Voting Events
-  VOTE_STARTED = 'voteStarted',
-  VOTE_UPDATED = 'voteUpdated',
-  VOTE_ENDED = 'voteEnded',
+  VOTE_STARTED = "voteStarted",
+  VOTE_UPDATED = "voteUpdated",
+  VOTE_ENDED = "voteEnded",
 
   // Notifications
-  ERROR = 'error',
-  MESSAGE = 'message',
+  ERROR = "error",
+  MESSAGE = "message",
 }
 
 export interface SocketPayloads {
   // Connection Events
-  [SocketEvents.CONNECT]: void;
-  [SocketEvents.DISCONNECTING]: void;
-  [SocketEvents.DISCONNECT]: void;
+  [SocketEvents.CONNECT]: undefined;
+  [SocketEvents.DISCONNECTING]: undefined;
+  [SocketEvents.DISCONNECT]: undefined;
 
   // Lobby Events
   [SocketEvents.LOBBY_GAME_UPDATE]: LobbyState;
@@ -162,16 +162,20 @@ export interface JoinGamePayload {
   gameId: string;
 }
 
+// biome-ignore lint/suspicious/noEmptyInterface: Empty payload, standardized event payload interface
 export interface CreateGamePayload {}
 
+// biome-ignore lint/suspicious/noEmptyInterface: Empty payload, standardized event payload interface
 export interface LeaveGamePayload {}
 
+// biome-ignore lint/suspicious/noEmptyInterface: Empty payload, standardized event payload interface
 export interface JoinLobbyPayload {}
 
 export interface ChangeNamePayload {
   name: string;
 }
 
+// biome-ignore lint/suspicious/noEmptyInterface: Empty payload, standardized event payload interface
 export interface PlayCardPayload {}
 
 export interface SlapPilePayload {
@@ -189,7 +193,7 @@ export interface CardPlayedPayload {
 
 export interface SlapResultPayload {
   playerId: string;
-  result: 'valid' | 'invalid';
+  result: "valid" | "invalid";
   message?: string;
 }
 

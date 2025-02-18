@@ -1,10 +1,9 @@
-import { Socket } from 'socket.io';
-import { Game } from '../game/Game';
-import { newLogger } from '../logger';
-import { PlayerActionType, PlayerInfo } from '../types';
-import { Messenger } from '../game/Messenger';
+import type { Game } from "../game/Game.js";
+import { newLogger } from "../logger.js";
+import type { PlayerInfo } from "../types.js";
+import type { Messenger } from "@oer/message";
 
-const logger = newLogger('Bot');
+const logger = newLogger("Bot");
 
 export class Bot {
   private id: string;
@@ -12,7 +11,7 @@ export class Bot {
   public playerInfo: PlayerInfo;
   public messenger: Messenger;
 
-  constructor(name: string = 'Bot') {
+  constructor(messenger: Messenger, name = "Bot") {
     this.id = `bot-${Math.random().toString(36).slice(2, 15)}`;
     logger.info(`Creating bot: ${name} with id: ${this.id}`);
 
@@ -21,6 +20,8 @@ export class Bot {
       name: name,
       isBot: true,
     };
+
+    this.messenger = messenger;
   }
 
   public joinGame(gameId: string): void {
@@ -36,7 +37,7 @@ export class Bot {
     if (!this.messenger) return;
 
     // Listen for game state updates
-    this.messenger.on('gameStateUpdated', (gameState) => {
+    this.messenger.on("gameStateUpdated", (gameState) => {
       this.handleGameStateUpdate(gameState);
     });
 

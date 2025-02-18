@@ -1,47 +1,53 @@
-import type { Server, Socket } from "socket.io";
-import { SETTINGS } from "./config.js";
+import type { WebSocketServer } from "ws";
+import { SETTINGS } from "@oer/configuration";
 import { Game } from "./game/Game.js";
 import { newLogger } from "./logger.js";
 import { SocketEvents } from "./socketEvents.js";
-import type {
-  GameSettings,
-  PlayerAction,
+import {
+  type GameSettings,
+  type PlayerAction,
   PlayerActionType,
-  PlayerInfo,
+  type PlayerInfo,
 } from "./types.js";
 import { Bot } from "./bot/index.js";
-import type { Messenger } from "./game/Messenger.js";
+import { type Room, Messenger } from "@oer/message";
+import { MessageServer } from "@oer/message/server";
+import { defaultSlapRules } from "./game/rules/SlapRules.js";
 
 const logger = newLogger("GameManager");
 
 export class GameManager {
   private static instance: GameManager;
-  private static io: Server;
+  private static messageServer: MessageServer;
 
   /**
-   * Stores all active games, indexed by their game ID.
+   * Maps room IDs to their corresponding game instances
    */
   private games: Map<string, Game> = new Map();
 
   /**
-   * Maps socket IDs to the corresponding player information.
+   * Maps messenger IDs to the corresponding player information.
    */
-  private socketPlayerMap: Map<string, PlayerInfo> = new Map();
+  private playerMap: Map<string, PlayerInfo> = new Map();
 
-  private constructor(io: Server) {
-    GameManager.io = io;
+  private constructor() {
+    GameManager.messageServer = new MessageServer();
     logger.info("GameManager initialized");
   }
 
-  public static getInstance(io?: Server): GameManager {
+  public static getInstance(wss: WebSocketServer): GameManager {
     if (!GameManager.instance) {
-      if (!io)
-        throw new Error(
-          "IO instance required for initial GameManager creation"
-        );
-      GameManager.instance = new GameManager(io);
+      GameManager.instance = new GameManager();
     }
     return GameManager.instance;
+  }
+
+  public getMessageServer(): MessageServer {
+    return GameManager.messageServer;
+  }
+
+  public getLobbyPlayer(playerId: string): PlayerInfo | undefined {
+    return this.playerMap.get(playerId);
   }
 
   public joinGame(
@@ -50,39 +56,66 @@ export class GameManager {
     messenger: Messenger
   ): void {
     logger.info(
-      `Joining game: ${gameId} for player: ${player.name} with socket id: ${messenger.id}`
+      `Joining game: ${gameId} for player: ${JSON.stringify(player)} with id: ${
+        messenger.id
+      }`
     );
-    if (this.isPlayerInGame(messenger)) {
-      messenger.emitToPlayer(
-        SocketEvents.ERROR,
-        "Player is already in a game."
-      );
+
+    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
+    if (
+      currentRoom &&
+      currentRoom.getId() !== GameManager.messageServer.getGlobalRoom().getId()
+    ) {
+      logger.error("Player is already in a game.", messenger.id);
+      messenger.emit(SocketEvents.ERROR, {
+        data: "Player is already in a game.",
+      });
       return;
     }
 
-    const game = this.getOrCreateGame(gameId);
+    const { game, gameRoom } = this.getOrCreateGame(gameId);
 
-    logger.info("Game stage before joining", game.getStage());
-    logger.info("Current player count", game.getPlayerCount());
+    if (!game) {
+      logger.error("Failed to find game.", messenger.id);
+      messenger.emit(SocketEvents.ERROR, {
+        data: "Failed to find game.",
+      });
+      return;
+    }
 
-    messenger.leave(SETTINGS.LOBBY_ROOM);
-    messenger.join(game.gameId);
+    // Move player to game room using MessageServer
+    const wasAdded = GameManager.messageServer.moveMessengerToRoom(
+      messenger,
+      gameRoom.getId()
+    );
+    if (!wasAdded) {
+      messenger.emit(
+        SocketEvents.ERROR,
+        "Failed to join game room - room might be full."
+      );
+      this.initPlayerInLobby(player, messenger);
+      return;
+    }
 
     logger.info(
       `Player removed from lobby and joined game id:"${game.gameId}"`
     );
 
     const playerAdditionResult = game.addPlayer(messenger, player);
-
-    this.socketPlayerMap.set(messenger.id, player);
+    this.playerMap.set(messenger.id, player);
 
     if (playerAdditionResult) {
       logger.info(`Player successfully added to game: ${player.name}`);
       this.emitPlayerLeftLobby(messenger.id, player.name);
     } else {
       logger.error(`Player addition failed: ${playerAdditionResult}`);
+      GameManager.messageServer.moveMessengerToRoom(
+        messenger,
+        GameManager.messageServer.getGlobalRoom().getId()
+      );
       this.initPlayerInLobby(player, messenger);
     }
+
     // Update the lobby with the new game
     this.emitLobbyUpdate();
 
@@ -93,147 +126,144 @@ export class GameManager {
   }
 
   public leaveGame(messenger: Messenger): void {
-    // socket.rooms is a Set, it will always contain the socket's identifier
-    // but we want to find any game id
-    const gameId = Array.from(messenger.getRooms()).find(
-      (room) => room !== messenger.id && this.games.has(room)
-    );
-
-    if (!gameId) {
-      messenger.emitToPlayer(SocketEvents.ERROR, "Player is not in a game.");
+    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
+    if (
+      !currentRoom ||
+      currentRoom.getId() === GameManager.messageServer.getGlobalRoom().getId()
+    ) {
+      messenger.emit(SocketEvents.ERROR, {
+        data: "Player is not in a game.",
+      });
       return;
     }
 
-    const game = this.games.get(gameId);
+    const game = this.games.get(currentRoom.getId());
     if (!game) {
-      messenger.emitToPlayer(SocketEvents.ERROR, "Game does not exist.");
+      messenger.emit(SocketEvents.ERROR, {
+        data: "Game not found.",
+      });
       return;
     }
 
     game.removePlayer(messenger);
+    GameManager.messageServer.moveMessengerToRoom(
+      messenger,
+      GameManager.messageServer.getGlobalRoom().getId()
+    );
 
-    messenger.leave(gameId); // Remove player from game
-    messenger.join(SETTINGS.LOBBY_ROOM); // Add player to lobby
+    // Add player back to lobby
+    const player = this.playerMap.get(messenger.id);
+    if (player) {
+      this.initPlayerInLobby(player, messenger);
+    }
 
-    // Emit player joined lobby event
-    this.initPlayerInLobby(this.socketPlayerMap.get(messenger.id)!, messenger);
-
-    // If the game is empty, remove it
+    // If the game is empty, clean up
     if (game.getPlayerCount() === 0) {
-      this.games.delete(gameId);
+      this.games.delete(currentRoom.getId());
     }
   }
 
   public initPlayerInLobby(player: PlayerInfo, messenger: Messenger): void {
-    messenger.join(SETTINGS.LOBBY_ROOM);
-    this.socketPlayerMap.set(messenger.id, player);
+    GameManager.messageServer.moveMessengerToRoom(
+      messenger,
+      GameManager.messageServer.getGlobalRoom().getId()
+    );
+    this.playerMap.set(messenger.id, player);
 
     // Emit player joined lobby event
     this.emitPlayerJoinedLobby(messenger.id, player.name);
 
     // Emit all lobby players to the new player
-    const lobbyPlayers = Array.from(this.socketPlayerMap.values())
+    const lobbyPlayers = Array.from(this.playerMap.values())
       .filter((p) => p.id !== messenger.id)
       .map((p) => ({
         id: p.id,
         name: p.name,
         action: "join",
       }));
-    GameManager.io
-      .to(messenger.id)
-      .emit(SocketEvents.LOBBY_PLAYER_UPDATE, lobbyPlayers);
+
+    messenger.emit(SocketEvents.LOBBY_PLAYER_UPDATE, lobbyPlayers);
   }
 
-  public getLobbyPlayer(playerId: string): PlayerInfo | undefined {
-    return this.socketPlayerMap.get(playerId);
-  }
-
-  public handleDisconnect(socket: Socket): void {
-    // Call this in socket io "disconnecting" event in order to access the socket's rooms
-
-    // Make sure the player is removed from any games they are in
-    // also remove them from the lobby
-    socket.rooms.forEach((room, isLobby) => {
-      logger.info("Removing player from game", room, isLobby);
-      const game = this.games.get(room);
+  public handleDisconnect(messenger: Messenger): void {
+    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
+    if (
+      currentRoom &&
+      currentRoom.getId() !== GameManager.messageServer.getGlobalRoom().getId()
+    ) {
+      const game = this.games.get(currentRoom.getId());
       if (game) {
-        game.removePlayer(socket);
-        // If the game is empty, remove it
+        game.removePlayer(messenger);
         if (game.getPlayerCount() === 0) {
-          this.games.delete(game.gameId);
+          this.games.delete(currentRoom.getId());
         }
       }
-      socket.leave(room);
-    });
+    }
+
+    GameManager.messageServer.removeMessengerFromRoom(messenger);
 
     // Emit player left lobby event
     this.emitPlayerLeftLobby(
-      socket.id,
-      this.socketPlayerMap.get(socket.id)?.name
+      messenger.id,
+      this.playerMap.get(messenger.id)?.name
     );
-
-    this.socketPlayerMap.delete(socket.id);
+    this.playerMap.delete(messenger.id);
   }
 
-  public handlePlayCard(socket: Socket): void {
-    logger.info("Routing play card to game", socket.id);
-    this.performGameAction(socket, (game) => game.handlePlayCard(socket));
+  private routeToGame(messenger: Messenger, action: (game: Game) => void) {
+    const game = this.getGameForMessenger(messenger);
+    if (game) action(game);
   }
 
-  public handleSlapPile(socket: Socket): void {
-    logger.info("Routing slap pile to game", socket.id);
-    this.performGameAction(socket, (game) => game.handleSlapAttempt(socket));
-  }
+  public handlePlayCard = (messenger: Messenger) =>
+    this.routeToGame(messenger, (g) => g.handlePlayCard(messenger));
 
-  public handlePlayerReady(socket: Socket): void {
-    this.performGameAction(socket, (game) =>
-      game.performPlayerAction({
-        actionType: PlayerActionType.SET_READY,
-        playerId: socket.id,
-        timestamp: Date.now(),
-        data: {
-          ready: true,
-        },
-      })
-    );
-  }
+  public handleSlapPile = (messenger: Messenger) =>
+    this.routeToGame(messenger, (g) => g.handleSlapAttempt(messenger));
 
-  public performPlayerAction(socket: Socket, action: PlayerAction): void {
-    this.performGameAction(socket, (game) => {
-      game.performPlayerAction(action);
+  public handlePlayerReady = (messenger: Messenger) =>
+    this.performPlayerAction(messenger, {
+      playerId: messenger.id,
+      actionType: PlayerActionType.SET_READY,
+      data: { ready: true },
+      timestamp: Date.now(),
     });
+
+  public performPlayerAction(messenger: Messenger, action: PlayerAction): void {
+    this.routeToGame(messenger, (g) => g.performPlayerAction(action));
   }
 
-  public getGameSettings(socket: Socket, gameId?: string): void {
-    const game = this.getGameForSocket(socket, gameId);
+  public getGameSettings(messenger: Messenger, gameId?: string): void {
+    const game = this.getGameForMessenger(messenger, gameId);
     if (game) {
-      socket.emit(SocketEvents.SET_GAME_SETTINGS, game.getGameSettings());
+      messenger.emit(SocketEvents.SET_GAME_SETTINGS, game.getGameSettings());
     }
   }
 
   public setGameSettings(
-    socket: Socket,
+    messenger: Messenger,
     gameId: string | undefined,
     settings: GameSettings
   ): void {
-    const game = this.getGameForSocket(socket, gameId);
+    const game = this.getGameForMessenger(messenger, gameId);
     if (game) {
       game.setGameSettings(settings);
     }
   }
 
-  public setPlayerName(socketId: string, playerName: string): void {
-    logger.info(`Setting player name: ${socketId} ${playerName}`);
-    const player = this.getLobbyPlayer(socketId);
+  public setPlayerName(playerId: string, playerName: string): void {
+    logger.info(`Setting player name: ${playerId} ${playerName}`);
+    const player = this.getLobbyPlayer(playerId);
     if (player) {
       player.name = playerName;
-      this.socketPlayerMap.set(socketId, player);
+      this.playerMap.set(playerId, player);
 
-      GameManager.io
-        .to(SETTINGS.LOBBY_ROOM)
+      // Emit to all clients in the lobby room
+      this.getMessageServer()
+        .getGlobalRoom()
         .emit(SocketEvents.LOBBY_PLAYER_UPDATE, [
           {
-            id: socketId,
+            id: playerId,
             name: playerName,
             action: "update",
           },
@@ -241,55 +271,88 @@ export class GameManager {
     }
   }
 
-  public startVote(socket: Socket, topic: string): void {
-    this.performGameAction(socket, (game) => {
+  public startVote(messenger: Messenger, topic: string): void {
+    this.performGameAction(messenger, (game) => {
       logger.info(`Starting vote on game: ${game.gameId}`);
       game.startVote(topic);
     });
   }
 
-  public submitVote(socket: Socket, vote: boolean): void {
-    this.performGameAction(socket, (game) => game.submitVote(socket.id, vote));
-  }
-
-  private isPlayerInGame(messenger: Messenger): boolean {
-    return Array.from(messenger.getRooms()).some((room) =>
-      this.games.has(room)
+  public submitVote(messenger: Messenger, vote: boolean): void {
+    this.performGameAction(messenger, (game) =>
+      game.submitVote(messenger.id, vote)
     );
   }
 
-  private getOrCreateGame(gameId: string): Game {
+  private isPlayerInGame(messenger: Messenger): boolean {
+    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
+    return (
+      currentRoom?.getId() !== GameManager.messageServer.getGlobalRoom().getId()
+    );
+  }
+
+  private getOrCreateGame(gameId: string): {
+    game: Game;
+    gameRoom: Room;
+  } {
     logger.info(`Getting or creating game id:"${gameId}"`);
+    let finalGameId = gameId;
+
     if (!this.games.has(gameId) || gameId === "") {
-      logger.info("Generating new game", gameId);
-      gameId = gameId || this.generateGameId();
-      this.games.set(gameId, new Game(GameManager.io, gameId));
+      finalGameId = gameId || this.generateGameId();
+      logger.info("Generating new game", finalGameId);
+
+      const game = new Game(finalGameId, defaultSlapRules, {
+        maximumPlayers: 4,
+        minimumPlayers: 2,
+      });
+      this.games.set(finalGameId, game);
+
+      // Create a new room for the game using MessageServer
+      const gameRoom = GameManager.messageServer.createRoom(
+        finalGameId,
+        `Game ${finalGameId}`,
+        game.getGameSettings().maximumPlayers
+      );
     }
-    return this.games.get(gameId)!;
+
+    const game = this.games.get(finalGameId);
+    if (!game) {
+      throw new Error(`Failed to create/get game with ID: ${finalGameId}`);
+    }
+
+    const gameRoom = GameManager.messageServer.getRoom(finalGameId);
+    if (!gameRoom) {
+      throw new Error(`Failed to create/get game room with ID: ${finalGameId}`);
+    }
+
+    return { game, gameRoom };
   }
 
   private emitPlayerLeftLobby(id: string, name: string | undefined): void {
+    const finalName = name || this.generatePlayerName();
     if (!name) {
-      name = this.generatePlayerName();
-      this.setPlayerName(id, name);
+      this.setPlayerName(id, finalName);
     }
 
-    logger.info("Emitting player left lobby", id, name);
+    logger.info("Emitting player left lobby", id, finalName);
 
-    GameManager.io
-      .to(SETTINGS.LOBBY_ROOM)
+    // Emit to all clients in the lobby room
+    this.getMessageServer()
+      .getGlobalRoom()
       .emit(SocketEvents.LOBBY_PLAYER_UPDATE, [
         {
           id,
-          name,
+          name: finalName,
           action: "leave",
         },
       ]);
   }
 
   private emitPlayerJoinedLobby(id: string, name: string): void {
-    GameManager.io
-      .to(SETTINGS.LOBBY_ROOM)
+    // Emit to all clients in the lobby room
+    this.getMessageServer()
+      .getGlobalRoom()
       .emit(SocketEvents.LOBBY_PLAYER_UPDATE, [
         {
           id,
@@ -300,8 +363,9 @@ export class GameManager {
   }
 
   private emitLobbyUpdate(): void {
-    GameManager.io
-      .to(SETTINGS.LOBBY_ROOM)
+    // Emit to all clients in the lobby room
+    this.getMessageServer()
+      .getGlobalRoom()
       .emit(SocketEvents.LOBBY_GAME_UPDATE, {
         games: Array.from(this.games.values()).map((game) => ({
           id: game.gameId,
@@ -312,32 +376,32 @@ export class GameManager {
       });
   }
 
-  private emitError(socket: Socket, message: string): void {
-    socket.emit(SocketEvents.ERROR, message);
+  private emitError(messenger: Messenger, message: string): void {
+    messenger.emit(SocketEvents.ERROR, message);
   }
 
   private performGameAction(
-    socket: Socket,
+    messenger: Messenger,
     action: (game: Game) => void
   ): void {
-    const game = this.getGameForSocket(socket);
+    const game = this.getGameForMessenger(messenger);
     if (game) {
       logger.info("Performing game action on game", game.gameId);
       action(game);
     }
   }
 
-  private getGameForSocket(socket: Socket, gameId?: string): Game | undefined {
-    gameId =
-      gameId ||
-      Array.from(socket.rooms).find(
-        (room) => room !== socket.id && this.games.has(room)
-      );
-    if (!gameId) {
-      this.emitError(socket, "Player is not in a game.");
+  private getGameForMessenger(
+    messenger: Messenger,
+    gameId?: string
+  ): Game | undefined {
+    const finalGameId =
+      gameId || GameManager.messageServer.getMessengerRoom(messenger)?.getId();
+    if (!finalGameId) {
+      this.emitError(messenger, "Player is not in a game.");
       return;
     }
-    return this.games.get(gameId);
+    return this.games.get(finalGameId);
   }
 
   private generateGameId(): string {
@@ -347,7 +411,9 @@ export class GameManager {
     let gameId: string;
     do {
       // Generate a random game ID
-      gameId = `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${nouns[Math.floor(Math.random() * nouns.length)]}`;
+      gameId = `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${
+        nouns[Math.floor(Math.random() * nouns.length)]
+      }`;
     } while (this.games.has(gameId)); // Check if the ID already exists
 
     return gameId;
@@ -356,15 +422,18 @@ export class GameManager {
   private generatePlayerName(): string {
     const adjectives = SETTINGS.GENERATORS.PLAYER_NAME.ADJECTIVES;
     const names = SETTINGS.GENERATORS.PLAYER_NAME.NOUNS;
-    return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
+    return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${
+      names[Math.floor(Math.random() * names.length)]
+    }`;
   }
 
   private addBotPlayer(gameId: string): void {
     logger.info(`Adding bot player to game: ${gameId}`);
-    const bot = new Bot("Alvin");
-    const game = this.getOrCreateGame(gameId);
+    const bot = new Bot(Messenger.createBot());
+    const { game, gameRoom } = this.getOrCreateGame(gameId);
     if (bot.messenger) {
       game.addPlayer(bot.messenger, bot.playerInfo);
+      gameRoom.addMessenger(bot.messenger);
     }
   }
 }

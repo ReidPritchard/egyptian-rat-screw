@@ -42,7 +42,7 @@ export class Condition {
       if (part.startsWith("[") && part.endsWith("]")) {
         // Handle bracket notation
         part = part.slice(1, -1);
-        if (!isNaN(Number(part))) {
+        if (!Number.isNaN(Number(part))) {
           // If it's a number, use it as an index
           let index = Number(part);
           index = index < 0 ? value.length + index : index;

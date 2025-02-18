@@ -54,26 +54,21 @@ export interface PlayerAction {
 export enum GameEventType {
   ADD_PLAYER = "ADD_PLAYER",
   REMOVE_PLAYER = "REMOVE_PLAYER",
-
+  START_GAME = "START_GAME",
+  END_GAME = "END_GAME",
   PLAY_CARD = "PLAY_CARD",
-  SLAP = "SLAP",
-
-  GAME_STARTED = "GAME_STARTED",
-  GAME_ENDED = "GAME_ENDED",
-
+  VALID_SLAP = "VALID_SLAP",
+  INVALID_SLAP = "INVALID_SLAP",
   START_CHALLENGE = "START_CHALLENGE",
-  COUNTER_CHALLENGE = "COUNTER_CHALLENGE",
-  FAILED_COUNTER = "FAILED_COUNTER",
-  CHALLENGE_FAILED = "CHALLENGE_FAILED",
-
-  TURN_CHANGED = "TURN_CHANGED",
-
-  START_VOTE = "START_VOTE",
-  CAST_VOTE = "CAST_VOTE",
-  VOTE_RESOLVED = "VOTE_RESOLVED",
-
+  COUNTER_FACE_CARD_CHALLENGE = "COUNTER_FACE_CARD_CHALLENGE",
+  WIN_FACE_CARD_CHALLENGE = "WIN_FACE_CARD_CHALLENGE",
+  LOSE_FACE_CARD_CHALLENGE = "LOSE_FACE_CARD_CHALLENGE",
+  ADVANCE_TURN = "ADVANCE_TURN",
   SET_READY = "SET_READY",
   SET_SETTINGS = "SET_SETTINGS",
+  START_VOTE = "START_VOTE",
+  SUBMIT_VOTE = "SUBMIT_VOTE",
+  RESOLVE_VOTE = "RESOLVE_VOTE",
 }
 
 export interface GameEvent {
@@ -188,29 +183,27 @@ export enum GameStage {
 // This is used to reduce the amount of data sent to the client
 // and to prevent the client from having full access to the game state
 export interface ClientGameState {
-  // Game Metadata
-  name: string;
+  gameId: string;
   stage: GameStage;
-  winner: PlayerInfo | null;
-
-  // Player Information
-  playerIds: string[]; // Turn order
-  playerNames: { [playerId: string]: string };
-  playerHandSizes: { [playerId: string]: number };
-  playerReadyStatus: { [playerId: string]: boolean };
+  players: Array<{
+    id: string;
+    name: string;
+    cardCount: number;
+    isBot: boolean;
+    isReady: boolean;
+  }>;
   currentPlayerId: string;
-
-  // Pile Information
-  // pileSize: number; // Total cards in the pile
-  // TODO: Only send the top card of the pile to the client
-  pileCards: Card[]; // The cards in the pile, from bottom to top
-
-  // Game Settings
-  gameSettings: GameSettings;
-
-  // Ongoing Actions (active over multiple turns and thus require client-side state)
+  centralPileCount: number;
+  topCards: Card[];
+  faceCardChallenge: {
+    challenger: PlayerInfo;
+    currentPlayerId: string;
+    remainingPlays: number;
+  } | null;
+  winner: PlayerInfo | null;
   voteState: VoteState | null;
-  cardChallenge: CardChallenge | null;
+  settings: GameSettings;
+  eventLog: GameEvent[];
 }
 
 export interface LobbyState {
@@ -230,7 +223,7 @@ export interface Vote {
 export interface VoteState {
   topic: string;
   votes: Vote[];
-  totalPlayers: number;
+  startTime: number;
 }
 
 export interface CardChallenge {

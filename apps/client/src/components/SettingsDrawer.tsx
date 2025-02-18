@@ -1,7 +1,15 @@
-import { Button, Drawer, MultiSelect, NumberInput, Stack, Text } from '@mantine/core';
-import React, { useState } from 'react';
-import { LocalPlayerSettings } from '../clientTypes';
-import { GameSettings, SlapRule } from '../types';
+import {
+  Button,
+  Drawer,
+  MultiSelect,
+  NumberInput,
+  Stack,
+  Text,
+} from "@mantine/core";
+import type React from "react";
+import { useState } from "react";
+import type { LocalPlayerSettings } from "../clientTypes";
+import type { GameSettings, SlapRule } from "../types";
 
 interface SettingsDrawerProps {
   gameSettings: GameSettings;
@@ -19,23 +27,43 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Drawer opened={isOpen} onClose={() => setIsOpen(false)} title="Game Settings" padding="xl" size="sm">
+    <Drawer
+      opened={isOpen}
+      onClose={() => setIsOpen(false)}
+      title="Game Settings"
+      padding="xl"
+      size="sm"
+    >
       <Stack>
         <NumberInput
           label="Max Players"
           value={gameSettings.maximumPlayers}
-          onChange={(value) => handleGameSettingsChange({ ...gameSettings, maximumPlayers: Number(value) })}
+          onChange={(value) =>
+            handleGameSettingsChange({
+              ...gameSettings,
+              maximumPlayers: Number(value),
+            })
+          }
           min={2}
           max={8}
         />
         <MultiSelect
           label="Slap Rules"
-          data={allSlapRules.map((rule) => ({ value: rule.name, label: rule.name }))}
+          data={allSlapRules.map((rule) => ({
+            value: rule.name,
+            label: rule.name,
+          }))}
           value={gameSettings.slapRules.map((rule) => rule.name)}
           onChange={(selectedRules) =>
             handleGameSettingsChange({
               ...gameSettings,
-              slapRules: selectedRules.map((rule) => allSlapRules.find((r) => r.name === rule)!),
+              slapRules: selectedRules.map((rule) => {
+                const foundRule = allSlapRules.find((r) => r.name === rule);
+                if (!foundRule) {
+                  throw new Error(`Rule not found: ${rule}`);
+                }
+                return foundRule;
+              }),
             })
           }
           placeholder="Select slap rules"

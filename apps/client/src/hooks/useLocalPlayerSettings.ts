@@ -1,23 +1,23 @@
-import { create } from 'zustand';
-import { devtools, persist, createJSONStorage } from 'zustand/middleware';
-import { LocalPlayerSettings } from '../clientTypes';
-import { api } from '../api';
-import { newLogger } from '../logger';
+import { create } from "zustand";
+import { devtools, persist, createJSONStorage } from "zustand/middleware";
+import type { LocalPlayerSettings } from "../clientTypes";
+import type { Api } from "../api";
+import { newLogger } from "../logger";
 
-const logger = newLogger('LocalPlayerSettings');
+const logger = newLogger("LocalPlayerSettings");
 
 const DEFAULT_SETTINGS: LocalPlayerSettings = {
-  name: '',
+  name: "",
   hotkeys: {
     enable: true,
-    playCard: 'Space',
-    slap: 'S',
+    playCard: "Space",
+    slap: "S",
     vote: {
-      yes: 'Y',
-      no: 'N',
+      yes: "Y",
+      no: "N",
     },
-    ready: 'R',
-    settings: 'Escape',
+    ready: "R",
+    settings: "Escape",
   },
   ui: {
     actionLog: {
@@ -32,11 +32,15 @@ interface LocalPlayerSettingsState {
 }
 
 interface LocalPlayerSettingsActions {
-  updateSettings: (newSettings: Partial<LocalPlayerSettings>) => void;
-  changeName: (name: string) => void;
+  updateSettings: (
+    newSettings: Partial<LocalPlayerSettings>,
+    api: Api | null
+  ) => void;
+  changeName: (name: string, api: Api | null) => void;
 }
 
-type LocalPlayerSettingsStore = LocalPlayerSettingsState & LocalPlayerSettingsActions;
+type LocalPlayerSettingsStore = LocalPlayerSettingsState &
+  LocalPlayerSettingsActions;
 
 export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
   devtools(
@@ -44,13 +48,20 @@ export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
       (set) => ({
         settings: DEFAULT_SETTINGS,
 
-        updateSettings: (newSettings: Partial<LocalPlayerSettings>) => {
+        updateSettings: (
+          newSettings: Partial<LocalPlayerSettings>,
+          api: Api | null
+        ) => {
           logger.info(`Updating settings: ${JSON.stringify(newSettings)}`);
           set((state) => {
             const updatedSettings = { ...state.settings, ...newSettings };
 
             // If the name has changed, update it on the server
-            if (newSettings.name && newSettings.name !== state.settings.name) {
+            if (
+              newSettings.name &&
+              newSettings.name !== state.settings.name &&
+              api
+            ) {
               api.changeName({ name: newSettings.name });
             }
 
@@ -58,18 +69,23 @@ export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
           });
         },
 
-        changeName: (name: string) => {
+        changeName: (name: string, api: Api | null) => {
           logger.info(`Changing name: ${name}`);
           set((state) => ({
             settings: { ...state.settings, name },
           }));
+
+          if (!api) {
+            logger.error("API not initialized, skipping name change");
+            return;
+          }
           api.changeName({ name });
         },
       }),
       {
-        name: 'player-settings',
+        name: "player-settings",
         storage: createJSONStorage(() => localStorage),
-      },
-    ),
-  ),
+      }
+    )
+  )
 );

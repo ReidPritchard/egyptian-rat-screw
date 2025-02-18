@@ -3,23 +3,35 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "esbuild --bundle --watch --sourcemap --outdir=dist src/index.ts",
-    "build": "esbuild --bundle --sourcemap --outdir=dist src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "clean:full": "pnpm run clean && rm -rf node_modules"
   },
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./src/client.ts",
+      "default": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./src/server.ts",
+      "default": "./dist/server.js"
     }
   },
   "dependencies": {
-    "socket.io": "^4.7.0",
     "@oer/configuration": "workspace:*"
   },
+  "optionalDependencies": {
+    "ws": "^8.18.0"
+  },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "esbuild": "^0.19.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.0.0"
   }
 }

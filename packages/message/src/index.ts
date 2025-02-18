@@ -1,96 +1,370 @@
-import type { Socket } from "socket.io";
+/**
+ * This file provides the core messaging abstractions for both client and server usage.
+ */
+
 import { SETTINGS } from "@oer/configuration";
 
 /**
- * The messenger is an abstraction layer for a player/bot's socket logic.
- * It will be the interface for the game to interact with to notify the player/bot of events.
+ * Type for event data
+ */
+export type EventData = any;
+
+/**
+ * Type for event listener functions
+ */
+export type EventListener = (data: EventData) => void;
+
+/**
+ * Messenger is a core class that handles event emission, listener management, and room coordination.
+ * It is environment agnostic.
  */
 export class Messenger {
-  private isBot: boolean;
-
   /**
-   * The ID of the player/bot.
+   * Whether this messenger represents a bot
    */
-  public id: string;
+  public readonly isBot: boolean;
 
   /**
-   * The socket of the player. Only used if the messenger is a player.
-   * Otherwise the socket is undefined.
+   * Unique identifier for the messenger
    */
-  private socket: Socket | undefined;
+  public readonly id: string;
 
   /**
-   * Maps event names to their corresponding listeners.
-   * Only used if the messenger is a bot. Otherwise the socket is used directly.
+   * The socket instance, if applicable. Client-specific socket creation is handled elsewhere.
    */
-  private listeners: Map<string, (data: any) => void> = new Map();
+  private socket: WebSocket | undefined;
 
   /**
-   * Rooms the player is in. Only used if the messenger is a bot.
-   * Otherwise the rooms are managed by the socket.
+   * Maps event names to their corresponding listeners
+   */
+  private listeners: Map<string, Set<EventListener>> = new Map();
+
+  /**
+   * Tracks the rooms this messenger has joined
    */
   private rooms: Set<string> = new Set();
 
-  constructor(isBot: boolean, socket?: Socket) {
+  /**
+   * Indicates whether the messenger is still connected
+   */
+  private isConnected = true;
+
+  /**
+   * Constructs a new Messenger.
+   * @param isBot - Whether the messenger represents a bot.
+   * @param socket - The WebSocket instance (required for non-bot messengers).
+   * @throws Error if a non-bot messenger is created without a socket.
+   */
+  constructor(isBot: boolean, socket?: WebSocket, id?: string) {
     this.isBot = isBot;
     this.socket = socket;
-    this.id = socket?.id ?? this.generateId();
+    this.id = id || this.generateId();
+
+    if (!isBot && !socket) {
+      throw new Error("Socket must be provided for non-bot messengers");
+    }
   }
 
+  /**
+   * Generates a unique identifier using configuration-defined adjectives and nouns.
+   */
   private generateId(): string {
     const adjectives = SETTINGS.GENERATORS.PLAYER_NAME.ADJECTIVES;
     const nouns = SETTINGS.GENERATORS.PLAYER_NAME.NOUNS;
-    return `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${nouns[Math.floor(Math.random() * nouns.length)]}`;
+    return `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${
+      nouns[Math.floor(Math.random() * nouns.length)]
+    }`;
   }
 
-  public emitToPlayer(event: string, data: any): void {
-    if (this.isBot === false) {
-      this.socket?.emit(event, data);
+  /**
+   * Emits an event with associated data.
+   * For non-bot messengers with a socket, sends a JSON-stringified message.
+   * Otherwise, it uses the internal listener mechanism.
+   * @param event - The event name.
+   * @param data - The event data.
+   * @throws Error if the messenger is disconnected.
+   */
+  public emit(event: string, data: EventData): void {
+    if (!this.isConnected) {
+      throw new Error("Cannot emit to disconnected messenger");
+    }
+
+    if (!this.isBot && this.socket) {
+      this.socket.send(JSON.stringify({ event, data }));
     } else {
-      this.emit(event, data);
+      this.emitToPlayer(event, data);
     }
   }
 
-  public on(event: string, listener: (data: any) => void): void {
-    if (this.isBot === false) {
-      this.socket?.on(event, listener);
+  /**
+   * Registers a listener for a specified event.
+   * For messengers with a socket, attaches a message listener; otherwise, registers internally.
+   * @param event - The event name.
+   * @param listener - The callback function.
+   */
+  public on(event: string, listener: EventListener): void {
+    if (!this.isBot && this.socket) {
+      if (this.socket.addEventListener) {
+        // Browser WebSocket style
+        this.socket.addEventListener("message", (eventData: MessageEvent) => {
+          console.log("Received message:", eventData.data);
+          try {
+            const { event: msgEvent, data } = JSON.parse(eventData.data);
+            if (msgEvent === event) {
+              listener(data);
+            }
+          } catch (error) {
+            console.error("Error parsing WebSocket message:", error);
+          }
+        });
+      } else if ((this.socket as any).on) {
+        // Node.js style fallback
+        (this.socket as any).on("message", (rawData: string) => {
+          console.log("Received message:", rawData);
+          try {
+            const { event: msgEvent, data } = JSON.parse(rawData);
+            if (msgEvent === event) {
+              listener(data);
+            }
+          } catch (error) {
+            console.error("Error parsing WebSocket message:", error);
+          }
+        });
+      }
     } else {
-      this.listeners.set(event, listener);
+      if (!this.listeners.has(event)) {
+        this.listeners.set(event, new Set());
+      }
+      this.listeners.get(event)?.add(listener);
     }
   }
 
-  public off(event: string, listener: (data: any) => void): void {
-    if (this.isBot === false) {
-      this.socket?.off(event, listener);
+  /**
+   * Removes a specific listener for an event.
+   * @param event - The event name.
+   * @param listener - The listener to remove.
+   */
+  public off(event: string, listener: EventListener): void {
+    if (!this.isBot && this.socket) {
+      if ((this.socket as any).removeEventListener) {
+        (this.socket as any).removeEventListener("message", listener);
+      } else if ((this.socket as any).removeListener) {
+        (this.socket as any).removeListener("message", listener);
+      }
+    } else {
+      this.listeners.get(event)?.delete(listener);
+      if (this.listeners.get(event)?.size === 0) {
+        this.listeners.delete(event);
+      }
+    }
+  }
+
+  /**
+   * Removes all listeners for a given event.
+   * @param event - The event name.
+   */
+  public removeAllListeners(event: string): void {
+    if (!this.isBot && this.socket) {
+      if ((this.socket as any).removeAllListeners) {
+        (this.socket as any).removeAllListeners("message");
+      } else if ((this.socket as any).removeEventListener) {
+        // Fallback: remove by setting listener to a no-op
+        (this.socket as any).removeEventListener("message", () => {});
+      }
     } else {
       this.listeners.delete(event);
     }
   }
 
-  public emit(event: string, data: any): void {
-    const listener = this.listeners.get(event);
-    if (listener) {
-      listener(data);
+  /**
+   * Emits an event to all internally registered listeners.
+   * @param event - The event name.
+   * @param data - The event data.
+   */
+  public emitToPlayer(event: string, data: EventData): void {
+    const listeners = this.listeners.get(event);
+    if (listeners) {
+      for (const listener of listeners) {
+        try {
+          listener(data);
+        } catch (error) {
+          console.error(`Error in listener for event ${event}:`, error);
+        }
+      }
     }
   }
 
-  public join(room: string): void {
-    if (this.isBot === false) {
-      this.socket?.join(room);
-    } else {
-      this.rooms.add(room);
-    }
+  /**
+   * Joins a room identified by a given ID.
+   * @param room - The room ID to join.
+   * @returns true if the room was joined; false if already a member.
+   */
+  public join(room: string): boolean {
+    const wasAdded = !this.rooms.has(room);
+    this.rooms.add(room);
+    return wasAdded;
   }
 
-  public leave(room: string): void {
-    if (this.isBot === false) {
-      this.socket?.leave(room);
-    } else {
-      this.rooms.delete(room);
-    }
+  /**
+   * Leaves a room identified by a given ID.
+   * @param room - The room ID to leave.
+   * @returns true if the room was left; false if not a member.
+   */
+  public leave(room: string): boolean {
+    return this.rooms.delete(room);
   }
 
+  /**
+   * Retrieves all rooms the messenger has joined.
+   * @returns An array of room IDs.
+   */
   public getRooms(): string[] {
     return Array.from(this.rooms);
+  }
+
+  /**
+   * Checks whether the messenger is part of a specific room.
+   * @param room - The room ID to check.
+   * @returns true if in the room; false otherwise.
+   */
+  public isInRoom(room: string): boolean {
+    return this.rooms.has(room);
+  }
+
+  /**
+   * Disconnects the messenger, clearing all room memberships and listeners.
+   */
+  public disconnect(): void {
+    this.isConnected = false;
+    this.rooms.clear();
+    this.listeners.clear();
+    if (!this.isBot && this.socket) {
+      this.socket.close();
+    }
+  }
+
+  /**
+   * Checks if the messenger is still connected.
+   * @returns true if connected; false otherwise.
+   */
+  public getIsConnected(): boolean {
+    return this.isConnected;
+  }
+
+  /**
+   * Creates a bot messenger instance.
+   * This method is environment agnostic.
+   * @returns a new Messenger configured as a bot.
+   */
+  public static createBot(): Messenger {
+    return new Messenger(true);
+  }
+}
+
+/**
+ * Room represents a collection of messengers for group communication.
+ */
+export class Room {
+  private messengers: Set<Messenger> = new Set();
+
+  /**
+   * Constructs a new Room instance.
+   * @param id - The unique identifier for the room.
+   * @param roomName - The display name of the room.
+   * @param roomSize - Maximum number of messengers allowed (default is 4).
+   */
+  constructor(
+    private readonly id: string,
+    public readonly roomName: string,
+    public readonly roomSize = 4
+  ) {}
+
+  /**
+   * Retrieves the unique room identifier.
+   * @returns the room ID.
+   */
+  public getId(): string {
+    return this.id;
+  }
+
+  /**
+   * Adds a messenger to the room if there is capacity and if not already added.
+   * @param messenger - The messenger to add.
+   * @returns true if the messenger was added; false otherwise.
+   */
+  public addMessenger(messenger: Messenger): boolean {
+    const canAdd =
+      !this.messengers.has(messenger) && this.messengers.size < this.roomSize;
+
+    if (canAdd) {
+      this.messengers.add(messenger);
+      messenger.join(this.id);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Removes a messenger from the room.
+   * @param messenger - The messenger to remove.
+   * @returns true if the messenger was removed; false otherwise.
+   */
+  public removeMessenger(messenger: Messenger): boolean {
+    const wasRemoved = this.messengers.delete(messenger);
+    messenger.leave(this.id);
+    return wasRemoved;
+  }
+
+  /**
+   * Gets an array of all messengers in the room.
+   * @returns an array of Messenger instances.
+   */
+  public getMessengers(): Messenger[] {
+    return Array.from(this.messengers);
+  }
+
+  /**
+   * Gets the current number of messengers in the room.
+   * @returns the room size (number of messengers).
+   */
+  public getSize(): number {
+    return this.messengers.size;
+  }
+
+  /**
+   * Checks if a given messenger is in the room.
+   * @param messenger - The messenger to check.
+   * @returns true if present; false otherwise.
+   */
+  public hasMessenger(messenger: Messenger): boolean {
+    return this.messengers.has(messenger);
+  }
+
+  /**
+   * Broadcasts an event to all messengers in the room, with an option to exclude a specific messenger.
+   * @param event - The event name.
+   * @param data - The event data.
+   * @param excludeMessenger - Optional messenger to exclude from the broadcast.
+   */
+  public emit(
+    event: string,
+    data: EventData,
+    excludeMessenger?: Messenger
+  ): void {
+    for (const messenger of this.messengers) {
+      if (messenger !== excludeMessenger) {
+        messenger.emit(event, data);
+      }
+    }
+  }
+
+  /**
+   * Clears all messengers from the room.
+   */
+  public clear(): void {
+    for (const messenger of this.messengers) {
+      messenger.leave(this.id);
+    }
+    this.messengers.clear();
   }
 }

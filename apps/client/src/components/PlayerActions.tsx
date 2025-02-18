@@ -4,11 +4,11 @@ import {
   IconPlayerPlay,
   IconSettings,
 } from "@tabler/icons-react";
-import React from "react";
-import { api } from "../api";
+import type React from "react";
+import { useApi } from "../contexts/ApiContext";
 import { GameStage } from "../types";
-import { useApplicationStore } from "../hooks/useApplicationStore";
-import { useGameStore } from "../hooks/useGameStore";
+import { useApplicationStore } from "../store/useApplicationStore";
+import { useGameStore } from "../store/useGameStore";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
 import { useHotkeys } from "../hooks/useHotkeys";
 
@@ -16,7 +16,7 @@ export const PlayerActions: React.FC = () => {
   const { localPlayer } = useApplicationStore();
   const { isLocalPlayerTurn, gameState } = useGameStore();
   const { settings: localPlayerSettings } = useLocalPlayerSettings();
-
+  const api = useApi();
   const gameOver = gameState?.stage === GameStage.GAME_OVER;
 
   useHotkeys(
@@ -25,7 +25,7 @@ export const PlayerActions: React.FC = () => {
         localPlayerSettings.hotkeys.slap,
         () => {
           if (!gameOver && localPlayer) {
-            api.slapPile({
+            api?.slapPile({
               playerId: localPlayer.id,
             });
           }
@@ -35,7 +35,7 @@ export const PlayerActions: React.FC = () => {
         localPlayerSettings.hotkeys.playCard,
         () => {
           if (!gameOver && isLocalPlayerTurn) {
-            api.playCard({});
+            api?.playCard({});
           }
         },
       ],
@@ -48,6 +48,7 @@ export const PlayerActions: React.FC = () => {
       return (
         <div className="tooltip tooltip-primary" data-tip="Game settings (g)">
           <button
+            type="button"
             className="btn btn-outline btn-lg"
             onClick={() => console.log("Game settings")}
           >
@@ -63,8 +64,9 @@ export const PlayerActions: React.FC = () => {
       return (
         <div className="tooltip tooltip-primary" data-tip="Ready up">
           <button
+            type="button"
             className="btn btn-lg btn-success"
-            onClick={() => api.playerReady(localPlayer)}
+            onClick={() => api?.playerReady(localPlayer)}
           >
             <IconPlayerPlay size="1.5rem" />
           </button>
@@ -78,8 +80,9 @@ export const PlayerActions: React.FC = () => {
       return (
         <div className="tooltip tooltip-primary" data-tip="Play a card (n)">
           <button
+            type="button"
             className="btn btn-outline btn-lg"
-            onClick={() => api.playCard({})}
+            onClick={() => api?.playCard({})}
             disabled={!isLocalPlayerTurn}
           >
             <IconPlayCard size="1.5rem" />
@@ -97,8 +100,9 @@ export const PlayerActions: React.FC = () => {
           data-tip="Slap the pile if you think it's a valid slap (space)"
         >
           <button
+            type="button"
             className="btn btn-outline btn-lg"
-            onClick={() => api.slapPile({ playerId: localPlayer?.id })}
+            onClick={() => api?.slapPile({ playerId: localPlayer?.id })}
           >
             <IconHandStop size="1.5rem" />
           </button>
@@ -109,14 +113,14 @@ export const PlayerActions: React.FC = () => {
 
   return (
     <div className="navbar bg-base-100">
-      <div className="navbar-start flex-1"></div>
+      <div className="navbar-start flex-1" />
       <div className="navbar-center gap-2">
         {renderGameSettingsAction()}
         {renderStartGameAction()}
         {renderPlayCardAction()}
         {renderSlapPileAction()}
       </div>
-      <div className="navbar-end flex-1"></div>
+      <div className="navbar-end flex-1" />
     </div>
   );
 };

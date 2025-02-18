@@ -1,4 +1,4 @@
-import type { Server, Socket } from "socket.io";
+import type { WebSocketServer, WebSocket } from "ws";
 import { GameManager } from "./GameManager.js";
 import { newLogger } from "./logger.js";
 import {
@@ -7,110 +7,156 @@ import {
   type SocketPayloads,
 } from "./socketEvents.js";
 import type { GameSettings, PlayerAction } from "./types.js";
-import { Messenger } from "./game/Messenger.js";
+import { Messenger } from "@oer/message";
 
 const logger = newLogger("socketHandlers");
 
-let io: Server;
+let wss: WebSocketServer;
 let gameManager: GameManager;
 
-export function setupSocketHandlers(ioServer: Server) {
-  io = ioServer;
-  gameManager = GameManager.getInstance(io);
+interface WebSocketMessage {
+  event: string;
+  data?: any;
+}
 
-  io.on(SocketEvents.CONNECT, (socket: Socket) => {
-    logger.info(`A user connected: ${socket.id}`);
+export function setupWebSocketHandlers(wsServer: WebSocketServer) {
+  wss = wsServer;
+  gameManager = GameManager.getInstance(wss);
+
+  wss.on("connection", (socket: WebSocket) => {
+    logger.info("A user connected");
 
     const client = new Messenger(false, socket);
+    logger.info(`Client: ${client.id}`);
 
-    // Add the player to the lobby via GameManager
-    gameManager.initPlayerInLobby(
-      {
-        id: client.id,
-        name: "",
-        isBot: false,
-      },
-      client
-    );
+    logger.info("Setting up socket handlers");
+    socket.on("message", (data: string) => {
+      logger.info(`Received message: ${data}`);
 
-    socket.use((request_event, next) => {
-      const [event, ...payload] = request_event;
-      logger.info(`REQUEST: ${event} ${JSON.stringify(payload)}`);
-      next();
-    });
+      try {
+        const message: WebSocketMessage = JSON.parse(data);
+        logger.info(
+          `REQUEST: ${message.event} ${JSON.stringify(message.data)}`
+        );
 
-    socket.on(
-      SocketEvents.CHANGE_NAME,
-      ({ name }: SocketPayloads[SocketEvents.CHANGE_NAME]) => {
-        gameManager.setPlayerName(socket.id, name);
-      }
-    );
+        switch (message.event) {
+          case "connection_init":
+            logger.info("Received connection_init event, registering client");
+            gameManager.getMessageServer().register(client);
 
-    socket.on(
-      SocketEvents.JOIN_GAME,
-      ({ gameId }: SocketPayloads[SocketEvents.JOIN_GAME]) => {
-        const player = gameManager.getLobbyPlayer(socket.id);
-        if (player) {
-          gameManager.joinGame(gameId, player, socket);
+            logger.info("Adding player to lobby");
+            // Add the player to the lobby via GameManager
+            gameManager.initPlayerInLobby(
+              {
+                id: client.id,
+                name: "",
+                isBot: false,
+              },
+              client
+            );
+            logger.info(
+              `Player: ${JSON.stringify(gameManager.getLobbyPlayer(client.id))}`
+            );
+            break;
+
+          case SocketEvents.CHANGE_NAME:
+            gameManager.setPlayerName(
+              client.id,
+              (message.data as SocketPayloads[SocketEvents.CHANGE_NAME]).name
+            );
+            break;
+
+          case SocketEvents.JOIN_GAME: {
+            const player = gameManager.getLobbyPlayer(client.id);
+            if (player) {
+              gameManager.joinGame(
+                (message.data as SocketPayloads[SocketEvents.JOIN_GAME]).gameId,
+                player,
+                client
+              );
+            }
+            break;
+          }
+
+          case SocketEvents.CREATE_GAME: {
+            const createPlayer = gameManager.getLobbyPlayer(client.id);
+            if (createPlayer) {
+              // Update the player's name if one is provided in the event payload
+              if (message.data?.playerName) {
+                createPlayer.name = message.data.playerName;
+              }
+
+              gameManager.joinGame("", createPlayer, client);
+            }
+            logger.info("CREATE_GAME: request completed");
+            break;
+          }
+
+          case SocketEvents.LEAVE_GAME:
+            gameManager.leaveGame(client);
+            break;
+
+          case SocketEvents.PLAY_CARD:
+            gameManager.handlePlayCard(client);
+            break;
+
+          case SocketEvents.SLAP_PILE:
+            gameManager.handleSlapPile(client);
+            break;
+
+          case SocketEvents.PLAYER_READY:
+            gameManager.handlePlayerReady(client);
+            break;
+
+          case SocketEvents.PLAYER_ACTION:
+            gameManager.performPlayerAction(
+              client,
+              message.data as PlayerAction
+            );
+            break;
+
+          case SocketEvents.SET_GAME_SETTINGS: {
+            const { settings, gameId } = message.data as {
+              settings: GameSettings;
+              gameId?: string;
+            };
+            gameManager.setGameSettings(client, gameId, settings);
+            break;
+          }
+
+          case SocketEvents.MESSAGE: {
+            const { message: messageText, timestamp } =
+              message.data as MessagePayload;
+            logger.info(
+              `Received message: ${client.id} ${messageText} ${timestamp}`
+            );
+            break;
+          }
+
+          default:
+            logger.warn(`Unknown event: ${message.event}`);
         }
+      } catch (error) {
+        logger.error("Error processing message:", error);
+        client.emitToPlayer(SocketEvents.ERROR, {
+          message: "Error processing message",
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-    );
-
-    socket.on(SocketEvents.CREATE_GAME, () => {
-      const player = gameManager.getLobbyPlayer(socket.id);
-      if (player) {
-        gameManager.joinGame("", player, socket);
-      }
     });
 
-    socket.on(SocketEvents.LEAVE_GAME, () => {
-      gameManager.leaveGame(socket);
+    socket.on("close", () => {
+      logger.info(`A user disconnected: ${client.id}`);
+      gameManager.handleDisconnect(client);
+      gameManager.getMessageServer().unregister(client);
     });
 
-    socket.on(
-      SocketEvents.PLAY_CARD,
-      (_props: SocketPayloads[SocketEvents.PLAY_CARD]) => {
-        gameManager.handlePlayCard(socket);
-      }
-    );
-
-    socket.on(
-      SocketEvents.SLAP_PILE,
-      (_props: SocketPayloads[SocketEvents.SLAP_PILE]) => {
-        gameManager.handleSlapPile(socket);
-      }
-    );
-
-    socket.on(SocketEvents.PLAYER_READY, () => {
-      gameManager.handlePlayerReady(socket);
-    });
-
-    socket.on(SocketEvents.PLAYER_ACTION, (action: PlayerAction) => {
-      gameManager.performPlayerAction(socket, action);
-    });
-
-    socket.on(SocketEvents.SET_GAME_SETTINGS, (settings: GameSettings) => {
-      gameManager.setGameSettings(socket, undefined, settings);
-    });
-
-    socket.on(SocketEvents.MESSAGE, (message: MessagePayload) => {
-      const { message: messageText, timestamp } = message;
-      logger.info(`Received message: ${socket.id} ${messageText} ${timestamp}`);
-      // gameManager.handleMessage(socket, message);
-    });
-
-    socket.on(SocketEvents.ERROR, (error: Error) => {
-      logger.error(error);
-      socket.emit(SocketEvents.ERROR, error.message);
-    });
-
-    socket.on(SocketEvents.DISCONNECTING, () => {
-      logger.info(`Disconnecting player: ${socket.id}`);
-      gameManager.handleDisconnect(socket);
-    });
-
-    socket.on(SocketEvents.DISCONNECT, () => {
-      logger.info(`A user disconnected: ${socket.id}`);
+    socket.on("error", (error: Error) => {
+      logger.error("WebSocket error:", error);
+      client.emitToPlayer(SocketEvents.ERROR, {
+        message: "WebSocket error",
+        error: error.message,
+      });
     });
   });
 }
