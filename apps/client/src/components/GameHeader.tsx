@@ -1,6 +1,6 @@
 import type React from "react";
 import { useGameStore } from "../store/useGameStore";
-import { GameStage } from "../types";
+import { GameStage } from "@oer/shared";
 
 export const GameHeader: React.FC = () => {
   const { gameState, isLocalPlayerTurn } = useGameStore();

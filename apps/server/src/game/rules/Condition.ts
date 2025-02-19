@@ -1,4 +1,4 @@
-import type { Card, ConditionValue, ICondition } from "../../types.js";
+import type { Card, ConditionValue, ICondition } from "@oer/shared";
 import type { Player } from "../Player.js";
 
 export class Condition {

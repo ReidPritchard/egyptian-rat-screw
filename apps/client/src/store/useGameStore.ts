@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { newLogger } from "../logger";
-import type { ClientGameState, GameSettings, VoteState } from "../types";
+import type { ClientGameState, GameSettings, VoteState } from "@oer/shared";
 import {
   type CardPlayedPayload,
   type TurnChangedPayload,
   SocketEvents,
-} from "../socketEvents";
+} from "@oer/shared";
 import useApplicationStore from "./useApplicationStore";
 import { useApi } from "../contexts/ApiContext";
 
@@ -31,6 +31,7 @@ interface GameActions {
   playCard: () => void;
   slapPile: () => void;
   setGameSettings: (settings: GameSettings) => void;
+  playerReady: (api: NonNullable<ReturnType<typeof useApi>>) => void;
   startVote: (topic: string) => void;
   submitVote: (vote: boolean) => void;
   // Event subscription
@@ -93,16 +94,17 @@ export const useGameStore = create<GameStore>()(
       const prevState = get().gameState;
       if (!prevState) return;
 
-      const updatedPileCards = [...prevState.pileCards, payload.card];
-      const updatedPlayerHands = { ...prevState.playerHandSizes };
-      if (payload.playerId in updatedPlayerHands) {
-        updatedPlayerHands[payload.playerId] -= 1;
-      }
+      const updatedPileCards = [...prevState.topCards, payload.card];
+      const updatedPlayers = prevState.players.map((player) =>
+        player.id === payload.playerId
+          ? { ...player, cardCount: player.cardCount - 1 }
+          : player
+      );
 
       const newGameState = {
         ...prevState,
-        pileCards: updatedPileCards,
-        playerHandSizes: updatedPlayerHands,
+        topCards: updatedPileCards,
+        players: updatedPlayers,
       };
       get().setGameState(newGameState);
     },
@@ -172,6 +174,31 @@ export const useGameStore = create<GameStore>()(
       api.slapPile({ playerId: localPlayer.id });
     },
 
+    playerReady: (api: NonNullable<ReturnType<typeof useApi>>) => {
+      if (!api) {
+        logger.error("Cannot ready player: API not initialized");
+        return;
+      }
+      const localPlayer = useApplicationStore.getState().localPlayer;
+      if (!localPlayer) {
+        logger.error("Cannot ready player: Local player not set");
+        return;
+      }
+      api.playerReady(localPlayer);
+
+      const gameState = get().gameState;
+      if (!gameState) {
+        logger.error("Cannot ready player: Game state not available");
+        return;
+      }
+      const newGameState = {
+        ...gameState,
+        players: gameState.players.map((player) =>
+          player.id === localPlayer.id ? { ...player, isReady: true } : player
+        ),
+      };
+      get().setGameState(newGameState);
+    },
     setGameSettings: (settings: GameSettings) => {
       const api = useApi();
       if (!api) {

@@ -2,10 +2,10 @@
 import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
 import { newLogger } from "../logger";
-import type { PlayerInfo } from "../types.js";
+import type { PlayerInfo } from "@oer/shared";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings.js";
 import type { useApi } from "../contexts/ApiContext.js";
-import { SocketEvents } from "@/socketEvents";
+import { SocketEvents } from "@oer/shared";
 const logger = newLogger("ApplicationStore");
 
 /**
@@ -56,6 +56,7 @@ export const useApplicationStore = create<ApplicationStore>()(
           setLocalPlayer({
             id: "pending", // Will be updated when API is available
             name: playerSettings.name,
+            isBot: false,
           });
         },
 
@@ -79,6 +80,16 @@ export const useApplicationStore = create<ApplicationStore>()(
 
           api.on(SocketEvents.ERROR, (data: { message: string }) => {
             logger.error("Error", { data });
+          });
+
+          // Update the local player's ID now that it's synced with the server
+          const currentLocalPlayer = get().localPlayer;
+          set({
+            localPlayer: {
+              id: api.messenger.id,
+              name: currentLocalPlayer?.name ?? api.messenger.id,
+              isBot: false,
+            },
           });
         },
 

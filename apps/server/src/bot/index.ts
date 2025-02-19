@@ -1,6 +1,6 @@
 import type { Game } from "../game/Game.js";
 import { newLogger } from "../logger.js";
-import type { PlayerInfo } from "../types.js";
+import type { PlayerInfo } from "@oer/shared";
 import type { Messenger } from "@oer/message";
 
 const logger = newLogger("Bot");

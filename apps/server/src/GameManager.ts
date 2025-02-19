@@ -2,13 +2,13 @@ import type { WebSocketServer } from "ws";
 import { SETTINGS } from "@oer/configuration";
 import { Game } from "./game/Game.js";
 import { newLogger } from "./logger.js";
-import { SocketEvents } from "./socketEvents.js";
+import { SocketEvents } from "@oer/shared";
 import {
   type GameSettings,
   type PlayerAction,
   PlayerActionType,
   type PlayerInfo,
-} from "./types.js";
+} from "@oer/shared";
 import { Bot } from "./bot/index.js";
 import { type Room, Messenger } from "@oer/message";
 import { MessageServer } from "@oer/message/server";
@@ -52,12 +52,20 @@ export class GameManager {
 
   // GameManager.ts - Modified methods only
 
-  private isPlayerInGameRoom(messenger: Messenger): boolean {
-    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
+  private isInGlobalRoom(room: Room | undefined): boolean {
     return (
-      !!currentRoom &&
-      currentRoom.getId() !== GameManager.messageServer.getGlobalRoom().getId()
+      !room ||
+      room.getId() === GameManager.messageServer.getGlobalRoom().getId()
     );
+  }
+
+  private getCurrentRoom(messenger: Messenger): Room | undefined {
+    return GameManager.messageServer.getMessengerRoom(messenger);
+  }
+
+  private isPlayerInGameRoom(messenger: Messenger): boolean {
+    const currentRoom = this.getCurrentRoom(messenger);
+    return !this.isInGlobalRoom(currentRoom);
   }
 
   private handleJoinError(messenger: Messenger, message: string): void {
@@ -98,10 +106,8 @@ export class GameManager {
 
     if (!playerAdditionResult) {
       logger.error("Player failed to join game");
-      GameManager.messageServer.moveMessengerToRoom(
-        messenger,
-        GameManager.messageServer.getGlobalRoom().getId()
-      );
+      // Remove the player from the game room
+      GameManager.messageServer.removeMessengerFromRoom(messenger);
       this.initPlayerInLobby(player, messenger);
       return false;
     }
@@ -140,13 +146,17 @@ export class GameManager {
   }
 
   public leaveGame(messenger: Messenger): void {
-    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
-    if (
-      !currentRoom ||
-      currentRoom.getId() === GameManager.messageServer.getGlobalRoom().getId()
-    ) {
+    const currentRoom = this.getCurrentRoom(messenger);
+    if (this.isInGlobalRoom(currentRoom)) {
       messenger.emit(SocketEvents.ERROR, {
         data: "Player is not in a game.",
+      });
+      return;
+    }
+
+    if (!currentRoom) {
+      messenger.emit(SocketEvents.ERROR, {
+        data: "Room not found.",
       });
       return;
     }
@@ -200,11 +210,8 @@ export class GameManager {
   }
 
   public handleDisconnect(messenger: Messenger): void {
-    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
-    if (
-      currentRoom &&
-      currentRoom.getId() !== GameManager.messageServer.getGlobalRoom().getId()
-    ) {
+    const currentRoom = this.getCurrentRoom(messenger);
+    if (!this.isInGlobalRoom(currentRoom) && currentRoom) {
       const game = this.games.get(currentRoom.getId());
       if (game) {
         game.removePlayer(messenger);
@@ -224,16 +231,29 @@ export class GameManager {
     this.playerMap.delete(messenger.id);
   }
 
-  private routeToGame(messenger: Messenger, action: (game: Game) => void) {
+  private routeGameAction(
+    messenger: Messenger,
+    action: (game: Game) => void,
+    shouldLog = false
+  ): void {
     const game = this.getGameForMessenger(messenger);
-    if (game) action(game);
+    if (game) {
+      if (shouldLog) {
+        logger.info("Performing game action on game", game.gameId);
+      }
+      action(game);
+    }
+  }
+
+  public performPlayerAction(messenger: Messenger, action: PlayerAction): void {
+    this.routeGameAction(messenger, (g) => g.performPlayerAction(action));
   }
 
   public handlePlayCard = (messenger: Messenger) =>
-    this.routeToGame(messenger, (g) => g.handlePlayCard(messenger));
+    this.routeGameAction(messenger, (g) => g.handlePlayCard(messenger));
 
   public handleSlapPile = (messenger: Messenger) =>
-    this.routeToGame(messenger, (g) => g.handleSlapAttempt(messenger));
+    this.routeGameAction(messenger, (g) => g.handleSlapAttempt(messenger));
 
   public handlePlayerReady = (messenger: Messenger) =>
     this.performPlayerAction(messenger, {
@@ -243,15 +263,10 @@ export class GameManager {
       timestamp: Date.now(),
     });
 
-  public performPlayerAction(messenger: Messenger, action: PlayerAction): void {
-    this.routeToGame(messenger, (g) => g.performPlayerAction(action));
-  }
-
   public getGameSettings(messenger: Messenger, gameId?: string): void {
-    const game = this.getGameForMessenger(messenger, gameId);
-    if (game) {
+    this.routeGameAction(messenger, (game) => {
       messenger.emit(SocketEvents.SET_GAME_SETTINGS, game.getGameSettings());
-    }
+    });
   }
 
   public setGameSettings(
@@ -259,10 +274,7 @@ export class GameManager {
     gameId: string | undefined,
     settings: GameSettings
   ): void {
-    const game = this.getGameForMessenger(messenger, gameId);
-    if (game) {
-      game.setGameSettings(settings);
-    }
+    this.routeGameAction(messenger, (game) => game.setGameSettings(settings));
   }
 
   public setPlayerName(playerId: string, playerName: string): void {
@@ -286,14 +298,18 @@ export class GameManager {
   }
 
   public startVote(messenger: Messenger, topic: string): void {
-    this.performGameAction(messenger, (game) => {
-      logger.info(`Starting vote on game: ${game.gameId}`);
-      game.startVote(topic);
-    });
+    this.routeGameAction(
+      messenger,
+      (game) => {
+        logger.info(`Starting vote on game: ${game.gameId}`);
+        game.startVote(topic);
+      },
+      true
+    );
   }
 
   public submitVote(messenger: Messenger, vote: boolean): void {
-    this.performGameAction(messenger, (game) =>
+    this.routeGameAction(messenger, (game) =>
       game.submitVote(messenger.id, vote)
     );
   }
@@ -310,12 +326,14 @@ export class GameManager {
     let gameRoom = GameManager.messageServer.getRoom(gameId);
 
     if (!game || !gameRoom) {
+      const newGameId = this.generateGameId(); // TODO: Consider using unique ids for games and rooms
+
       gameRoom = GameManager.messageServer.createRoom(
-        gameId,
-        `Game ${gameId}`,
+        newGameId,
+        `Game ${newGameId}`,
         4 // Default max players
       );
-      game = new Game(gameId, gameRoom, defaultSlapRules);
+      game = new Game(newGameId, gameRoom, defaultSlapRules);
       this.games.set(gameId, game);
     }
 
@@ -388,8 +406,25 @@ export class GameManager {
     messenger: Messenger,
     gameId?: string
   ): Game | undefined {
+    // FIXME: messenger.id is "" for some reason?
+    logger.info("Getting game for messenger", messenger.id);
+    logger.info(
+      "\tMessenger rooms",
+      JSON.stringify(messenger.getRooms(), null, 2) // Nothing in here
+    );
+    logger.info(
+      "\tMessage Server Room",
+      JSON.stringify(
+        GameManager.messageServer.getMessengerRoom(messenger), // Also nothing in here
+        null,
+        2
+      )
+    );
+
     const finalGameId =
-      gameId || GameManager.messageServer.getMessengerRoom(messenger)?.getId();
+      gameId ||
+      messenger.getRooms().find((room) => this.games.has(room)) ||
+      GameManager.messageServer.getMessengerRoom(messenger)?.getId();
     if (!finalGameId) {
       this.emitError(messenger, "Player is not in a game.");
       return;

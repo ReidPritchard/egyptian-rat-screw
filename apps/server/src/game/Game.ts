@@ -20,7 +20,7 @@ import {
   type SlapRule,
   type Vote,
   type VoteState,
-} from "../types.js";
+} from "@oer/shared";
 import { Deck } from "./Deck.js";
 import { FaceCardChallenge } from "./FaceCardChallenge.js";
 import { Player } from "./Player.js";
@@ -174,6 +174,8 @@ export class Game {
   }
 
   public performPlayerAction(action: PlayerAction): void {
+    logger.info("Performing player action", action);
+
     const player = this.players.find((p) => p.messenger.id === action.playerId);
     if (!player) return;
 

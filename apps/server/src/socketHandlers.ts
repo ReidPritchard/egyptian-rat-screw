@@ -5,8 +5,8 @@ import {
   type MessagePayload,
   SocketEvents,
   type SocketPayloads,
-} from "./socketEvents.js";
-import type { GameSettings, PlayerAction } from "./types.js";
+} from "@oer/shared";
+import type { GameSettings, PlayerAction } from "@oer/shared";
 import { Messenger } from "@oer/message";
 
 const logger = newLogger("socketHandlers");
@@ -25,9 +25,7 @@ export function setupWebSocketHandlers(wsServer: WebSocketServer) {
 
   wss.on("connection", (socket: WebSocket) => {
     logger.info("A user connected");
-
-    const client = new Messenger(false, socket);
-    logger.info(`Client: ${client.id}`);
+    let client: Messenger | undefined;
 
     logger.info("Setting up socket handlers");
     socket.on("message", (data: string) => {
@@ -39,26 +37,48 @@ export function setupWebSocketHandlers(wsServer: WebSocketServer) {
           `REQUEST: ${message.event} ${JSON.stringify(message.data)}`
         );
 
+        // Handle connection_init first
+        if (message.event === "connection_init") {
+          if (client) {
+            logger.warn(
+              "Received connection_init for already initialized client"
+            );
+            return;
+          }
+          logger.info("Received connection_init event");
+          client = new Messenger(false, socket);
+          logger.info(`Created client: ${client.id}`);
+
+          gameManager.getMessageServer().register(client);
+
+          logger.info("Adding player to lobby");
+          gameManager.initPlayerInLobby(
+            {
+              id: client.id,
+              name: "",
+              isBot: false,
+            },
+            client
+          );
+          logger.info(
+            `Player: ${JSON.stringify(gameManager.getLobbyPlayer(client.id))}`
+          );
+          return;
+        }
+
+        // Require client to be initialized for all other messages
+        if (!client) {
+          logger.error("Received message before connection_init");
+          socket.send(
+            JSON.stringify({
+              event: SocketEvents.ERROR,
+              data: "Connection not initialized",
+            })
+          );
+          return;
+        }
+
         switch (message.event) {
-          case "connection_init":
-            logger.info("Received connection_init event, registering client");
-            gameManager.getMessageServer().register(client);
-
-            logger.info("Adding player to lobby");
-            // Add the player to the lobby via GameManager
-            gameManager.initPlayerInLobby(
-              {
-                id: client.id,
-                name: "",
-                isBot: false,
-              },
-              client
-            );
-            logger.info(
-              `Player: ${JSON.stringify(gameManager.getLobbyPlayer(client.id))}`
-            );
-            break;
-
           case SocketEvents.CHANGE_NAME:
             gameManager.setPlayerName(
               client.id,
@@ -138,7 +158,7 @@ export function setupWebSocketHandlers(wsServer: WebSocketServer) {
         }
       } catch (error) {
         logger.error("Error processing message:", error);
-        client.emitToPlayer(SocketEvents.ERROR, {
+        client?.emitToPlayer(SocketEvents.ERROR, {
           message: "Error processing message",
           error: error instanceof Error ? error.message : String(error),
         });
@@ -146,14 +166,16 @@ export function setupWebSocketHandlers(wsServer: WebSocketServer) {
     });
 
     socket.on("close", () => {
-      logger.info(`A user disconnected: ${client.id}`);
-      gameManager.handleDisconnect(client);
-      gameManager.getMessageServer().unregister(client);
+      logger.info(`A user disconnected: ${client?.id}`);
+      if (client) {
+        gameManager.handleDisconnect(client);
+        gameManager.getMessageServer().unregister(client);
+      }
     });
 
     socket.on("error", (error: Error) => {
       logger.error("WebSocket error:", error);
-      client.emitToPlayer(SocketEvents.ERROR, {
+      client?.emitToPlayer(SocketEvents.ERROR, {
         message: "WebSocket error",
         error: error.message,
       });

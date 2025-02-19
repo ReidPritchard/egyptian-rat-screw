@@ -6,7 +6,7 @@ import {
 } from "@tabler/icons-react";
 import type React from "react";
 import { useApi } from "../contexts/ApiContext";
-import { GameStage } from "../types";
+import { GameStage } from "@oer/shared";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
@@ -14,7 +14,7 @@ import { useHotkeys } from "../hooks/useHotkeys";
 
 export const PlayerActions: React.FC = () => {
   const { localPlayer } = useApplicationStore();
-  const { isLocalPlayerTurn, gameState } = useGameStore();
+  const { isLocalPlayerTurn, gameState, playerReady } = useGameStore();
   const { settings: localPlayerSettings } = useLocalPlayerSettings();
   const api = useApi();
   const gameOver = gameState?.stage === GameStage.GAME_OVER;
@@ -66,7 +66,7 @@ export const PlayerActions: React.FC = () => {
           <button
             type="button"
             className="btn btn-lg btn-success"
-            onClick={() => api?.playerReady(localPlayer)}
+            onClick={() => api && playerReady(api)}
           >
             <IconPlayerPlay size="1.5rem" />
           </button>

@@ -1,9 +1,9 @@
 import type React from "react";
 import { StrictMode, Suspense, useEffect } from "react";
 import { AppContainer } from "./components/AppContainer";
+import { ApiProvider } from "./contexts/ApiContext";
 import useApplicationStore from "./store/useApplicationStore";
 import "./index.css";
-import { ApiProvider } from "./contexts/ApiContext";
 
 const App: React.FC = () => {
   useEffect(() => {

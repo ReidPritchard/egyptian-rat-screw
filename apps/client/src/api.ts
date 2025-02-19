@@ -8,8 +8,8 @@ import {
   type PlayCardPayload,
   type SlapPilePayload,
   SocketEvents,
-} from "./socketEvents";
-import type { GameSettings, PlayerAction, PlayerInfo } from "./types";
+} from "@oer/shared";
+import type { GameSettings, PlayerAction, PlayerInfo } from "@oer/shared";
 import { MessageClient } from "@oer/message/client";
 
 export class Api {

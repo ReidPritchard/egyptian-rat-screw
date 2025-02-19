@@ -1,10 +1,8 @@
 import type React from "react";
 import { ThemeToggle } from "./ThemeToggle";
-import {
-  ApplicationStore,
-  useApplicationStore,
-} from "../store/useApplicationStore";
+import { useApplicationStore } from "../store/useApplicationStore";
 import { useLobbyStore } from "../store/useLobbyStore";
+import { useApi } from "@/contexts/ApiContext";
 
 const logo = "./assets/rat.png";
 const title = "./assets/title.png";
@@ -12,6 +10,7 @@ const title = "./assets/title.png";
 export const NavBar: React.FC = () => {
   const { handleJoinLobby } = useLobbyStore();
   const { userLocation } = useApplicationStore();
+  const api = useApi();
 
   return (
     <div className="navbar bg-base-100 rounded-b-lg">
@@ -24,11 +23,7 @@ export const NavBar: React.FC = () => {
           />
         </div>
       </div>
-      <div className="navbar-center flex-1">
-        {/* <div className="form-control">
-          <input type="text" placeholder="Enter Game Code" className="input input-bordered w-24 md:w-auto" />
-        </div> */}
-      </div>
+      <div className="navbar-center flex-1" />
       <div className="navbar-end">
         <ThemeToggle />
 
@@ -60,7 +55,7 @@ export const NavBar: React.FC = () => {
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
-                  onClick={handleJoinLobby}
+                  onClick={() => api && handleJoinLobby(api)}
                 >
                   Leave Game
                 </button>

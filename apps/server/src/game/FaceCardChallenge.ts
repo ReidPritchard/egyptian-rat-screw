@@ -1,4 +1,4 @@
-import type { PlayerInfo } from "../types.js";
+import type { PlayerInfo } from "@oer/shared";
 
 /**
  * Represents a face card challenge in the game

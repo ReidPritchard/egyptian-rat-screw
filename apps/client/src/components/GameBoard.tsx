@@ -8,6 +8,7 @@ import { BottomCard } from "./BottomCard";
 import { CardStack } from "./CardStack";
 import { TurnOrder } from "./TurnOrder";
 import { newLogger } from "@/logger";
+import { Sprite } from "./Sprite";
 
 const logger = newLogger("GameBoard");
 
@@ -47,24 +48,38 @@ const PreGameReady: React.FC<GameComponentProps> = ({
     data: JSON.stringify(gameState, null, 2),
   });
 
-  const isLocalPlayerReady = gameState.playerReadyStatus[localPlayerId];
+  const isLocalPlayerReady = gameState.players.find(
+    (player) => player.id === localPlayerId
+  )?.isReady;
 
   return (
     <div className="flex flex-col items-center h-full gap-4">
+      <Sprite
+        spriteSrc="/assets/sprites/ers-assets-v01"
+        alt="Game asset"
+        frameKey={
+          isLocalPlayerReady
+            ? "ers-assets-v01 0.aseprite"
+            : "ers-assets-v01 1.aseprite"
+        }
+        width={128}
+        height={128}
+      />
+
       {isLocalPlayerReady ? "Ready" : "Not Ready"}
 
       {isLocalPlayerReady && (
         <>
           <LoadingState message="Waiting for all players to be ready..." />
           <div className="flex flex-col items-start">
-            {gameState.playerIds
-              .filter((id: string) => id !== localPlayerId)
-              .map((playerId: string) => (
+            {gameState.players
+              .filter((player) => player.id !== localPlayerId)
+              .map((player) => (
                 <PlayerReadyStatus
-                  key={playerId}
-                  playerId={playerId}
-                  playerName={gameState.playerNames[playerId]}
-                  isReady={gameState.playerReadyStatus[playerId]}
+                  key={player.id}
+                  playerId={player.id}
+                  playerName={player.name}
+                  isReady={player.isReady}
                 />
               ))}
           </div>
@@ -83,9 +98,9 @@ const MainGameBoard: React.FC<GameComponentProps> = ({
     <TurnOrder gameState={gameState} localPlayerId={localPlayerId} />
     <div className="flex-1 flex flex-col justify-center p-4">
       <p className="text-center text-sm mb-2">
-        Pile Size: {gameState.pileCards?.length ?? 0}
+        Pile Size: {gameState.centralPileCount}
       </p>
-      <CardStack pile={gameState.pileCards} />
+      <CardStack pile={gameState.topCards} />
     </div>
   </div>
 );

@@ -1,4 +1,4 @@
-import type { Card, PlayerInfo } from "../types.js";
+import type { Card, PlayerInfo } from "@oer/shared";
 import type { Messenger } from "@oer/message";
 
 export class Player {

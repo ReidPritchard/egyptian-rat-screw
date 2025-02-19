@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { newLogger } from "../logger";
-import type { LobbyState, PlayerInfo, PlayerInfoUpdate } from "../types";
+import type { LobbyState, PlayerInfo, PlayerInfoUpdate } from "@oer/shared";
 import useApplicationStore from "./useApplicationStore";
-import { SocketEvents } from "../socketEvents";
+import { SocketEvents } from "@oer/shared";
 import type { useApi } from "../contexts/ApiContext";
 
 // Create a logger specific for the lobby store
