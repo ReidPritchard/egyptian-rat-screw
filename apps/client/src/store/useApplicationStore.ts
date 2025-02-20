@@ -1,7 +1,7 @@
 import type { MessageClient } from "@/message/client";
 import { MessengerEvents } from "@oer/message";
-import type { PlayerInfo } from "@oer/shared";
-import { SocketEvents } from "@oer/shared";
+import { SocketEvents } from "@oer/shared/socketEvents";
+import type { PlayerInfo } from "@oer/shared/types";
 // useApplicationStore.ts
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
