@@ -1,10 +1,12 @@
-/**
- * This file defines the server-side messaging interface.
- * It provides an abstraction over the Room and Messenger classes for server usage.
- */
+import { type EventData, Messenger, MessengerEvents, Room } from "@oer/message";
+import { SocketEvents } from "@oer/shared/socketEvents";
+import type { PlayerInfo } from "@oer/shared/types";
+import type { WebSocket } from "ws";
+import { newLogger } from "../logger.js";
+import { setupMessageHandlers } from "./messageHandlers.js";
+import { parseMessage } from "./utils.js";
 
-import type { Messenger } from "./index.js";
-import { Room } from "./index.js";
+const logger = newLogger("MessageServer");
 
 /**
  * IMessageServer interface defines the contract for a messaging server.
@@ -12,9 +14,9 @@ import { Room } from "./index.js";
 export interface IMessageServer {
   /**
    * Registers a messenger (client) to the server.
-   * @param messenger The messenger to register.
+   * @param socket The socket to register.
    */
-  register(messenger: Messenger): void;
+  register(socket: WebSocket): void;
 
   /**
    * Unregisters a messenger (client) from the server.
@@ -37,6 +39,18 @@ export interface IMessageServer {
    * @returns The room if found, undefined otherwise
    */
   getRoom(roomId: string): Room | undefined;
+
+  /**
+   * Gets all rooms.
+   * @returns All rooms
+   */
+  getRooms(): Map<string, Room>;
+
+  /**
+   * Gets the global room.
+   * @returns The global room
+   */
+  getGlobalRoom(): Room;
 
   /**
    * Moves a messenger from one room to another.
@@ -135,6 +149,13 @@ export class MessageServer implements IMessageServer {
   }
 
   /**
+   * Gets all rooms.
+   */
+  public getRooms(): Map<string, Room> {
+    return this.rooms;
+  }
+
+  /**
    * Gets the room a messenger is currently in.
    */
   public getMessengerRoom(messenger: Messenger): Room | undefined {
@@ -158,7 +179,7 @@ export class MessageServer implements IMessageServer {
     if (success) {
       this.messengerRooms.set(messenger.id, targetRoom);
       messenger.join(targetRoom.getId());
-      messenger.emit("join_room", { room: targetRoom.getId() });
+      messenger.emit(MessengerEvents.JOIN_ROOM, { room: targetRoom.getId() });
     }
     return success;
   }
@@ -171,17 +192,47 @@ export class MessageServer implements IMessageServer {
     if (currentRoom) {
       currentRoom.removeMessenger(messenger);
       this.messengerRooms.delete(messenger.id);
+
+      // If the room is empty, remove it
+      if (currentRoom.getMessengers().length === 0) {
+        this.rooms.delete(currentRoom.getId());
+      }
     }
   }
 
   /**
    * Registers a messenger to the server and places them in the lobby.
    */
-  public register(messenger: Messenger): void {
-    // Handle connection initialization if this is a new messenger
-    if (!this.messengers.has(messenger)) {
-      messenger.emit("connection_ack", { id: messenger.id });
-    }
+  public register(socket: WebSocket): void {
+    const messenger = new Messenger(false, socket);
+
+    setupMessageHandlers(messenger);
+
+    socket.on("message", (data: WebSocket.RawData) => {
+      const { event, data: messageData } = parseMessage(data);
+      logger.info(`Received message: ${event} ${JSON.stringify(messageData)}`);
+      messenger.notifyLocal(event, messageData);
+    });
+
+    socket.on("close", () => {
+      logger.info(`User disconnected: ${messenger.id}`);
+      this.unregister(messenger);
+    });
+
+    socket.on("error", (error: Error) => {
+      logger.error("WebSocket error:", error);
+      messenger.notifyLocal(SocketEvents.ERROR, {
+        message: "WebSocket error",
+        error: error.message,
+      });
+    });
+
+    const playerInfo: PlayerInfo = {
+      id: messenger.id,
+      name: "",
+      isBot: false,
+    };
+    messenger.setData("playerInfo", playerInfo);
 
     this.messengers.add(messenger);
     this.moveMessengerToRoom(messenger, this.lobbyRoom.getId());
@@ -200,7 +251,7 @@ export class MessageServer implements IMessageServer {
    */
   public broadcast(
     event: string,
-    data: any,
+    data: EventData,
     excludeMessenger?: Messenger
   ): void {
     for (const messenger of this.messengers) {
@@ -215,7 +266,7 @@ export class MessageServer implements IMessageServer {
    */
   public broadcastToRoom(
     event: string,
-    data: any,
+    data: EventData,
     roomId: string,
     excludeMessengers?: Messenger[]
   ): void {
@@ -225,7 +276,7 @@ export class MessageServer implements IMessageServer {
     }
 
     for (const messenger of room.getMessengers()) {
-      if (!excludeMessengers || !excludeMessengers.includes(messenger)) {
+      if (!excludeMessengers?.includes(messenger)) {
         messenger.emit(event, data);
       }
     }

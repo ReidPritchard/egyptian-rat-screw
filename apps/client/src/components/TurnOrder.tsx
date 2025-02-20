@@ -1,8 +1,6 @@
+import type { ClientGameState } from "@oer/shared/types";
+import { AnimatePresence, motion } from "framer-motion";
 import type React from "react";
-import { useEffect, useState } from "react";
-import { IconCircle, IconChevronRight } from "@tabler/icons-react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { ClientGameState } from "../types";
 
 interface TurnOrderProps {
   gameState: ClientGameState;
@@ -14,21 +12,21 @@ export const TurnOrder: React.FC<TurnOrderProps> = ({
   localPlayerId,
 }) => {
   const currentPlayerIndex = gameState.currentPlayerId;
-  const players = gameState.playerNames;
+  const players = gameState.players;
 
   return (
     <div className="w-full">
       <AnimatePresence>
         <ul className="steps">
-          {gameState.playerIds.map((playerId, index) => (
+          {gameState.players.map((player, _index) => (
             <motion.li
-              key={playerId}
+              key={player.id}
               className={`step ${
-                playerId === currentPlayerIndex
+                player.id === currentPlayerIndex
                   ? "step-primary"
                   : "step-neutral"
               }`}
-              data-content={playerId === localPlayerId ? "★" : ""}
+              data-content={player.id === localPlayerId ? "★" : ""}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -36,13 +34,11 @@ export const TurnOrder: React.FC<TurnOrderProps> = ({
             >
               <p
                 className={`text-sm flex flex-row justify-between ${
-                  playerId === localPlayerId ? "font-bold" : ""
+                  player.id === localPlayerId ? "font-bold" : ""
                 }`}
               >
-                {players[playerId]}
-                <p className="text-xs text-gray-500">
-                  ({gameState.playerHandSizes[playerId]})
-                </p>
+                {player.name}
+                <p className="text-xs text-gray-500">({player.cardCount})</p>
               </p>
             </motion.li>
           ))}

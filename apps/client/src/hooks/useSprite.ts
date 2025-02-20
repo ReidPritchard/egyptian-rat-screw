@@ -1,23 +1,26 @@
 /**
  * Hook to load and manipulate sprites
  * Uses the related Aseprite JSON format for calculating sprite/frame dimensions
+ *
+ *
+ * Example Aseprite JSON file format
+ *   { "frames": {
+ *     "sprite-name 0.aseprite": {
+ *      "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
+ *      "rotated": false,
+ *      "trimmed": false,
+ *      "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
+ *      "sourceSize": { "w": 32, "h": 32 },
+ *      "duration": 100
+ *     },
+ *     "sprite-name 1.aseprite": { ... },
+ *     ...
+ *   }
  */
 
-// Example Aseprite JSON file format
-// { "frames": {
-//     "ers-assets-v01 0.aseprite": {
-//      "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
-//      "rotated": false,
-//      "trimmed": false,
-//      "spriteSourceSize": { "x": 0, "y": 0, "w": 32, "h": 32 },
-//      "sourceSize": { "w": 32, "h": 32 },
-//      "duration": 100
-//     },
-// }
+import { useEffect, useState } from "react";
 
-import { useState, useEffect } from "react";
-
-interface Frame {
+interface IFrame {
   frame: {
     x: number;
     y: number;
@@ -30,8 +33,8 @@ interface Frame {
   };
 }
 
-interface SpriteData {
-  frames: Record<string, Frame>;
+interface ISpriteData {
+  frames: Record<string, IFrame>;
   meta: {
     size: {
       w: number;
@@ -40,18 +43,18 @@ interface SpriteData {
   };
 }
 
-interface SpriteProps {
+interface ISpriteProps {
   spriteSrc: string;
   frameKey?: string;
   frameOrder?: string[];
 }
 
-export const useSprite = (props: SpriteProps) => {
+export const useSprite = (props: ISpriteProps) => {
   const { spriteSrc, frameKey, frameOrder } = props;
 
   const [sprite, setSprite] = useState<HTMLImageElement | null>(null);
-  const [spriteData, setSpriteData] = useState<SpriteData | null>(null);
-  const [currentFrame, setCurrentFrame] = useState<Frame | null>(null);
+  const [spriteData, setSpriteData] = useState<ISpriteData | null>(null);
+  const [currentFrame, setCurrentFrame] = useState<IFrame | null>(null);
 
   const imageFile = `${spriteSrc}.png`; // The actual sprite image file
   const jsonFile = `${spriteSrc}.json`; // The related Aseprite JSON file
@@ -67,7 +70,7 @@ export const useSprite = (props: SpriteProps) => {
   useEffect(() => {
     fetch(jsonFile)
       .then((response) => response.json())
-      .then((data: SpriteData) => {
+      .then((data: ISpriteData) => {
         setSpriteData(data);
 
         // Set initial frame

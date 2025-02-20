@@ -1,6 +1,5 @@
-import type React from "react";
+import type { Card } from "@oer/shared/types";
 import { forwardRef } from "react";
-import type { Card } from "../types";
 import { PlayingCard } from "./PlayingCard";
 
 interface CardStackProps {
@@ -13,7 +12,7 @@ export const CardStack = forwardRef<HTMLDivElement, CardStackProps>(
 
     return (
       <div className="flex-1 stack max-w-screen m-auto max-h-screen">
-        {pile.map((card, index) => (
+        {pile.map((card, _index) => (
           <div
             key={card.id}
             className="place-content-center aspect-playing-card"

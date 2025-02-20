@@ -1,4 +1,4 @@
-import type { Card, GameSettings, SlapRule } from "@oer/shared";
+import type { Card, GameSettings, SlapRule } from "@oer/shared/types";
 import type { Player } from "../Player.js";
 import { Condition } from "./Condition.js";
 

@@ -1,14 +1,11 @@
 import type React from "react";
-import {
-  type ApplicationStore,
-  useApplicationStore,
-} from "../store/useApplicationStore";
+import { useApplicationStore } from "../store/useApplicationStore";
 import { Game } from "./Game";
 import { Lobby } from "./Lobby";
 import { NavBar } from "./NavBar";
 
-import { newLogger } from "../logger";
 import { useEffect } from "react";
+import { newLogger } from "../logger";
 
 const logger = newLogger("AppContainer");
 

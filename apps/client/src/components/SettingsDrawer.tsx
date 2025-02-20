@@ -6,10 +6,10 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
+import type { GameSettings, SlapRule } from "@oer/shared/types";
 import type React from "react";
 import { useState } from "react";
 import type { LocalPlayerSettings } from "../clientTypes";
-import type { GameSettings, SlapRule } from "../types";
 
 interface SettingsDrawerProps {
   gameSettings: GameSettings;

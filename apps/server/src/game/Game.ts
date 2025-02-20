@@ -1,12 +1,11 @@
-import type { WebSocketServer } from "ws";
-import { SETTINGS } from "@oer/configuration";
-import { newLogger } from "../logger.js";
+import type { Messenger } from "@oer/message";
+import type { Room } from "@oer/message";
 import {
   type GameEndedPayload,
   type GameStartedPayload,
   SocketEvents,
   type VoteCount,
-} from "@oer/shared";
+} from "@oer/shared/socketEvents";
 import {
   type Card,
   type ClientGameState,
@@ -18,16 +17,14 @@ import {
   PlayerActionType,
   type PlayerInfo,
   type SlapRule,
-  type Vote,
   type VoteState,
-} from "@oer/shared";
+} from "@oer/shared/types";
+import { newLogger } from "../logger.js";
 import { Deck } from "./Deck.js";
 import { FaceCardChallenge } from "./FaceCardChallenge.js";
 import { Player } from "./Player.js";
 import { RuleEngine } from "./rules/RuleEngine.js";
 import { defaultSlapRules } from "./rules/SlapRules.js";
-import type { Messenger } from "@oer/message";
-import type { Room } from "@oer/message";
 
 const logger = newLogger("Game");
 

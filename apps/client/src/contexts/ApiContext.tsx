@@ -1,15 +1,18 @@
+import { newLogger } from "@/logger";
 import type React from "react";
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { type Api, initializeApi } from "../api";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
 import { useLobbyStore } from "../store/useLobbyStore";
 
-interface ApiContextType {
+const logger = newLogger("ApiContext");
+
+interface IApiContextType {
   api: Api | null;
 }
 
-const ApiContext = createContext<ApiContextType | null>(null);
+const ApiContext = createContext<IApiContextType | null>(null);
 
 export const useApi = () => {
   const context = useContext(ApiContext);
@@ -19,11 +22,11 @@ export const useApi = () => {
   return context.api;
 };
 
-interface ApiProviderProps {
+interface IApiProviderProps {
   children: React.ReactNode;
 }
 
-export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
+export const ApiProvider: React.FC<IApiProviderProps> = ({ children }) => {
   const [api, setApi] = useState<Api | null>(null);
   const apiRef = useRef<Api | null>(null);
 
@@ -38,14 +41,18 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   useEffect(() => {
     // Initialize API with connection handlers
     const initApi = async () => {
+      logger.info("Initializing API");
       const apiInstance = await initializeApi();
       setApi(apiInstance);
       apiRef.current = apiInstance;
 
       // Initialize store event subscriptions
-      useApplicationStore.getState().initializeEventSubscriptions(apiInstance);
-      useGameStore.getState().initializeEventSubscriptions(apiInstance);
-      useLobbyStore.getState().initializeEventSubscriptions(apiInstance);
+      const messageClient = apiInstance.messageClient;
+      useApplicationStore
+        .getState()
+        .initializeEventSubscriptions(messageClient);
+      useGameStore.getState().initializeEventSubscriptions(messageClient);
+      useLobbyStore.getState().initializeEventSubscriptions(messageClient);
     };
 
     initApi().catch((error) => {
@@ -55,7 +62,7 @@ export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
     // Cleanup on unmount
     return () => {
       if (apiRef.current) {
-        apiRef.current.messenger.disconnect();
+        apiRef.current.messageClient.disconnect();
       }
     };
   }, []); // No dependencies needed since we use ref for cleanup

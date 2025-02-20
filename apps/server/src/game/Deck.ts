@@ -1,4 +1,4 @@
-import { type Card, Ranks, Suits } from "@oer/shared";
+import { type Card, Ranks, Suits } from "@oer/shared/types";
 import type { Player } from "./Player.js";
 
 export class Deck {

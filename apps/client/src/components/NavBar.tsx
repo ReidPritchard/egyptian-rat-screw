@@ -1,8 +1,8 @@
+import { useApi } from "@/contexts/ApiContext";
 import type React from "react";
-import { ThemeToggle } from "./ThemeToggle";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useLobbyStore } from "../store/useLobbyStore";
-import { useApi } from "@/contexts/ApiContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 const logo = "./assets/rat.png";
 const title = "./assets/title.png";

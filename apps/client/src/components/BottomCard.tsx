@@ -1,8 +1,8 @@
-import type React from "react";
-import { useState, useEffect } from "react";
-import { PlayingCard } from "./PlayingCard";
-import type { Card } from "../types";
+import type { Card } from "@oer/shared/types";
 import { motion } from "framer-motion";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { PlayingCard } from "./PlayingCard";
 
 interface BottomCardProps {
   bottomCard: Card | null;
@@ -13,8 +13,6 @@ export const BottomCard: React.FC<BottomCardProps> = ({
   bottomCard,
   duration,
 }) => {
-  if (!bottomCard) return null;
-
   // Only show the bottom card for a short duration
   const [isVisible, setIsVisible] = useState(true);
 
@@ -24,6 +22,8 @@ export const BottomCard: React.FC<BottomCardProps> = ({
     }, duration);
     return () => clearTimeout(timer);
   }, [duration]);
+
+  if (!bottomCard) return null;
 
   return (
     <motion.div

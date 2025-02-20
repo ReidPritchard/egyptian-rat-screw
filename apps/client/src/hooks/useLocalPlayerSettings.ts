@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import type { LocalPlayerSettings } from "../clientTypes";
+import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import type { Api } from "../api";
+import type { LocalPlayerSettings } from "../clientTypes";
 import { newLogger } from "../logger";
 
 const logger = newLogger("LocalPlayerSettings");
@@ -27,11 +27,11 @@ const DEFAULT_SETTINGS: LocalPlayerSettings = {
   },
 };
 
-interface LocalPlayerSettingsState {
+interface ILocalPlayerSettingsState {
   settings: LocalPlayerSettings;
 }
 
-interface LocalPlayerSettingsActions {
+interface ILocalPlayerSettingsActions {
   updateSettings: (
     newSettings: Partial<LocalPlayerSettings>,
     api: Api | null
@@ -39,8 +39,8 @@ interface LocalPlayerSettingsActions {
   changeName: (name: string, api: Api | null) => void;
 }
 
-type LocalPlayerSettingsStore = LocalPlayerSettingsState &
-  LocalPlayerSettingsActions;
+type LocalPlayerSettingsStore = ILocalPlayerSettingsState &
+  ILocalPlayerSettingsActions;
 
 export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
   devtools(

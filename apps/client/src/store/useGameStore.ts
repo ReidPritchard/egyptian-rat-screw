@@ -1,27 +1,32 @@
+import type { MessageClient } from "@/message/client";
+import {
+  type ICardPlayedPayload,
+  SocketEvents,
+  type TurnChangedPayload,
+} from "@oer/shared/socketEvents";
+import type {
+  ClientGameState,
+  GameSettings,
+  VoteState,
+} from "@oer/shared/types";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { newLogger } from "../logger";
-import type { ClientGameState, GameSettings, VoteState } from "@oer/shared";
-import {
-  type CardPlayedPayload,
-  type TurnChangedPayload,
-  SocketEvents,
-} from "@oer/shared";
-import useApplicationStore from "./useApplicationStore";
 import { useApi } from "../contexts/ApiContext";
+import { newLogger } from "../logger";
+import useApplicationStore from "./useApplicationStore";
 
 const logger = newLogger("GameStore");
 
-interface GameState {
+interface IGameState {
   gameState: ClientGameState | null;
   isLocalPlayerTurn: boolean;
   isGameStarting: boolean;
   isCardPlayedAnimationVisible: boolean;
 }
 
-interface GameActions {
+interface IGameActions {
   setGameState: (gameState: ClientGameState | null) => void;
-  handleCardPlayed: (payload: CardPlayedPayload) => void;
+  handleCardPlayed: (payload: ICardPlayedPayload) => void;
   handleTurnChanged: (payload: TurnChangedPayload) => void;
   handleGameSettingsChanged: (settings: GameSettings) => void;
   handleVoteUpdated: (voteState: VoteState) => void;
@@ -35,12 +40,10 @@ interface GameActions {
   startVote: (topic: string) => void;
   submitVote: (vote: boolean) => void;
   // Event subscription
-  initializeEventSubscriptions: (
-    api: NonNullable<ReturnType<typeof useApi>>
-  ) => void;
+  initializeEventSubscriptions: (messageClient: MessageClient) => void;
 }
 
-export type GameStore = GameState & GameActions;
+export type GameStore = IGameState & IGameActions;
 
 export const useGameStore = create<GameStore>()(
   devtools((set, get) => ({
@@ -87,7 +90,7 @@ export const useGameStore = create<GameStore>()(
       });
     },
 
-    handleCardPlayed: (payload: CardPlayedPayload) => {
+    handleCardPlayed: (payload: ICardPlayedPayload) => {
       logger.info("Card played", { data: payload });
       set({ isCardPlayedAnimationVisible: true });
 

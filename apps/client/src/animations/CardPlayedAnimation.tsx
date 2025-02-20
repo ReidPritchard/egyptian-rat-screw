@@ -47,7 +47,7 @@ export const CardPlayedAnimation: React.FC<CardPlayedAnimationProps> = ({
   }, [isVisible, card, onAnimationComplete, targetRef]);
 
   const calculateEndPosition = (targetRef: React.RefObject<HTMLDivElement>) => {
-    if (!cardRef.current || !targetRef.current) return { x: 0, y: 0 };
+    if (!(cardRef.current && targetRef.current)) return { x: 0, y: 0 };
 
     const cardRect = cardRef.current.getBoundingClientRect();
     const targetRect = targetRef.current.getBoundingClientRect();

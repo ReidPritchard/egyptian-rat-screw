@@ -1,14 +1,13 @@
+import { newLogger } from "@/logger";
+import { GameStage } from "@oer/shared/types";
+import type { ClientGameState } from "@oer/shared/types";
 import type React from "react";
 import { Suspense } from "react";
 import useApplicationStore from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
-import { GameStage } from "@oer/shared";
-import type { ClientGameState } from "@oer/shared";
-import { BottomCard } from "./BottomCard";
 import { CardStack } from "./CardStack";
-import { TurnOrder } from "./TurnOrder";
-import { newLogger } from "@/logger";
 import { Sprite } from "./Sprite";
+import { TurnOrder } from "./TurnOrder";
 
 const logger = newLogger("GameBoard");
 

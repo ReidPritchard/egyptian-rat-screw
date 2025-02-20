@@ -1,4 +1,4 @@
-import { type SlapRule, SlapRuleAction } from "@oer/shared";
+import { type SlapRule, SlapRuleAction } from "@oer/shared/types";
 
 export const defaultSlapRules: SlapRule[] = [
   {

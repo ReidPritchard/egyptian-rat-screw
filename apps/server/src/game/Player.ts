@@ -1,5 +1,5 @@
-import type { Card, PlayerInfo } from "@oer/shared";
 import type { Messenger } from "@oer/message";
+import type { Card, PlayerInfo } from "@oer/shared/types";
 
 export class Player {
   public readonly messenger: Messenger;

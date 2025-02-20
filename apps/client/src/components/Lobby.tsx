@@ -1,18 +1,18 @@
-import type React from "react";
-import { useEffect, useState } from "react";
 import {
   IconArrowRight,
   IconId,
   IconPlus,
   IconUser,
 } from "@tabler/icons-react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { config } from "../config";
+import { useApi } from "../contexts/ApiContext";
+import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { newLogger } from "../logger";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useLobbyStore } from "../store/useLobbyStore";
-import { useLocalStorage } from "../hooks/useLocalStorage";
-import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
-import { useApi } from "../contexts/ApiContext";
-import { newLogger } from "../logger";
 
 const logger = newLogger("Lobby");
 
@@ -90,7 +90,7 @@ export const Lobby: React.FC = () => {
             type="button"
             className="btn btn-secondary join-item"
             onClick={() => api && handleJoinGame(api, joinGameCode)}
-            disabled={!playerName || !joinGameCode}
+            disabled={!(playerName && joinGameCode)}
           >
             <IconArrowRight size="1.1rem" />
             Join Game

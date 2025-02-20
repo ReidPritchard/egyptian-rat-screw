@@ -10,9 +10,25 @@ import { SETTINGS } from "@oer/configuration";
 export type EventData = any;
 
 /**
+ * Type for additional data for a messenger
+ */
+export type AdditionalData = Map<string, any>;
+
+/**
  * Type for event listener functions
  */
 export type EventListener = (data: EventData) => void;
+
+/**
+ * Shared event names for the Messenger class
+ */
+export const MessengerEvents = {
+  CONNECTION_INIT: "connection_init",
+  CONNECTION_ACK: "connection_ack",
+  JOIN_ROOM: "join_room",
+  LEAVE_ROOM: "leave_room",
+  ERROR: "error",
+};
 
 /**
  * Messenger is a core class that handles event emission, listener management, and room coordination.
@@ -50,6 +66,12 @@ export class Messenger {
   private isConnected = true;
 
   /**
+   * Any additional data we want to associate with this messenger
+   * In the context of OER, this could contain the player info
+   */
+  private data: AdditionalData = new Map();
+
+  /**
    * Constructs a new Messenger.
    * @param isBot - Whether the messenger represents a bot.
    * @param socket - The WebSocket instance (required for non-bot messengers).
@@ -60,7 +82,7 @@ export class Messenger {
     this.socket = socket;
     this.id = id || this.generateId();
 
-    if (!isBot && !socket) {
+    if (!(isBot || socket)) {
       throw new Error("Socket must be provided for non-bot messengers");
     }
   }
@@ -92,7 +114,7 @@ export class Messenger {
     if (!this.isBot && this.socket) {
       this.socket.send(JSON.stringify({ event, data }));
     } else {
-      this.emitToPlayer(event, data);
+      this.notifyLocal(event, data);
     }
   }
 
@@ -103,40 +125,10 @@ export class Messenger {
    * @param listener - The callback function.
    */
   public on(event: string, listener: EventListener): void {
-    if (!this.isBot && this.socket) {
-      if (this.socket.addEventListener) {
-        // Browser WebSocket style
-        this.socket.addEventListener("message", (eventData: MessageEvent) => {
-          console.log("Received message:", eventData.data);
-          try {
-            const { event: msgEvent, data } = JSON.parse(eventData.data);
-            if (msgEvent === event) {
-              listener(data);
-            }
-          } catch (error) {
-            console.error("Error parsing WebSocket message:", error);
-          }
-        });
-      } else if ((this.socket as any).on) {
-        // Node.js style fallback
-        (this.socket as any).on("message", (rawData: string) => {
-          console.log("Received message:", rawData);
-          try {
-            const { event: msgEvent, data } = JSON.parse(rawData);
-            if (msgEvent === event) {
-              listener(data);
-            }
-          } catch (error) {
-            console.error("Error parsing WebSocket message:", error);
-          }
-        });
-      }
-    } else {
-      if (!this.listeners.has(event)) {
-        this.listeners.set(event, new Set());
-      }
-      this.listeners.get(event)?.add(listener);
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
     }
+    this.listeners.get(event)?.add(listener);
   }
 
   /**
@@ -181,7 +173,7 @@ export class Messenger {
    * @param event - The event name.
    * @param data - The event data.
    */
-  public emitToPlayer(event: string, data: EventData): void {
+  public notifyLocal(event: string, data: EventData): void {
     const listeners = this.listeners.get(event);
     if (listeners) {
       for (const listener of listeners) {
@@ -191,6 +183,8 @@ export class Messenger {
           console.error(`Error in listener for event ${event}:`, error);
         }
       }
+    } else {
+      console.warn(`No listeners for event ${event}`);
     }
   }
 
@@ -252,6 +246,26 @@ export class Messenger {
   }
 
   /**
+   * Gets the data associated with the messenger
+   * @returns the data
+   */
+  public getData(key?: string): any {
+    if (key) {
+      return this.data.get(key);
+    }
+    return this.data;
+  }
+
+  /**
+   * Sets the data associated with the messenger
+   * @param key - The key to set the data for
+   * @param value - The value to set
+   */
+  public setData(key: string, value: any): void {
+    this.data.set(key, value);
+  }
+
+  /**
    * Creates a bot messenger instance.
    * This method is environment agnostic.
    * @returns a new Messenger configured as a bot.
@@ -265,7 +279,29 @@ export class Messenger {
  * Room represents a collection of messengers for group communication.
  */
 export class Room {
+  /**
+   * The messengers in the room
+   */
   private messengers: Set<Messenger> = new Set();
+
+  /**
+   * Any other data we want to associate with the room
+   * In the context of OER, this could contain the game instance
+   */
+  private data: AdditionalData = new Map();
+
+  /**
+   * Hooks for room events. Currently only one hook per event.
+   * @example
+   * const room = new Room("room1", "Room 1", 4);
+   * room.addHook("addMessenger", (messenger) => {
+   *   console.log("Messenger added to room:", messenger.id);
+   * });
+   */
+  private hooks: Map<
+    "addMessenger" | "removeMessenger",
+    (messenger: Messenger) => void
+  > = new Map();
 
   /**
    * Constructs a new Room instance.
@@ -300,6 +336,8 @@ export class Room {
       this.messengers.add(messenger);
       messenger.join(this.id);
 
+      this.hooks.get("addMessenger")?.(messenger);
+
       console.log("Added messenger to room:", {
         room: this.id,
         messenger: messenger.id,
@@ -317,6 +355,13 @@ export class Room {
   public removeMessenger(messenger: Messenger): boolean {
     const wasRemoved = this.messengers.delete(messenger);
     messenger.leave(this.id);
+
+    this.hooks.get("removeMessenger")?.(messenger);
+
+    console.log("Removed messenger from room:", {
+      room: this.id,
+      messenger: messenger.id,
+    });
     return wasRemoved;
   }
 
@@ -346,6 +391,26 @@ export class Room {
   }
 
   /**
+   * Gets the data associated with the room
+   * @returns the data
+   */
+  public getData(key?: string): any {
+    if (key) {
+      return this.data.get(key);
+    }
+    return this.data;
+  }
+
+  /**
+   * Sets the data associated with the room
+   * @param key - The key to set the data for
+   * @param value - The value to set
+   */
+  public setData(key: string, value: any): void {
+    this.data.set(key, value);
+  }
+
+  /**
    * Broadcasts an event to all messengers in the room, with an option to exclude a specific messenger.
    * @param event - The event name.
    * @param data - The event data.
@@ -357,11 +422,30 @@ export class Room {
     excludeMessengers?: Messenger[]
   ): void {
     for (const messenger of this.messengers) {
-      if (!excludeMessengers || !excludeMessengers.includes(messenger)) {
-        console.log("ROOM: Emitting to messenger:", messenger.id);
+      if (!(excludeMessengers?.includes(messenger))) {
         messenger.emit(event, data);
       }
     }
+  }
+
+  /**
+   * Adds a hook for a room event.
+   * @param event - The event name.
+   * @param hook - The hook to add.
+   */
+  public addHook(
+    event: "addMessenger" | "removeMessenger",
+    hook: (messenger: Messenger) => void
+  ): void {
+    this.hooks.set(event, hook);
+  }
+
+  /**
+   * Removes a hook for a room event.
+   * @param event - The event name.
+   */
+  public removeHook(event: "addMessenger" | "removeMessenger"): void {
+    this.hooks.delete(event);
   }
 
   /**

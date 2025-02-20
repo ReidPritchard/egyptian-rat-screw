@@ -1,18 +1,19 @@
+import type { MessageClient } from "@/message/client";
+import { MessengerEvents } from "@oer/message";
+import type { PlayerInfo } from "@oer/shared";
+import { SocketEvents } from "@oer/shared";
 // useApplicationStore.ts
 import { create } from "zustand";
-import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import { newLogger } from "../logger";
-import type { PlayerInfo } from "@oer/shared";
+import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings.js";
-import type { useApi } from "../contexts/ApiContext.js";
-import { SocketEvents } from "@oer/shared";
+import { newLogger } from "../logger";
 const logger = newLogger("ApplicationStore");
 
 /**
  * App-wide state.
  * Anything that spans multiple views (e.g. connection state, player info, etc.)
  */
-interface ApplicationState {
+interface IApplicationState {
   // UI State
   userLocation: "lobby" | "game";
 
@@ -23,18 +24,16 @@ interface ApplicationState {
   localPlayer: PlayerInfo | null;
 }
 
-interface ApplicationActions {
+interface IApplicationActions {
   handleConnection: () => void;
   handleDisconnect: () => void;
-  initializeEventSubscriptions: (
-    api: NonNullable<ReturnType<typeof useApi>>
-  ) => void;
+  initializeEventSubscriptions: (messageClient: MessageClient) => void;
   setIsConnected: (isConnected: boolean) => void;
   setUserLocation: (location: "lobby" | "game") => void;
   setLocalPlayer: (player: PlayerInfo | null) => void;
 }
 
-export type ApplicationStore = ApplicationState & ApplicationActions;
+export type ApplicationStore = IApplicationState & IApplicationActions;
 
 export const useApplicationStore = create<ApplicationStore>()(
   devtools(
@@ -68,17 +67,20 @@ export const useApplicationStore = create<ApplicationStore>()(
           setLocalPlayer(null);
         },
 
-        initializeEventSubscriptions: (api) => {
-          api.on("join_room" as any, (data: { room: string }) => {
-            logger.info("Joined room", { data });
-            if (data.room === "lobby") {
-              get().setUserLocation("lobby");
-            } else {
-              get().setUserLocation("game");
+        initializeEventSubscriptions: (messageClient: MessageClient) => {
+          messageClient.on(
+            MessengerEvents.JOIN_ROOM,
+            (data: { room: string }) => {
+              logger.info("Joined room", { data });
+              if (data.room === "lobby") {
+                get().setUserLocation("lobby");
+              } else {
+                get().setUserLocation("game");
+              }
             }
-          });
+          );
 
-          api.on(SocketEvents.ERROR, (data: { message: string }) => {
+          messageClient.on(SocketEvents.ERROR, (data: { message: string }) => {
             logger.error("Error", { data });
           });
 
@@ -86,8 +88,8 @@ export const useApplicationStore = create<ApplicationStore>()(
           const currentLocalPlayer = get().localPlayer;
           set({
             localPlayer: {
-              id: api.messenger.id,
-              name: currentLocalPlayer?.name ?? api.messenger.id,
+              id: messageClient.id,
+              name: currentLocalPlayer?.name ?? messageClient.id,
               isBot: false,
             },
           });

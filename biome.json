@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "vcs": {
-    "enabled": false,
+    "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
   },
@@ -11,7 +11,8 @@
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "tab"
+    "indentStyle": "tab",
+    "attributePosition": "multiline"
   },
   "organizeImports": {
     "enabled": true
@@ -22,12 +23,54 @@
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "warn"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "info",
+        "noUselessStringConcat": "warn",
+        "noVoid": "warn",
+        "useSimplifiedLogicExpression": "warn"
+      },
+      "correctness": {
+        "noUndeclaredVariables": "warn",
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedImports": "error",
+        "noUnusedPrivateClassMembers": "warn",
+        "useHookAtTopLevel": "warn"
+      },
+      "nursery": {
+        "noDuplicateElseIf": "error"
+      },
+      "performance": {
+        "noBarrelFile": "error"
+      },
+      "style": {
+        "noShoutyConstants": "error",
+        "noYodaExpression": "warn",
+        "useCollapsedElseIf": "error",
+        "useNamingConvention": {
+          "level": "off",
+          "options": {
+            "strictCase": true,
+            "enumMemberCase": "CONSTANT_CASE",
+            "conventions": [
+              {
+                "formats": ["PascalCase"],
+                "match": "I[A-Z][a-zA-Z0-9]*",
+                "selector": {
+                  "kind": "interface"
+                }
+              }
+            ]
+          }
+        }
       }
     }
   },
   "javascript": {
     "formatter": {
-      "quoteStyle": "double"
+      "quoteStyle": "double",
+      "trailingCommas": "all",
+      "attributePosition": "multiline"
     }
   }
 }

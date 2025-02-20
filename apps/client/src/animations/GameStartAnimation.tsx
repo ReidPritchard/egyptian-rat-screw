@@ -2,9 +2,6 @@ import { AspectRatio, Image, Text } from "@mantine/core";
 import { AnimatePresence, motion } from "framer-motion";
 import type React from "react";
 import { useEffect, useState } from "react";
-import useApplicationStore, {
-  ApplicationStore,
-} from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
 
 export const GameStartAnimation: React.FC = () => {
@@ -13,10 +10,10 @@ export const GameStartAnimation: React.FC = () => {
   const disable = true;
 
   // Timing constants
-  const CHAR_REVEAL_INTERVAL = 0; // Time between each character reveal (in ms)
-  const MESSAGE_PAUSE = 1000; // Pause time after each message (in ms)
-  const FADE_DURATION = 1; // Duration of fade in/out animation (in seconds)
-  const SCALE_DURATION = 1; // Duration of scale animation (in seconds)
+  const charRevealInterval = 0; // Time between each character reveal (in ms)
+  const messagePause = 1000; // Pause time after each message (in ms)
+  const fadeDuration = 1; // Duration of fade in/out animation (in seconds)
+  const scaleDuration = 1; // Duration of scale animation (in seconds)
 
   // Total duration of the animation:
   // messageLength * CHAR_REVEAL_INTERVAL + MESSAGE_PAUSE * (messageLength - 1) + FADE_DURATION + SCALE_DURATION
@@ -44,9 +41,9 @@ export const GameStartAnimation: React.FC = () => {
           // Move to the next message after a delay
           setTimeout(() => {
             setMessageIndex((prevIndex) => prevIndex + 1);
-          }, MESSAGE_PAUSE);
+          }, messagePause);
         }
-      }, CHAR_REVEAL_INTERVAL);
+      }, charRevealInterval);
 
       return () => clearInterval(intervalId);
     }
@@ -63,7 +60,7 @@ export const GameStartAnimation: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: FADE_DURATION }}
+          transition={{ duration: fadeDuration }}
           style={{
             position: "fixed",
             top: 0,
@@ -102,7 +99,7 @@ export const GameStartAnimation: React.FC = () => {
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.5, opacity: 0 }}
-            transition={{ duration: SCALE_DURATION }}
+            transition={{ duration: scaleDuration }}
           >
             <Text size="4rem" c="rat-ears-pink" fw={700}>
               {currentMessage}

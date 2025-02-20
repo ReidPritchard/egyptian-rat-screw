@@ -1,8 +1,8 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useGameStore } from "../store/useGameStore";
-import { useApplicationStore } from "../store/useApplicationStore";
 import { newLogger } from "../logger";
+import { useApplicationStore } from "../store/useApplicationStore";
+import { useGameStore } from "../store/useGameStore";
 import { GameBoard } from "./GameBoard";
 import { GameHeader } from "./GameHeader";
 import { PlayerActions } from "./PlayerActions";
@@ -17,13 +17,13 @@ export const Game: React.FC = () => {
   const [cardChallengeStyle, setCardChallengeStyle] = useState<string>("");
 
   useEffect(() => {
-    if (gameState?.cardChallenge?.active) {
+    if (gameState?.faceCardChallenge) {
       logger.info("Card challenge", {
-        data: { cardChallenge: gameState.cardChallenge },
+        data: { cardChallenge: gameState.faceCardChallenge },
       });
 
       const isChallenger =
-        gameState.cardChallenge.challenger.id === localPlayer?.id;
+        gameState.faceCardChallenge.challenger.id === localPlayer?.id;
       setCardChallengeStyle(
         `border-2 border-${isChallenger ? "pink" : "green"} text-${
           isChallenger ? "white" : "black"
@@ -32,7 +32,7 @@ export const Game: React.FC = () => {
     } else {
       setCardChallengeStyle("");
     }
-  }, [gameState?.cardChallenge, localPlayer?.id]);
+  }, [gameState?.faceCardChallenge, localPlayer?.id]);
 
   return (
     <div

@@ -1,6 +1,6 @@
+import { GameStage } from "@oer/shared/types";
 import type React from "react";
 import { useGameStore } from "../store/useGameStore";
-import { GameStage } from "@oer/shared";
 
 export const GameHeader: React.FC = () => {
   const { gameState, isLocalPlayerTurn } = useGameStore();
@@ -15,7 +15,11 @@ export const GameHeader: React.FC = () => {
         >
           {isLocalPlayerTurn
             ? "Your Turn"
-            : `${gameState?.playerNames[gameState.currentPlayerId]}'s Turn`}
+            : `${
+                gameState?.players.find(
+                  (player) => player.id === gameState.currentPlayerId
+                )?.name
+              }'s Turn`}
         </div>
       )}
     </div>

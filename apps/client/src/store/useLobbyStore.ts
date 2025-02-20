@@ -1,42 +1,45 @@
+import type { MessageClient } from "@/message/client";
+import { SocketEvents } from "@oer/shared/socketEvents";
+import type {
+  LobbyState,
+  PlayerInfo,
+  PlayerInfoUpdate,
+} from "@oer/shared/types";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { newLogger } from "../logger";
-import type { LobbyState, PlayerInfo, PlayerInfoUpdate } from "@oer/shared";
-import useApplicationStore from "./useApplicationStore";
-import { SocketEvents } from "@oer/shared";
 import type { useApi } from "../contexts/ApiContext";
+import { newLogger } from "../logger";
+import useApplicationStore from "./useApplicationStore";
 
 // Create a logger specific for the lobby store
 const logger = newLogger("LobbyStore");
 
 // Define the state interface
-interface LobbyStoreState {
+interface ILobbyStoreState {
   lobbyState: LobbyState | null;
   lobbyPlayers: PlayerInfo[];
 }
 
 // Define the actions interface
-interface LobbyActions {
+interface ILobbyActions {
   setLobbyState: (lobbyState: LobbyState | null) => void;
   setLobbyPlayers: (players: PlayerInfo[]) => void;
   handleLobbyPlayerUpdate: (playerUpdates: PlayerInfoUpdate[]) => void;
   handleJoinLobby: (api: NonNullable<ReturnType<typeof useApi>>) => void;
   handleJoinGame: (
     api: NonNullable<ReturnType<typeof useApi>>,
-    gameId: string
+    roomId: string
   ) => void;
   handleCreateGame: (
     api: NonNullable<ReturnType<typeof useApi>>,
     playerName: string
   ) => void;
   // Event subscription
-  initializeEventSubscriptions: (
-    api: NonNullable<ReturnType<typeof useApi>>
-  ) => void;
+  initializeEventSubscriptions: (messageClient: MessageClient) => void;
 }
 
 // Combine state and actions into one type
-export type LobbyStore = LobbyStoreState & LobbyActions;
+export type LobbyStore = ILobbyStoreState & ILobbyActions;
 
 /**
  * Zustand store for lobby-related state and actions.
@@ -52,9 +55,9 @@ export const useLobbyStore = create<LobbyStore>()(
      * Initializes API event subscriptions.
      * @param api - API instance for socket connections.
      */
-    initializeEventSubscriptions: (api) => {
+    initializeEventSubscriptions: (messageClient: MessageClient) => {
       // Handle lobby state update events
-      api.on(
+      messageClient.on(
         SocketEvents.LOBBY_GAME_UPDATE,
         (updatedLobbyState: LobbyState) => {
           logger.info("Lobby state updated", { data: updatedLobbyState });
@@ -68,10 +71,13 @@ export const useLobbyStore = create<LobbyStore>()(
       );
 
       // Handle lobby player update events
-      api.on(SocketEvents.LOBBY_PLAYER_UPDATE, get().handleLobbyPlayerUpdate);
+      messageClient.on(
+        SocketEvents.LOBBY_PLAYER_UPDATE,
+        get().handleLobbyPlayerUpdate
+      );
 
       // Handle generic errors from the API
-      api.on(SocketEvents.ERROR, (error: string) => {
+      messageClient.on(SocketEvents.ERROR, (error: string) => {
         logger.error("Error occurred", { data: error });
       });
     },
@@ -145,9 +151,9 @@ export const useLobbyStore = create<LobbyStore>()(
      * @param api - API instance for socket connections
      * @param gameId - Identifier for the game to join.
      */
-    handleJoinGame: (api, gameId: string) => {
-      logger.info("Joining game", { data: { gameId } });
-      api.joinGame({ gameId });
+    handleJoinGame: (api, roomId: string) => {
+      logger.info("Joining game", { data: { roomId } });
+      api.joinGame({ roomId });
       // User location will be updated by the GAME_STARTED event.
     },
 

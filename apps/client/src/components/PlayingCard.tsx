@@ -1,6 +1,5 @@
+import { forwardRef } from "react";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
-import { useApplicationStore } from "../store/useApplicationStore";
-import React, { forwardRef } from "react";
 
 interface CardProps {
   suit: string;

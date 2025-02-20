@@ -102,7 +102,7 @@ export enum SocketEvents {
   MESSAGE = "message",
 }
 
-export interface SocketPayloads {
+export interface ISocketPayloads {
   // Connection Events
   [SocketEvents.CONNECT]: undefined;
   [SocketEvents.DISCONNECTING]: undefined;
@@ -116,7 +116,7 @@ export interface SocketPayloads {
   [SocketEvents.GAME_STATE_UPDATED]: ClientGameState;
   [SocketEvents.GAME_PILE_UPDATED]: Card[];
   [SocketEvents.GAME_SETTINGS_CHANGED]: GameSettings;
-  [SocketEvents.GAME_STAGE_CHANGED]: GameStageChangedPayload;
+  [SocketEvents.GAME_STAGE_CHANGED]: IGameStageChangedPayload;
   [SocketEvents.GAME_STARTED]: GameStartedPayload;
   [SocketEvents.GAME_ENDED]: GameEndedPayload;
 
@@ -127,18 +127,19 @@ export interface SocketPayloads {
   [SocketEvents.PLAYER_NOT_READY]: PlayerInfo;
 
   // Player Actions
-  [SocketEvents.CHANGE_NAME]: ChangeNamePayload;
-  [SocketEvents.JOIN_GAME]: JoinGamePayload;
-  [SocketEvents.CREATE_GAME]: CreateGamePayload;
-  [SocketEvents.LEAVE_GAME]: LeaveGamePayload;
-  [SocketEvents.JOIN_LOBBY]: JoinLobbyPayload;
-  [SocketEvents.PLAY_CARD]: PlayCardPayload;
-  [SocketEvents.SLAP_PILE]: SlapPilePayload;
+  [SocketEvents.CHANGE_NAME]: IChangeNamePayload;
+  [SocketEvents.JOIN_GAME]: IJoinGamePayload;
+  [SocketEvents.CREATE_GAME]: ICreateGamePayload;
+  [SocketEvents.LEAVE_GAME]: ILeaveGamePayload;
+  [SocketEvents.JOIN_LOBBY]: IJoinLobbyPayload;
+  [SocketEvents.PLAY_CARD]: IPlayCardPayload;
+  [SocketEvents.SLAP_PILE]: ISlapPilePayload;
+  [SocketEvents.SET_GAME_SETTINGS]: ISetGameSettingsPayload;
   [SocketEvents.PLAYER_ACTION]: PlayerAction;
 
   // Player Action Results
-  [SocketEvents.CARD_PLAYED]: CardPlayedPayload;
-  [SocketEvents.SLAP_RESULT]: SlapResultPayload;
+  [SocketEvents.CARD_PLAYED]: ICardPlayedPayload;
+  [SocketEvents.SLAP_RESULT]: ISlapResultPayload;
   [SocketEvents.CHALLENGE_STARTED]: ChallengeStartedPayload;
   [SocketEvents.CHALLENGE_RESULT]: ChallengeResultPayload;
   [SocketEvents.TURN_CHANGED]: TurnChangedPayload;
@@ -155,45 +156,49 @@ export interface SocketPayloads {
 }
 
 // Define payload interfaces
-export interface GameStageChangedPayload {
+export interface IGameStageChangedPayload {
   previousStage: GameStage;
   currentStage: GameStage;
 }
 
-export interface JoinGamePayload {
-  gameId: string;
+export interface IJoinGamePayload {
+  roomId: string;
 }
 
 // biome-ignore lint/suspicious/noEmptyInterface: Empty interface for create game payload
-export interface CreateGamePayload {}
+export interface ICreateGamePayload {}
 
 // biome-ignore lint/suspicious/noEmptyInterface: Empty interface for leave game payload
-export interface LeaveGamePayload {}
+export interface ILeaveGamePayload {}
 
 // biome-ignore lint/suspicious/noEmptyInterface: Empty interface for join lobby payload
-export interface JoinLobbyPayload {}
+export interface IJoinLobbyPayload {}
 
-export interface ChangeNamePayload {
+export interface IChangeNamePayload {
   name: string;
 }
 
 // biome-ignore lint/suspicious/noEmptyInterface: Empty interface for play card payload
-export interface PlayCardPayload {}
+export interface IPlayCardPayload {}
 
-export interface SlapPilePayload {
+export interface ISlapPilePayload {
   playerId: string;
 }
 
-export interface ChallengeCounterPayload {
+export interface ISetGameSettingsPayload {
+  settings: GameSettings;
+}
+
+export interface IChallengeCounterPayload {
   playerId: string;
 }
 
-export interface CardPlayedPayload {
+export interface ICardPlayedPayload {
   playerId: string;
   card: Card;
 }
 
-export interface SlapResultPayload {
+export interface ISlapResultPayload {
   playerId: string;
   result: "valid" | "invalid";
   message?: string;

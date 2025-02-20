@@ -1,7 +1,7 @@
+import type { Messenger } from "@oer/message";
+import type { ClientGameState, PlayerInfo } from "@oer/shared/types";
 import type { Game } from "../game/Game.js";
 import { newLogger } from "../logger.js";
-import type { PlayerInfo } from "@oer/shared";
-import type { Messenger } from "@oer/message";
 
 const logger = newLogger("Bot");
 
@@ -44,7 +44,7 @@ export class Bot {
     // Add more listeners as needed
   }
 
-  private handleGameStateUpdate(gameState: any): void {
+  private handleGameStateUpdate(gameState: ClientGameState): void {
     // Check if it's the bot's turn
     if (gameState.currentPlayerId === this.playerInfo.id) {
       this.playTurn();

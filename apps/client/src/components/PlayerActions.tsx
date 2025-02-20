@@ -1,3 +1,4 @@
+import { GameStage } from "@oer/shared/types";
 import {
   IconHandStop,
   IconPlayCard,
@@ -6,11 +7,10 @@ import {
 } from "@tabler/icons-react";
 import type React from "react";
 import { useApi } from "../contexts/ApiContext";
-import { GameStage } from "@oer/shared";
+import { useHotkeys } from "../hooks/useHotkeys";
+import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
-import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
-import { useHotkeys } from "../hooks/useHotkeys";
 
 export const PlayerActions: React.FC = () => {
   const { localPlayer } = useApplicationStore();

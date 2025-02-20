@@ -1,4 +1,4 @@
-import type { PlayerInfo } from "@oer/shared";
+import type { PlayerInfo } from "@oer/shared/types";
 
 /**
  * Represents a face card challenge in the game

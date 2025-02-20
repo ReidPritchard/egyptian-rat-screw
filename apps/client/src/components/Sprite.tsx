@@ -1,7 +1,7 @@
-import { useSprite } from "@/hooks";
+import { useSprite } from "@/hooks/useSprite";
 import type React from "react";
 
-interface SpriteProps {
+interface ISpriteProps {
   /**
    * Path to assets/sprites without the file extension
    * e.g. "assets/sprites/player" (looks for player.png and player.json)
@@ -15,7 +15,7 @@ interface SpriteProps {
   height?: number;
 }
 
-export const Sprite: React.FC<SpriteProps> = ({
+export const Sprite: React.FC<ISpriteProps> = ({
   spriteSrc,
   alt,
   className = "",
@@ -30,7 +30,7 @@ export const Sprite: React.FC<SpriteProps> = ({
     frameOrder,
   });
 
-  if (!sprite || !frame) {
+  if (!(sprite && frame)) {
     return null;
   }
 
