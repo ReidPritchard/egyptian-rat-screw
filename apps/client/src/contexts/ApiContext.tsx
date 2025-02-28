@@ -30,14 +30,6 @@ export const ApiProvider: React.FC<IApiProviderProps> = ({ children }) => {
   const [api, setApi] = useState<Api | null>(null);
   const apiRef = useRef<Api | null>(null);
 
-  // TODO: Revisit if we need to handle connection and disconnect events here
-  const handleConnection = useApplicationStore(
-    (state) => state.handleConnection
-  );
-  const handleDisconnect = useApplicationStore(
-    (state) => state.handleDisconnect
-  );
-
   useEffect(() => {
     // Initialize API with connection handlers
     const initApi = async () => {

@@ -35,7 +35,6 @@ export const setupMessageHandlers = (messenger: Messenger) => {
       }
       gameManager.joinGame("", messenger);
     }
-    logger.info("CREATE_GAME: request completed");
   });
 
   messenger.on(SocketEvents.LEAVE_GAME, () => {
@@ -79,5 +78,7 @@ export const setupMessageHandlers = (messenger: Messenger) => {
 
   messenger.on(MessengerEvents.CONNECTION_INIT, () => {
     messenger.emit(MessengerEvents.CONNECTION_ACK, { id: messenger.id });
+    // Move the messenger to the global room on initial connection
+    GameManager.messageServer.moveMessengerToGlobalRoom(messenger);
   });
 };

@@ -53,6 +53,12 @@ export interface IMessageServer {
   getGlobalRoom(): Room;
 
   /**
+   * Move a messenger to the global room.
+   * @param messenger The messenger to move
+   */
+  moveMessengerToGlobalRoom(messenger: Messenger): void;
+
+  /**
    * Moves a messenger from one room to another.
    * @param messenger The messenger to move
    * @param toRoomId The target room ID
@@ -79,7 +85,7 @@ export interface IMessageServer {
    * @param data The data payload.
    * @param excludeMessenger Optional messenger to exclude from broadcast.
    */
-  broadcast(event: string, data: any, excludeMessenger?: Messenger): void;
+  broadcast(event: string, data: EventData, excludeMessenger?: Messenger): void;
 
   /**
    * Disconnects all registered messengers.
@@ -111,22 +117,19 @@ export class MessageServer implements IMessageServer {
    * The lobby room for unassigned messengers.
    */
   private lobbyRoom: Room;
+  private readonly lobbyRoomId = "lobby";
 
   /**
    * Creates a MessageServer instance.
    * A lobby room is initialized to manage unassigned messengers.
    */
   constructor() {
-    this.lobbyRoom = new Room("lobby", "Lobby", Number.POSITIVE_INFINITY);
+    this.lobbyRoom = new Room(
+      this.lobbyRoomId,
+      "Lobby",
+      Number.POSITIVE_INFINITY
+    );
     this.rooms.set(this.lobbyRoom.getId(), this.lobbyRoom);
-  }
-
-  /**
-   * Gets the lobby room instance.
-   * @returns The lobby room instance.
-   */
-  public getGlobalRoom(): Room {
-    return this.lobbyRoom;
   }
 
   /**
@@ -168,6 +171,7 @@ export class MessageServer implements IMessageServer {
   public moveMessengerToRoom(messenger: Messenger, toRoomId: string): boolean {
     const targetRoom = this.rooms.get(toRoomId);
     if (!targetRoom) {
+      logger.error(`Room with ID ${toRoomId} not found`);
       return false;
     }
 
@@ -178,9 +182,10 @@ export class MessageServer implements IMessageServer {
     const success = targetRoom.addMessenger(messenger);
     if (success) {
       this.messengerRooms.set(messenger.id, targetRoom);
-      messenger.join(targetRoom.getId());
-      messenger.emit(MessengerEvents.JOIN_ROOM, { room: targetRoom.getId() });
+      messenger.join(toRoomId);
+      messenger.emit(MessengerEvents.JOIN_ROOM, { room: toRoomId });
     }
+
     return success;
   }
 
@@ -193,11 +198,29 @@ export class MessageServer implements IMessageServer {
       currentRoom.removeMessenger(messenger);
       this.messengerRooms.delete(messenger.id);
 
-      // If the room is empty, remove it
-      if (currentRoom.getMessengers().length === 0) {
+      // If the room is empty, remove it (except for the lobby)
+      if (
+        currentRoom.getId() !== this.lobbyRoomId &&
+        currentRoom.getMessengers().length === 0
+      ) {
         this.rooms.delete(currentRoom.getId());
       }
     }
+  }
+
+  /**
+   * Gets the lobby room instance.
+   * @returns The lobby room instance.
+   */
+  public getGlobalRoom(): Room {
+    return this.lobbyRoom;
+  }
+
+  /**
+   * Move a messenger to the global room.
+   */
+  public moveMessengerToGlobalRoom(messenger: Messenger): void {
+    this.moveMessengerToRoom(messenger, this.lobbyRoomId);
   }
 
   /**
@@ -205,6 +228,16 @@ export class MessageServer implements IMessageServer {
    */
   public register(socket: WebSocket): void {
     const messenger = new Messenger(false, socket);
+
+    this.messengers.add(messenger);
+    this.moveMessengerToGlobalRoom(messenger);
+
+    const playerInfo: PlayerInfo = {
+      id: messenger.id,
+      name: "",
+      isBot: false,
+    };
+    messenger.setData("playerInfo", playerInfo);
 
     setupMessageHandlers(messenger);
 
@@ -226,16 +259,6 @@ export class MessageServer implements IMessageServer {
         error: error.message,
       });
     });
-
-    const playerInfo: PlayerInfo = {
-      id: messenger.id,
-      name: "",
-      isBot: false,
-    };
-    messenger.setData("playerInfo", playerInfo);
-
-    this.messengers.add(messenger);
-    this.moveMessengerToRoom(messenger, this.lobbyRoom.getId());
   }
 
   /**

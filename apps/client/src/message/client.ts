@@ -1,8 +1,3 @@
-/**
- * This file defines the client-side messaging interface.
- * It provides an abstraction over the Messenger class for client usage.
- */
-
 import { newLogger } from "@/logger";
 import { type EventData, Messenger, MessengerEvents } from "@oer/message";
 import { SocketEvents } from "@oer/shared/socketEvents";
@@ -20,33 +15,43 @@ export interface IMessageClient {
    * @param event The event name.
    * @param data The event data.
    */
-  notifyServer(event: string, data: EventData): void;
+  notifyServer(event: EventName, data: EventData): void;
 
   /**
    * Notify/trigger local listeners of an event.
    * @param event The event name.
    * @param data The event data.
    */
-  notifyLocal(event: string, data: EventData): void;
+  notifyLocal(event: EventName, data: EventData): void;
 
   /**
    * Notify both the server and local listeners of an event.
    * @param event The event name.
    * @param data The event data.
    */
-  broadcast(event: string, data: EventData): void;
+  broadcast(event: EventName, data: EventData): void;
 
   /**
    * Registers a listener for a specific event.
    * @param event The event name.
    * @param listener Callback function to handle the event.
    */
-  on(event: string, listener: (data: EventData) => void): void;
+  on(event: EventName, listener: (data: EventData) => void): void;
 
   /**
    * Disconnects the client.
    */
   disconnect(): void;
+
+  /**
+   * Indicates whether the client is connected to the server.
+   */
+  readonly isConnected: boolean;
+
+  /**
+   * Returns the client's ID.
+   */
+  readonly id: string;
 }
 
 /**
@@ -57,13 +62,15 @@ export class MessageClient implements IMessageClient {
   /**
    * The Messenger instance.
    */
-  private messenger: Messenger;
+  private readonly messenger: Messenger;
 
   /**
    * A map of event names to their listeners.
    */
-  private eventHandlers: Map<string, Set<(data: EventData) => void>> =
-    new Map();
+  private readonly eventHandlers: Map<
+    EventName,
+    Set<(data: EventData) => void>
+  > = new Map();
 
   /**
    * Private constructor to enforce async creation via connect.
@@ -75,28 +82,25 @@ export class MessageClient implements IMessageClient {
 
   /**
    * Notify the server of an event.
-   * @param event The event name.
-   * @param data The event data.
    */
-  public notifyServer(event: string, data: EventData): void {
-    logger.info("NOTIFYING SERVER", { data: { event, data } });
+  public notifyServer(event: EventName, data: EventData): void {
+    logger.debug("Notifying server", { data: { event, data } });
     this.messenger.emit(event, data);
   }
 
   /**
    * Notify/trigger local listeners of an event.
-   * @param event The event name.
-   * @param data The event data.
    */
-  public notifyLocal(event: string, data: EventData): void {
-    logger.info("NOTIFYING LOCAL", { data: { event, data } });
+  public notifyLocal(event: EventName, data: EventData): void {
     const handlers = this.eventHandlers.get(event);
-
-    if (!handlers) {
-      logger.warn("No handlers for event", { data: { event } });
+    if (!handlers?.size) {
+      logger.debug("No handlers for event", { data: { event } });
       return;
     }
 
+    logger.debug("Notifying local handlers", {
+      data: { event, handlersCount: handlers.size },
+    });
     for (const handler of handlers) {
       handler(data);
     }
@@ -104,25 +108,22 @@ export class MessageClient implements IMessageClient {
 
   /**
    * Notify both the server and local listeners of an event.
-   * @param event The event name.
-   * @param data The event data.
    */
-  public broadcast(event: string, data: EventData): void {
-    logger.info("BROADCASTING ================================");
+  public broadcast(event: EventName, data: EventData): void {
+    logger.info("Broadcasting event");
     this.notifyServer(event, data);
     this.notifyLocal(event, data);
-    logger.info("BROADCASTED ================================");
   }
+
   /**
    * Register an event listener both locally and with the messenger.
-   * @param event The event name.
-   * @param listener The callback function.
    */
   public on(event: EventName, listener: (data: EventData) => void): void {
+    // Initialize handler set if it doesn't exist
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, new Set());
 
-      // Set up messenger event handler if it's not a special event
+      // Set up messenger event handler for non-socket events
       if (event !== SocketEvents.CONNECT && event !== SocketEvents.DISCONNECT) {
         this.messenger.on(event, (data: EventData) => {
           const handlers = this.eventHandlers.get(event);
@@ -136,16 +137,16 @@ export class MessageClient implements IMessageClient {
     }
 
     this.eventHandlers.get(event)?.add(listener);
+    logger.debug("Added event listener", { data: { event } });
   }
 
   /**
    * Removes an event listener from both local handlers and messenger.
-   * @param event The event name.
-   * @param listener The callback function.
    */
-  public off(event: string, listener: (data: EventData) => void): void {
+  public off(event: EventName, listener: (data: EventData) => void): void {
     this.messenger.off(event, listener);
     this.eventHandlers.get(event)?.delete(listener);
+    logger.debug("Removed event listener", { data: { event } });
   }
 
   /**
@@ -153,13 +154,15 @@ export class MessageClient implements IMessageClient {
    */
   public disconnect(): void {
     this.messenger.disconnect();
+    this.eventHandlers.clear();
+    logger.debug("Client disconnected");
   }
 
-  get isConnected(): boolean {
+  public get isConnected(): boolean {
     return this.messenger.getIsConnected();
   }
 
-  get id(): string {
+  public get id(): string {
     return this.messenger.id;
   }
 }
@@ -170,46 +173,57 @@ export const connectMessageClient = async (
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url);
     let connectionAckReceived = false;
+    const connectionTimeout = 5000;
 
-    socket.onopen = () => {
-      logger.info("WebSocket connection opened");
-      // We have to use the socket directly here as the Messenger class
-      // can't be initialized until the server has sent the connection ID
+    // Handle initial connection
+    socket.addEventListener("open", () => {
+      logger.debug("WebSocket connection opened");
       socket.send(JSON.stringify({ event: MessengerEvents.CONNECTION_INIT }));
-    };
+    });
 
-    socket.onmessage = (event) => {
-      logger.info("WebSocket message received", { data: event });
+    // Single message handler for both connection setup and regular messages
+    socket.addEventListener("message", (event) => {
       const data = JSON.parse(event.data);
+      logger.debug("WebSocket message received", { data });
 
-      if (data.event === MessengerEvents.CONNECTION_ACK && data.data.id) {
-        logger.info("Connection ACK received", { data: data.data.id });
-        connectionAckReceived = true;
-        const id = data.data.id;
-        const messenger = new Messenger(false, socket, id);
-        const client = new MessageClient(messenger);
-        logger.info("MessageClient created", { data: client.id });
+      if (!connectionAckReceived) {
+        // Handle initial connection acknowledgment
+        if (data.event === MessengerEvents.CONNECTION_ACK && data.data.id) {
+          connectionAckReceived = true;
+          const messenger = new Messenger(false, socket, data.data.id);
+          const client = new MessageClient(messenger);
+          logger.debug("MessageClient created", { data: client.id });
+          resolve(client);
 
-        // Change `onmessage` to notify the local client handlers
-        socket.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          client.notifyLocal(data.event, data.data);
-        };
-
-        resolve(client);
+          // After client is created, handle all subsequent messages
+          socket.addEventListener("message", (msgEvent) => {
+            const msgData = JSON.parse(msgEvent.data);
+            client.notifyLocal(msgData.event, msgData.data);
+          });
+        }
       }
-    };
+    });
 
-    socket.onerror = (error) => {
-      logger.error("WebSocket connection failed", { data: error });
-      reject(new Error("WebSocket connection failed"));
-    };
+    // Error handling
+    socket.addEventListener("error", (error) => {
+      const errorMsg = "WebSocket connection failed";
+      logger.error(errorMsg, { data: error });
+      reject(new Error(errorMsg));
+    });
 
+    socket.addEventListener("close", () => {
+      logger.debug("WebSocket connection closed");
+      if (!connectionAckReceived) {
+        reject(new Error("Connection closed before initialization"));
+      }
+    });
+
+    // Connection timeout
     setTimeout(() => {
       if (!connectionAckReceived) {
         socket.close();
         reject(new Error("Connection timeout waiting for server ID"));
       }
-    }, 5000);
+    }, connectionTimeout);
   });
 };

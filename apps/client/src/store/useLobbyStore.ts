@@ -11,16 +11,13 @@ import type { useApi } from "../contexts/ApiContext";
 import { newLogger } from "../logger";
 import useApplicationStore from "./useApplicationStore";
 
-// Create a logger specific for the lobby store
 const logger = newLogger("LobbyStore");
 
-// Define the state interface
 interface ILobbyStoreState {
   lobbyState: LobbyState | null;
   lobbyPlayers: PlayerInfo[];
 }
 
-// Define the actions interface
 interface ILobbyActions {
   setLobbyState: (lobbyState: LobbyState | null) => void;
   setLobbyPlayers: (players: PlayerInfo[]) => void;
@@ -75,11 +72,6 @@ export const useLobbyStore = create<LobbyStore>()(
         SocketEvents.LOBBY_PLAYER_UPDATE,
         get().handleLobbyPlayerUpdate
       );
-
-      // Handle generic errors from the API
-      messageClient.on(SocketEvents.ERROR, (error: string) => {
-        logger.error("Error occurred", { data: error });
-      });
     },
 
     /**

@@ -3,6 +3,7 @@ const LOG_LEVELS = new Set(["error", "warn", "info", "debug"]);
 export const SETTINGS = {
   PORT: 3000,
   LOG_LEVEL: "info",
+  LOG_ALIGNMENT: 25,
   LOBBY_ROOM: "lobby",
 
   GENERATORS: {

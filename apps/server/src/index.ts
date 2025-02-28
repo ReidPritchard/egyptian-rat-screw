@@ -1,14 +1,16 @@
-import express from "express";
 import { createServer } from "node:http";
 import path from "node:path";
-import type WebSocket from "ws";
-import { WebSocketServer } from "ws";
 import { fileURLToPath } from "node:url";
 import { SETTINGS } from "@oer/configuration";
+import express from "express";
+import type WebSocket from "ws";
+import { WebSocketServer } from "ws";
 import { newLogger } from "./logger.js";
 import { GameManager } from "./manager/GameManager.js";
 
 const logger = newLogger("server");
+
+GameManager.getInstance();
 
 const app = express();
 const httpServer = createServer(app);
@@ -19,7 +21,6 @@ wss.on("connection", (socket: WebSocket) => {
   logger.info("User connected");
   GameManager.messageServer.register(socket);
 });
-GameManager.getInstance();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

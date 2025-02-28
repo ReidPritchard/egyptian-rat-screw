@@ -1,3 +1,5 @@
+import { SETTINGS } from "@oer/configuration";
+
 type LogLevel = "debug" | "info" | "warn" | "error";
 type LogColor = keyof typeof COLORS | string;
 
@@ -37,9 +39,13 @@ function colorLog(
     ? `${message} ${JSON.stringify(options.data)}`
     : message;
 
+  const alignmentSpaces =
+    SETTINGS.LOG_ALIGNMENT - (timestamp.length + prefix.length);
+  const spaces = " ".repeat(Math.max(0, alignmentSpaces));
+
   console.log(
-    `%c${timestamp}${prefix}${logMessage}%c`,
-    `color: ${logColor}; font-weight: bold`,
+    `${timestamp}${prefix}${spaces}%c${logMessage}%c`,
+    `color: ${logColor};`,
     "color: inherit"
   );
 }
@@ -57,7 +63,7 @@ class Logger {
     this.name = name;
     this.level = level;
     this.defaultOptions = {
-      timestamp: true,
+      timestamp: false,
       prefix: `[${name}]`,
       ...options,
     };
@@ -150,8 +156,8 @@ class Logger {
     }
   }
 
-  public child(name: string, options: Partial<LogOptions> = {}): Logger {
-    return new Logger(`${this.name}.${name}`, this.level, {
+  public child(module: string, options: Partial<LogOptions> = {}): Logger {
+    return new Logger(module, this.level, {
       ...this.defaultOptions,
       ...options,
     });
@@ -171,5 +177,8 @@ export const newLogger = (
   module: string,
   options?: Partial<LogOptions>
 ): Logger => {
-  return logger.child(module, options);
+  return logger.child(module, {
+    ...options,
+    prefix: `[${module}]`,
+  });
 };

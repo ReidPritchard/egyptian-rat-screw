@@ -12,10 +12,12 @@
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check . --write",
     "clean": "turbo run clean",
-    "clean:full": "turbo run clean:full && rm -rf node_modules"
+    "clean:full": "turbo run clean:full && rm -rf node_modules",
+    "cy:open": "cypress open"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "cypress": "^14.0.3",
     "turbo": "^2.3.3"
   },
   "packageManager": "pnpm@9.1.0"

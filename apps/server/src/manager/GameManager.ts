@@ -165,18 +165,25 @@ export class GameManager {
     this.emitPlayerJoinedLobby(messenger);
 
     // Update the lobby player list for the new player
-    const LOBBY_PLAYER_UPDATEs = Array.from(
-      GameManager.messageServer.getGlobalRoom().getMessengers()
-    ).map((p) => ({
-      id: p.id,
-      name: p.getData("playerInfo").name,
-      action: "join",
-    }));
-    messenger.emit(SocketEvents.LOBBY_PLAYER_UPDATE, LOBBY_PLAYER_UPDATEs);
+    const lobbyPlayerUpdates = GameManager.messageServer
+      .getGlobalRoom()
+      .getMessengers()
+      .map((player) => ({
+        id: player.id,
+        name: player.getData("playerInfo").name,
+        action: "join",
+      }));
+    messenger.emit(SocketEvents.LOBBY_PLAYER_UPDATE, lobbyPlayerUpdates);
   }
 
-  private emitToLobby(event: string, data: EventData): void {
-    GameManager.messageServer.getGlobalRoom().emit(event, data);
+  private emitToLobby(
+    event: string,
+    data: EventData,
+    excludeMessengers?: Messenger[]
+  ): void {
+    GameManager.messageServer
+      .getGlobalRoom()
+      .emit(event, data, excludeMessengers);
   }
 
   public handleDisconnect(messenger: Messenger): void {
@@ -244,6 +251,9 @@ export class GameManager {
       }
     } else {
       logger.warn("Set player name failed - player not in lobby", messenger.id);
+      logger.warn(
+        `Messenger Rooms ${Array.from(messenger.getRooms().values())}`
+      );
       this.emitError(messenger, "Player is not in the lobby.");
     }
   }
