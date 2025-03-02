@@ -1,10 +1,35 @@
 import type React from "react";
+import { useEffect } from "react";
+import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
+import { THEMES } from "../hooks/useLocalPlayerSettings";
+import { newLogger } from "../logger";
+
+const logger = newLogger("ThemeToggle");
 
 export const ThemeToggle: React.FC = () => {
+  const { toggleTheme, getTheme } = useLocalPlayerSettings();
+  const currentTheme = getTheme();
+
+  // Apply theme whenever it changes in settings
+  useEffect(() => {
+    logger.info(`Applying theme: ${currentTheme}`);
+    document.querySelector("html")?.setAttribute("data-theme", currentTheme);
+  }, [currentTheme]);
+
+  const onToggleTheme = () => {
+    logger.info(`Toggling theme from ${currentTheme}`);
+    toggleTheme();
+  };
+
   return (
     <label className="swap swap-rotate scale-75">
       {/* this hidden checkbox controls the state */}
-      <input type="checkbox" className="theme-controller" value="synthwave" />
+      <input
+        type="checkbox"
+        className="theme-controller"
+        checked={currentTheme === THEMES.DARK}
+        onChange={onToggleTheme}
+      />
 
       {/* sun icon */}
       <svg

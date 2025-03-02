@@ -39,7 +39,7 @@ export const GameBoard: React.FC = () => {
             <p className="text-center text-sm mb-2">
               Pile Size: {gameState.centralPileCount}
             </p>
-            <CardStack pile={gameState.topCards} />
+            <CardStack pile={gameState.centralPile} />
           </div>
         </div>
       </div>

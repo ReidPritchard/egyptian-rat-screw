@@ -3,8 +3,7 @@ import { SETTINGS } from "@oer/configuration";
 type LogLevel = "debug" | "info" | "warn" | "error";
 type LogColor = keyof typeof COLORS | string;
 
-const defaultLevel: LogLevel =
-  process.env.NODE_ENV === "production" ? "info" : "debug";
+const defaultLevel: LogLevel = "debug";
 
 const COLORS = {
   success: "#4CAF50", // Material Green

@@ -16,5 +16,6 @@ export interface LocalPlayerSettings {
       expanded: boolean;
     };
     highContrast: boolean;
+    theme: string;
   };
 }

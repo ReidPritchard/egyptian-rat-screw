@@ -76,9 +76,11 @@ export const setupMessageHandlers = (messenger: Messenger) => {
     gameManager.addPlayerToLobby(messenger);
   });
 
+  messenger.on(SocketEvents.DISCONNECT, () => {
+    gameManager.handleDisconnect(messenger);
+  });
+
   messenger.on(MessengerEvents.CONNECTION_INIT, () => {
     messenger.emit(MessengerEvents.CONNECTION_ACK, { id: messenger.id });
-    // Move the messenger to the global room on initial connection
-    // GameManager.messageServer.moveMessengerToGlobalRoom(messenger);
   });
 };

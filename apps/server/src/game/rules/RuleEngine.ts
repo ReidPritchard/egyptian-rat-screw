@@ -1,5 +1,5 @@
 import type { Card, GameSettings, SlapRule } from "@oer/shared/types";
-import type { Player } from "../Player.js";
+import type { Player } from "../models/Player.js";
 import { Condition } from "./Condition.js";
 
 export class RuleEngine {

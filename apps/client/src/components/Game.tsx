@@ -1,4 +1,4 @@
-import { GameStage } from "@oer/shared/types";
+import { isGameStatusInCategory } from "@/utils/categories";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { newLogger } from "../logger";
@@ -25,7 +25,7 @@ export const Game: React.FC = () => {
       });
 
       const isChallenger =
-        gameState.faceCardChallenge.challenger.id === localPlayer?.id;
+        gameState.faceCardChallenge.initiator.id === localPlayer?.id;
       setCardChallengeStyle(
         `border-2 border-${isChallenger ? "pink" : "green"} text-${
           isChallenger ? "white" : "black"
@@ -52,7 +52,11 @@ export const Game: React.FC = () => {
     >
       <GameHeader />
       <div className="flex-grow">
-        {gameState.stage === GameStage.PRE_GAME ? <PreGame /> : <GameBoard />}
+        {isGameStatusInCategory(gameState.status, "PRE_GAME") ? (
+          <PreGame />
+        ) : (
+          <GameBoard />
+        )}
       </div>
       <PlayerActions />
     </div>

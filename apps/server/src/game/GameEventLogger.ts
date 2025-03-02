@@ -1,4 +1,4 @@
-import type { GameEvent } from "@oer/shared/types";
+import type { GameAction } from "@oer/shared/types";
 import { newLogger } from "../logger.js";
 
 const logger = newLogger("GameEventLogger");
@@ -7,7 +7,7 @@ const logger = newLogger("GameEventLogger");
  * Handles logging and tracking of all game events
  */
 export class GameEventLogger {
-  private eventLog: GameEvent[] = [];
+  private eventLog: GameAction[] = [];
 
   constructor() {
     this.reset();
@@ -16,7 +16,7 @@ export class GameEventLogger {
   /**
    * Log a new game event
    */
-  public logEvent(event: GameEvent): void {
+  public logEvent(event: GameAction): void {
     logger.debug(`Logging event: ${event.eventType}`);
     this.eventLog.push(event);
   }
@@ -24,7 +24,7 @@ export class GameEventLogger {
   /**
    * Get the complete event log
    */
-  public getEventLog(): GameEvent[] {
+  public getEventLog(): GameAction[] {
     return [...this.eventLog];
   }
 

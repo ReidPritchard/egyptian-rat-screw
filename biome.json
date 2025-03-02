@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": []
+    "ignore": ["cypress/**"]
   },
   "formatter": {
     "enabled": true,
@@ -72,5 +72,15 @@
       "trailingCommas": "all",
       "attributePosition": "multiline"
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["cypress/**"],
+      "linter": {
+        "rules": {
+          "recommended": false
+        }
+      }
+    }
+  ]
 }

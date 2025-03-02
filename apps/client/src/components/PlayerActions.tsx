@@ -1,4 +1,4 @@
-import { GameStage } from "@oer/shared/types";
+import { isGameStatusInCategory } from "@/utils/categories";
 import {
   IconHandStop,
   IconPlayCard,
@@ -17,7 +17,8 @@ export const PlayerActions: React.FC = () => {
   const { isLocalPlayerTurn, gameState, playerReady } = useGameStore();
   const { settings: localPlayerSettings } = useLocalPlayerSettings();
   const api = useApi();
-  const gameOver = gameState?.stage === GameStage.GAME_OVER;
+  const gameOver =
+    gameState?.status && isGameStatusInCategory(gameState?.status, "POST_GAME");
 
   useHotkeys(
     [
@@ -44,7 +45,10 @@ export const PlayerActions: React.FC = () => {
   );
 
   const renderGameSettingsAction = () => {
-    if (gameState?.stage === GameStage.PRE_GAME) {
+    if (
+      gameState?.status &&
+      isGameStatusInCategory(gameState?.status, "PRE_GAME")
+    ) {
       return (
         <div className="tooltip tooltip-primary" data-tip="Game settings (g)">
           <button
@@ -60,7 +64,11 @@ export const PlayerActions: React.FC = () => {
   };
 
   const renderStartGameAction = () => {
-    if (gameState?.stage === GameStage.PRE_GAME && localPlayer) {
+    if (
+      gameState?.status &&
+      isGameStatusInCategory(gameState?.status, "PRE_GAME") &&
+      localPlayer
+    ) {
       return (
         <div className="tooltip tooltip-primary" data-tip="Ready up">
           <button
@@ -76,7 +84,10 @@ export const PlayerActions: React.FC = () => {
   };
 
   const renderPlayCardAction = () => {
-    if (gameState?.stage === GameStage.PLAYING) {
+    if (
+      gameState?.status &&
+      isGameStatusInCategory(gameState?.status, "IN_GAME")
+    ) {
       return (
         <div className="tooltip tooltip-primary" data-tip="Play a card (n)">
           <button
@@ -93,7 +104,10 @@ export const PlayerActions: React.FC = () => {
   };
 
   const renderSlapPileAction = () => {
-    if (gameState?.stage === GameStage.PLAYING) {
+    if (
+      gameState?.status &&
+      isGameStatusInCategory(gameState?.status, "IN_GAME")
+    ) {
       return (
         <div
           className="tooltip tooltip-primary"

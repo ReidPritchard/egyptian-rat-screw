@@ -1,25 +1,31 @@
 import type { Messenger } from "@oer/message";
-import type { Card, PlayerInfo } from "@oer/shared/types";
+import { type Card, type PlayerInfo, PlayerStatus } from "@oer/shared/types";
 
 export class Player {
   public readonly messenger: Messenger;
   public readonly name: string;
   public isBot = false;
   private cards: Card[] = [];
-  private ready = false;
+
+  public status: PlayerStatus;
+  public isActive: boolean;
+  public lastActivity: Date;
 
   constructor(messenger: Messenger, name: string, isBot = false) {
     this.messenger = messenger;
     this.name = name;
     this.isBot = isBot;
+    this.status = PlayerStatus.UNKNOWN;
+    this.isActive = true;
+    this.lastActivity = new Date();
   }
 
   public isReady(): boolean {
-    return this.ready;
+    return this.status === PlayerStatus.READY;
   }
 
   public setReady(ready: boolean): void {
-    this.ready = ready;
+    this.status = ready ? PlayerStatus.READY : PlayerStatus.NOT_READY;
   }
 
   public addCards(cards: Card[]): void {
@@ -36,7 +42,9 @@ export class Player {
 
   public reset(): void {
     this.cards = [];
-    this.ready = false;
+    this.status = PlayerStatus.UNKNOWN;
+    this.isActive = false;
+    this.lastActivity = new Date();
   }
 
   public collectPile(pile: Card[]) {

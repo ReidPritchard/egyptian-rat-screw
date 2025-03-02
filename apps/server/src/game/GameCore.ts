@@ -4,27 +4,27 @@ import { SocketEvents } from "@oer/shared/socketEvents";
 import {
   type Card,
   type ClientGameState,
-  type GameEvent,
-  GameEventType,
+  type GameAction,
+  GameActionType,
   type GameSettings,
-  GameStage,
+  GameStatus,
   type PlayerAction,
   PlayerActionType,
   type PlayerInfo,
   type SlapRule,
 } from "@oer/shared/types";
 import { newLogger } from "../logger.js";
-import { Deck } from "./Deck.js";
 import { GameEventLogger } from "./GameEventLogger.js";
 import { GameNotifier } from "./GameNotifier.js";
-import { Player } from "./Player.js";
 import { VotingSystem } from "./VotingSystem.js";
-import { CardPlayManager } from "./subsystems/CardPlayManager.js";
-import { FaceCardChallengeManager } from "./subsystems/FaceCardChallengeManager.js";
-import { SlapManager } from "./subsystems/SlapManager.js";
-import { WinConditionManager } from "./subsystems/WinConditionManager.js";
+import { Deck } from "./models/Deck.js";
+import { Player } from "./models/Player.js";
 import { RuleEngine } from "./rules/RuleEngine.js";
 import { defaultSlapRules } from "./rules/SlapRules.js";
+import { CardPlayManager } from "./services/CardPlayManager.js";
+import { FaceCardService } from "./services/FaceCardService.js";
+import { SlapManager } from "./services/SlappingService.js";
+import { WinConditionManager } from "./services/WinConditionManager.js";
 
 const logger = newLogger("GameCore");
 
@@ -38,7 +38,7 @@ const DEFAULT_GAME_SETTINGS: GameSettings = {
     K: 3,
     A: 4,
   },
-  challengeCounterCards: [],
+  challengeCounterCards: [{ rank: "10" }],
   turnTimeout: 30000,
   challengeCounterSlapTimeout: 2000,
 };
@@ -50,7 +50,7 @@ export class GameCore {
   private players: Player[] = [];
   private turnIndex = 0;
   private centralPile: Card[] = [];
-  private stage = GameStage.PRE_GAME;
+  private status = GameStatus.PRE_GAME;
   private winner: PlayerInfo | null = null;
   private gameRoom: Room;
   private readonly settings: GameSettings;
@@ -58,7 +58,7 @@ export class GameCore {
   // Managers and subsystems
   private ruleEngine: RuleEngine;
   private cardPlayManager: CardPlayManager;
-  private faceCardChallengeManager: FaceCardChallengeManager;
+  private faceCardService: FaceCardService;
   private slapManager: SlapManager;
   private votingSystem: VotingSystem;
   private winConditionManager: WinConditionManager;
@@ -92,7 +92,7 @@ export class GameCore {
       this.notifier
     );
 
-    this.faceCardChallengeManager = new FaceCardChallengeManager(
+    this.faceCardService = new FaceCardService(
       this,
       this.ruleEngine,
       this.eventLogger,
@@ -130,7 +130,7 @@ export class GameCore {
   public addPlayer(messenger: Messenger, playerInfo: PlayerInfo): boolean {
     logger.info(`Adding player to game: ${playerInfo.name}`);
 
-    if (this.stage !== GameStage.PRE_GAME) {
+    if (this.status !== GameStatus.PRE_GAME) {
       messenger.emit(SocketEvents.ERROR, "Game has already started.");
       return false;
     }
@@ -153,7 +153,7 @@ export class GameCore {
     // Log the player addition event
     this.eventLogger.logEvent({
       playerId: messenger.id,
-      eventType: GameEventType.ADD_PLAYER,
+      eventType: GameActionType.ADD_PLAYER,
       timestamp: Date.now(),
       data: { playerInfo },
     });
@@ -174,16 +174,16 @@ export class GameCore {
     // Log the player removal event
     this.eventLogger.logEvent({
       playerId: messenger.id,
-      eventType: GameEventType.REMOVE_PLAYER,
+      eventType: GameActionType.REMOVE_PLAYER,
       timestamp: Date.now(),
       data: {},
     });
 
     if (this.players.length === 0) return;
 
-    if (this.stage === GameStage.PRE_GAME) {
-      this.stage = GameStage.CANCELLED;
-    } else if (this.stage === GameStage.PLAYING) {
+    if (this.status === GameStatus.PRE_GAME) {
+      this.status = GameStatus.CANCELLED;
+    } else if (this.status === GameStatus.PLAYING) {
       this.winConditionManager.checkForWinner();
     }
 
@@ -235,7 +235,7 @@ export class GameCore {
     deck.shuffle();
     deck.dealCards(this.players);
 
-    this.stage = GameStage.PLAYING;
+    this.status = GameStatus.PLAYING;
     this.notifier.emitGameStarted({
       gameId: this.gameId,
       players: this.players.map((player) => ({
@@ -257,7 +257,7 @@ export class GameCore {
     this.turnIndex = 0;
 
     // Reset all subsystems
-    this.faceCardChallengeManager.reset();
+    this.faceCardService.reset();
     this.votingSystem.reset();
     this.eventLogger.reset();
 
@@ -267,7 +267,7 @@ export class GameCore {
   }
 
   private endGame(): void {
-    this.stage = GameStage.GAME_OVER;
+    this.status = GameStatus.GAME_OVER;
 
     if (this.winner) {
       this.notifier.emitGameEnded({
@@ -287,7 +287,7 @@ export class GameCore {
     // Log the ready status change event
     this.eventLogger.logEvent({
       playerId,
-      eventType: GameEventType.SET_READY,
+      eventType: GameActionType.SET_READY,
       timestamp: Date.now(),
       data: { ready },
     });
@@ -298,7 +298,7 @@ export class GameCore {
 
   private checkForStart(): void {
     if (
-      this.stage === GameStage.PRE_GAME &&
+      this.status === GameStatus.PRE_GAME &&
       this.players.every((p) => p.isReady())
     ) {
       this.startGame();
@@ -310,7 +310,7 @@ export class GameCore {
   }
 
   public setGameSettings(settings: GameSettings): void {
-    if (this.stage === GameStage.PLAYING) {
+    if (this.status === GameStatus.PLAYING) {
       this.notifier.emitError("Game is already in progress.");
       return;
     }
@@ -321,7 +321,7 @@ export class GameCore {
     // Log the settings change event
     this.eventLogger.logEvent({
       playerId: "", // System event
-      eventType: GameEventType.SET_SETTINGS,
+      eventType: GameActionType.SET_SETTINGS,
       timestamp: Date.now(),
       data: { settings },
     });
@@ -340,13 +340,13 @@ export class GameCore {
     return this.centralPile;
   }
 
-  public getStage(): GameStage {
-    return this.stage;
+  public getStatus(): GameStatus {
+    return this.status;
   }
 
   // Getters for accessing the manager classes
-  public getFaceCardChallengeManager(): FaceCardChallengeManager {
-    return this.faceCardChallengeManager;
+  public getFaceCardService(): FaceCardService {
+    return this.faceCardService;
   }
 
   public getCardPlayManager(): CardPlayManager {
@@ -376,19 +376,18 @@ export class GameCore {
   public getGameState(): ClientGameState {
     return {
       gameId: this.gameId,
-      stage: this.stage,
+      status: this.status,
       players: this.players.map((player) => ({
         id: player.messenger.id,
         name: player.name,
         cardCount: player.getCardCount(),
         isBot: player.messenger.isBot,
-        isReady: player.isReady(),
+        status: player.status,
       })),
       currentPlayerId: this.getCurrentPlayerId(),
       centralPileCount: this.centralPile.length,
-      topCards: this.centralPile.slice(-3).reverse(),
-      faceCardChallenge:
-        this.faceCardChallengeManager.getFaceCardChallengeState(),
+      centralPile: this.centralPile.slice(-3).reverse(),
+      faceCardChallenge: this.faceCardService.getChallengeState(),
       winner: this.winner,
       voteState: this.votingSystem.getVoteState(),
       settings: this.ruleEngine.getGameSettings(),
@@ -425,13 +424,13 @@ export class GameCore {
     // Log the turn advance event
     this.eventLogger.logEvent({
       playerId: this.getCurrentPlayerId(),
-      eventType: GameEventType.ADVANCE_TURN,
+      eventType: GameActionType.ADVANCE_TURN,
       timestamp: Date.now(),
       data: {},
     });
   }
 
-  public getEventLog(): GameEvent[] {
+  public getEventLog(): GameAction[] {
     return this.eventLogger.getEventLog();
   }
 

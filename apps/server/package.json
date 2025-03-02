@@ -1,38 +1,28 @@
 {
-  "name": "@oers/server",
+  "name": "@oer/server",
   "description": "Online Egyptian Ratscrew Game Server",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
-  "scriptComments": {
-    "start": "Start the server",
-    "dev:serve": "Run the node server, watch dist/ and public/ for changes and restart",
-    "dev:build": "Watch src/ for changes and rebuild using tsc",
-    "dev:sync-client": "Watch ../client/dist/ for changes and copy to public/",
-    "dev:sync-public": "Watch ../../public/ for changes and copy to public/",
-    "dev": "Run build watcher, serve watcher, and sync watchers concurrently",
-    "pre:build": "Clean dist and public directories (prepare for build)",
-    "build": "Build the server using tsc, copy client and public to dist/"
-  },
   "scripts": {
     "start": "node dist/index.js",
-    "dev:serve": "nodemon --watch dist --watch public dist/index.js",
+    "dev:serve": "nodemon --watch dist dist/index.js",
     "dev:build": "tsc -p tsconfig.json --watch",
-    "dev:sync-client": "nodemon --watch ../client/dist --exec 'pnpm run copy-client' --ext js,css,html",
     "dev:sync-public": "nodemon --watch ../../public --exec 'pnpm run copy-public' --ext js,css,html",
-    "dev": "concurrently --kill-others \"pnpm run dev:build\" \"pnpm run dev:serve\" \"pnpm run dev:sync-client\" \"pnpm run dev:sync-public\"",
-    "pre:build": "pnpm run clean-client && pnpm run clean-public",
-    "build": "pnpm run pre:build && tsc -p tsconfig.json && pnpm run copy-client && pnpm run copy-public",
-    "copy-client": "mkdir -p public && cp -r ../client/dist/* public/",
-    "clean-client": "rm -rf public",
+    "dev": "concurrently --kill-others \"pnpm run dev:build\" \"pnpm run dev:serve\" \"pnpm run dev:sync-public\"",
+    "pre:build": "pnpm run clean-public",
+    "build": "pnpm run pre:build && tsc -p tsconfig.json && pnpm run copy-public",
     "copy-public": "mkdir -p public && cp -r ../../public/* public/",
     "clean-public": "rm -rf public",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist public",
-    "clean:full": "pnpm run clean && rm -rf node_modules"
+    "clean:full": "pnpm run clean && rm -rf node_modules",
+    "cy:open": "cypress open",
+    "test": "cypress open"
   },
   "dependencies": {
+    "@oer/client": "workspace:*",
     "@oer/configuration": "workspace:*",
     "@oer/message": "workspace:*",
     "@oer/shared": "workspace:*",
@@ -49,6 +39,7 @@
     "@types/uuid": "^9.0.7",
     "@types/ws": "^8.5.10",
     "concurrently": "^9.0.1",
+    "cypress": "^14.1.0",
     "nodemon": "^3.1.7",
     "typescript": "^5.0.0"
   }

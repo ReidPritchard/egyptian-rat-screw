@@ -2,7 +2,7 @@ import type {
   Card,
   ClientGameState,
   GameSettings,
-  GameStage,
+  GameStatus,
   LobbyState,
   PlayerAction,
   PlayerInfo,
@@ -157,8 +157,8 @@ export interface ISocketPayloads {
 
 // Define payload interfaces
 export interface IGameStageChangedPayload {
-  previousStage: GameStage;
-  currentStage: GameStage;
+  previousStage: GameStatus;
+  currentStage: GameStatus;
 }
 
 export interface IJoinGamePayload {

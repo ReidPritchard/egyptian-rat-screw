@@ -1,4 +1,4 @@
-import { GameEventType, type VoteState } from "@oer/shared/types";
+import { GameActionType, type VoteState } from "@oer/shared/types";
 import { newLogger } from "../logger.js";
 import type { GameCore } from "./GameCore.js";
 import type { GameEventLogger } from "./GameEventLogger.js";
@@ -43,7 +43,7 @@ export class VotingSystem {
     // Log the vote start event
     this.eventLogger.logEvent({
       playerId: "", // System event
-      eventType: GameEventType.START_VOTE,
+      eventType: GameActionType.START_VOTE,
       timestamp: Date.now(),
       data: { topic },
     });
@@ -65,7 +65,7 @@ export class VotingSystem {
     // Log the vote submission event
     this.eventLogger.logEvent({
       playerId,
-      eventType: GameEventType.SUBMIT_VOTE,
+      eventType: GameActionType.SUBMIT_VOTE,
       timestamp: Date.now(),
       data: { vote },
     });
@@ -98,7 +98,7 @@ export class VotingSystem {
     // Log the vote resolution event
     this.eventLogger.logEvent({
       playerId: "", // System event
-      eventType: GameEventType.RESOLVE_VOTE,
+      eventType: GameActionType.RESOLVE_VOTE,
       timestamp: Date.now(),
       data: { voteCount, passed },
     });

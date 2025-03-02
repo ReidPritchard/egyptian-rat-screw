@@ -3,6 +3,8 @@
  * @description Consolidates all shared TypeScript types for both client and server.
  */
 
+///////// CARD TYPES /////////
+
 export const Suits = ["hearts", "diamonds", "clubs", "spades"] as const;
 export type Suit = (typeof Suits)[number];
 
@@ -30,6 +32,33 @@ export interface Card {
   rank: Rank;
 }
 
+///////// PLAYER TYPES /////////
+
+export interface PlayerInfo {
+  id: string;
+  name: string;
+  isBot: boolean;
+}
+
+export enum PlayerInfoAction {
+  JOIN = "join",
+  LEAVE = "leave",
+  UPDATE = "update",
+}
+
+export type PlayerInfoUpdate = PlayerInfo & {
+  action: PlayerInfoAction;
+};
+
+export enum PlayerStatus {
+  ACTIVE = "active",
+  ELIMINATED = "eliminated",
+  AWAY = "away",
+  READY = "ready",
+  NOT_READY = "not-ready",
+  UNKNOWN = "unknown",
+}
+
 export enum PlayerActionType {
   START_VOTE = "start-vote",
   CAST_VOTE = "cast-vote",
@@ -49,9 +78,19 @@ export interface PlayerAction {
   };
 }
 
-// Types of events that occur during the game, used for logging
+export interface PlayerActionResult {
+  playerId: string;
+  actionType: PlayerActionType;
+  result: "success" | "failure";
+  message?: string;
+  timestamp: number;
+}
+
+///////// GAME ACTION TYPES /////////
+
+// Types of actions that occur during the game, used for logging
 // and to calculate game statistics
-export enum GameEventType {
+export enum GameActionType {
   ADD_PLAYER = "ADD_PLAYER",
   REMOVE_PLAYER = "REMOVE_PLAYER",
   START_GAME = "START_GAME",
@@ -71,13 +110,15 @@ export enum GameEventType {
   RESOLVE_VOTE = "RESOLVE_VOTE",
 }
 
-export interface GameEvent {
+export interface GameAction {
   playerId: string;
-  eventType: GameEventType;
+  eventType: GameActionType;
   timestamp: number;
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   data: any;
 }
+
+///////// GAME RULE TYPES /////////
 
 export interface ICondition {
   field: ConditionValue;
@@ -120,20 +161,18 @@ export interface SlapRule {
   targetPlayerName?: string;
 }
 
-export interface PlayerActionResult {
-  playerId: string;
-  actionType: PlayerActionType;
-  result: "success" | "failure";
-  message?: string;
-  timestamp: number;
-}
+///////// GAME STATE TYPES /////////
 
 export interface GameSettings {
   minimumPlayers: number;
   maximumPlayers: number;
   slapRules: SlapRule[];
   faceCardChallengeCounts: { [key: string]: number };
-  challengeCounterCards: Partial<Card>[]; // Partial<Card> allows for a Card object with missing properties, which are treated as wild for the purpose of matching
+  /**
+   * Partial<Card> allows for a Card object with missing properties,
+   * which are treated as wild for the purpose of matching
+   */
+  challengeCounterCards: Partial<Card>[];
   turnTimeout: number;
   /**
    * The amount of time a "completed" challenge can be slapped before
@@ -145,38 +184,76 @@ export interface GameSettings {
   challengeCounterSlapTimeout: number;
 }
 
-export interface PlayerInfo {
-  id: string;
-  name: string;
-  isBot: boolean;
+export interface FaceCardSequence {
+  initiator: PlayerInfo;
+  activePlayerId: string;
+  faceCardRank: Rank;
+  cardsToPlay: number;
+  cardsPlayed: number;
 }
 
-export type PlayerInfoUpdate = PlayerInfo & {
-  action: "join" | "leave" | "update";
-};
+export interface SlappingRecord {
+  playerId: string;
+  slaps: number;
+}
 
-export interface GameState {
-  id: string;
+export interface ServerGameState {
+  gameId: string;
   name: string;
-  stage: GameStage;
-  maxPlayers: number;
   players: PlayerInfo[];
-  currentPlayer: number;
-  pileSize: number;
-  pile: Card[] | null;
-  playerHandSizes: { [playerId: string]: number };
-  playerNames: { [playerId: string]: string };
+  currentPlayerIndex: number;
+  centralPile: Card[] | null;
+  status: GameStatus;
+  faceCardSequence: FaceCardSequence | null;
+  lastAction: GameAction | null;
+  lastActionTimestamp: number;
+  winningSlaps: SlappingRecord[];
+  settings: GameSettings;
+  createdAt: Date;
+  updatedAt: Date;
   winner: PlayerInfo | null;
-  slapRules: SlapRule[];
 }
 
-export enum GameStage {
+export enum GameStatus {
+  WAITING_FOR_PLAYERS = "waiting_for_players",
   PRE_GAME = "pre-game",
+  STARTING = "starting",
+  IN_PROGRESS = "in_progress",
+  FACE_CARD_SEQUENCE = "face_card_sequence",
+  SLAPPING_WINDOW = "slapping_window",
   PLAYING = "playing",
-  GAME_OVER = "game-over",
-  RESTARTING = "restarting",
   VOTING = "voting",
+  PAUSED = "paused",
+  RESTARTING = "restarting",
+  COMPLETED = "completed",
   CANCELLED = "cancelled",
+  GAME_OVER = "game-over",
+}
+
+export const GameStatusCategories: Record<string, GameStatus[]> = {
+  PRE_GAME: [
+    GameStatus.WAITING_FOR_PLAYERS,
+    GameStatus.PRE_GAME,
+    GameStatus.STARTING,
+  ],
+  IN_GAME: [
+    GameStatus.PLAYING,
+    GameStatus.VOTING,
+    GameStatus.PAUSED,
+    GameStatus.RESTARTING,
+  ],
+  POST_GAME: [GameStatus.COMPLETED, GameStatus.GAME_OVER],
+  CANCELLED: [GameStatus.CANCELLED],
+} as const;
+
+///////// CLIENT STATE TYPES /////////
+
+export interface ClientPlayerInfo {
+  id: string;
+  name: string;
+  cardCount: number;
+  status: PlayerStatus;
+  isBot: boolean;
 }
 
 // A subset of GameState that is sent to the client
@@ -184,26 +261,16 @@ export enum GameStage {
 // and to prevent the client from having full access to the game state
 export interface ClientGameState {
   gameId: string;
-  stage: GameStage;
-  players: Array<{
-    id: string;
-    name: string;
-    cardCount: number;
-    isBot: boolean;
-    isReady: boolean;
-  }>;
+  status: GameStatus;
+  players: ClientPlayerInfo[];
   currentPlayerId: string;
   centralPileCount: number;
-  topCards: Card[];
-  faceCardChallenge: {
-    challenger: PlayerInfo;
-    currentPlayerId: string;
-    remainingPlays: number;
-  } | null;
+  centralPile: Card[];
+  faceCardChallenge: FaceCardSequence | null;
   winner: PlayerInfo | null;
   voteState: VoteState | null;
   settings: GameSettings;
-  eventLog: GameEvent[];
+  eventLog: GameAction[];
 }
 
 export interface LobbyState {
@@ -215,6 +282,8 @@ export interface LobbyState {
   }[];
 }
 
+///////// VOTING TYPES /////////
+
 export interface Vote {
   playerId: string;
   vote: boolean;
@@ -224,12 +293,4 @@ export interface VoteState {
   topic: string;
   votes: Vote[];
   startTime: number;
-}
-
-export interface CardChallenge {
-  active: boolean;
-  challenger: PlayerInfo;
-  challenged: PlayerInfo;
-  remainingCounterChances: number;
-  result: "challenger" | "counter" | null;
 }

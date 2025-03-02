@@ -58,6 +58,6 @@ export default {
   },
   plugins: [daisyui],
   daisyui: {
-    themes: ["light", "dark", "autumn"],
+    themes: ["light", "dark", "autumn", "synthwave"],
   },
 };

@@ -6,6 +6,12 @@ import { newLogger } from "../logger";
 
 const logger = newLogger("LocalPlayerSettings");
 
+// Available theme options
+export const THEMES = {
+  LIGHT: "light",
+  DARK: "synthwave",
+};
+
 const DEFAULT_SETTINGS: LocalPlayerSettings = {
   name: "",
   hotkeys: {
@@ -24,11 +30,16 @@ const DEFAULT_SETTINGS: LocalPlayerSettings = {
       expanded: false,
     },
     highContrast: false,
+    theme: THEMES.LIGHT, // Default to light theme
   },
 };
 
 interface ILocalPlayerSettingsState {
   settings: LocalPlayerSettings;
+}
+
+interface ILocalPlayerSettingsGetters {
+  getTheme: () => string;
 }
 
 interface ILocalPlayerSettingsActions {
@@ -37,17 +48,24 @@ interface ILocalPlayerSettingsActions {
     api: Api | null
   ) => void;
   changeName: (name: string, api: Api | null) => void;
+  toggleTheme: () => void;
 }
 
 type LocalPlayerSettingsStore = ILocalPlayerSettingsState &
+  ILocalPlayerSettingsGetters &
   ILocalPlayerSettingsActions;
 
 export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
+        // Data
         settings: DEFAULT_SETTINGS,
 
+        // Getters
+        getTheme: () => get().settings.ui.theme,
+
+        // Actions
         updateSettings: (
           newSettings: Partial<LocalPlayerSettings>,
           api: Api | null
@@ -80,6 +98,21 @@ export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
             return;
           }
           api.changeName({ name });
+        },
+
+        toggleTheme: () => {
+          set((state) => ({
+            settings: {
+              ...state.settings,
+              ui: {
+                ...state.settings.ui,
+                theme:
+                  state.settings.ui.theme === THEMES.LIGHT
+                    ? THEMES.DARK
+                    : THEMES.LIGHT,
+              },
+            },
+          }));
         },
       }),
       {

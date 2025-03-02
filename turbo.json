@@ -1,5 +1,4 @@
 {
-  "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env"],
   "tasks": {
     "build": {
@@ -16,6 +15,15 @@
     },
     "clean:full": {
       "cache": false
+    }
+  },
+  "boundaries": {
+    "tags": {
+      "public": {
+        "dependencies": {
+          "deny": ["internal"]
+        }
+      }
     }
   }
 }

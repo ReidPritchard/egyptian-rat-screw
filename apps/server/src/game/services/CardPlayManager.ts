@@ -1,16 +1,15 @@
 import type { Messenger } from "@oer/message";
-import { GameEventType } from "@oer/shared/types";
 import { newLogger } from "../../logger.js";
 import type { GameCore } from "../GameCore.js";
 import type { GameEventLogger } from "../GameEventLogger.js";
 import type { GameNotifier } from "../GameNotifier.js";
-import type { Player } from "../Player.js";
+import type { Player } from "../models/Player.js";
 import type { RuleEngine } from "../rules/RuleEngine.js";
 
 const logger = newLogger("CardPlayManager");
 
 /**
- * Handles all logic related to playing cards during normal gameplay
+ * Handles all logic related to playing cards during normal gameplay in Egyptian Ratscrew
  */
 export class CardPlayManager {
   private gameCore: GameCore;
@@ -32,57 +31,49 @@ export class CardPlayManager {
 
   /**
    * Handles a player's attempt to play a card
+   * @param messenger - The messenger object of the player attempting to play
    */
   public handlePlayCard(messenger: Messenger): void {
     const player = this.getPlayerByMessenger(messenger);
-    if (player) {
-      this.playCard(player);
+    if (!player) {
+      logger.warn(`Player with ID ${messenger.id} not found`);
+      return;
     }
+
+    this.playCard(player);
   }
 
   /**
    * Process the action of playing a card
+   * @param player - The player playing a card
    */
   private playCard(player: Player): void {
-    const players = this.gameCore.getPlayers();
     const currentPlayerId = this.gameCore.getCurrentPlayerId();
+    const fcService = this.gameCore.getFaceCardService();
 
-    // Verify it's the player's turn
+    // Check if the player is allowed to play a card
     if (player.messenger.id !== currentPlayerId) {
-      player.messenger.emit("error", "Not your turn.");
+      logger.warn(`Player ${player.messenger.id} is not the current player`);
       return;
     }
 
-    // Play the card
+    // Check if the player has any cards left
+    if (player.getCardCount() === 0) {
+      logger.warn(`Player ${player.messenger.id} has no cards left`);
+      return;
+    }
+
+    // Get the card that the player is playing
     const card = player.playCard();
     if (!card) {
-      player.messenger.emit("error", "No cards to play.");
+      logger.error(
+        `Player ${player.messenger.id} has no card to play! This should never happen!`
+      );
       return;
     }
 
-    // Add the card to the central pile
-    const centralPile = this.gameCore.getCentralPile();
-    centralPile.push(card);
-
-    // Log the event
-    this.eventLogger.logEvent({
-      playerId: player.messenger.id,
-      eventType: GameEventType.PLAY_CARD,
-      timestamp: Date.now(),
-      data: { card },
-    });
-
-    // Check for face card challenge
-    const challengeCount = this.ruleEngine.getFaceCardChallengeCount(card);
-    if (challengeCount > 0) {
-      // Notify the face card challenge manager
-      this.gameCore
-        .getFaceCardChallengeManager()
-        .startChallenge(player, challengeCount);
-    } else {
-      // Advance to the next player
-      this.gameCore.advanceTurn();
-    }
+    // Handle the card play
+    fcService.handleCardPlay(player, card);
 
     // Update all clients
     this.notifier.emitGameUpdate(this.gameCore.getGameState());
@@ -90,6 +81,8 @@ export class CardPlayManager {
 
   /**
    * Get a player by their messenger object
+   * @param messenger - The messenger object to lookup
+   * @returns The player associated with the messenger, or undefined if not found
    */
   private getPlayerByMessenger(messenger: Messenger): Player | undefined {
     return this.gameCore

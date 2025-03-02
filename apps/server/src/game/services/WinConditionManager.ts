@@ -1,4 +1,4 @@
-import { GameEventType, type PlayerInfo } from "@oer/shared/types";
+import { GameActionType, type PlayerInfo } from "@oer/shared/types";
 import { newLogger } from "../../logger.js";
 import type { GameCore } from "../GameCore.js";
 import type { GameEventLogger } from "../GameEventLogger.js";
@@ -42,7 +42,7 @@ export class WinConditionManager {
       // Log the game end event
       this.eventLogger.logEvent({
         playerId: winner.messenger.id,
-        eventType: GameEventType.END_GAME,
+        eventType: GameActionType.END_GAME,
         timestamp: Date.now(),
         data: { winner: winnerInfo },
       });

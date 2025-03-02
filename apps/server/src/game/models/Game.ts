@@ -3,14 +3,14 @@ import type { Room } from "@oer/message";
 import type {
   ClientGameState,
   GameSettings,
-  GameStage,
+  GameStatus,
   PlayerAction,
   PlayerInfo,
   SlapRule,
 } from "@oer/shared/types";
-import { newLogger } from "../logger.js";
-import { GameCore } from "./GameCore.js";
-import { defaultSlapRules } from "./rules/SlapRules.js";
+import { newLogger } from "../../logger.js";
+import { GameCore } from "../GameCore.js";
+import { defaultSlapRules } from "../rules/SlapRules.js";
 
 const logger = newLogger("Game");
 
@@ -93,7 +93,7 @@ export class Game {
     this.gameCore.getVotingSystem().submitVote(playerId, vote);
   }
 
-  public getStage(): GameStage {
-    return this.gameCore.getStage();
+  public getStatus(): GameStatus {
+    return this.gameCore.getStatus();
   }
 }

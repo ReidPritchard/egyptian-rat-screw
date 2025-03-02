@@ -1,5 +1,5 @@
 import type { Card, ConditionValue, ICondition } from "@oer/shared/types";
-import type { Player } from "../Player.js";
+import type { Player } from "../models/Player.js";
 
 export class Condition {
   private field: ConditionValue;

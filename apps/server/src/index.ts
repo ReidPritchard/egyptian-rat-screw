@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,16 +19,34 @@ const httpServer = createServer(app);
 // Create WebSocket server attached to our HTTP server
 const wss = new WebSocketServer({ server: httpServer });
 wss.on("connection", (socket: WebSocket) => {
-  logger.info("User connected");
+  logger.debug("User connected");
   GameManager.messageServer.register(socket);
 });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configure static file serving with proper MIME types
+// Get the path to the client package's dist directory
+const clientDistPath = path.resolve(__dirname, "../../../client/dist");
+const publicPath = path.join(__dirname, "../public");
+
+// Configure static file serving for client assets
 app.use(
-  express.static(path.join(__dirname, "../public"), {
+  express.static(clientDistPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      }
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      }
+    },
+  })
+);
+
+// Serve public assets (if any)
+app.use(
+  express.static(publicPath, {
     setHeaders: (res, filePath) => {
       if (filePath.endsWith(".css")) {
         res.setHeader("Content-Type", "text/css");
@@ -41,7 +60,15 @@ app.use(
 
 // Always serve index.html for any route (SPA support)
 app.get("*", (_req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+  // Try client index.html first, fall back to public if needed
+  const clientIndexPath = path.join(clientDistPath, "index.html");
+  const publicIndexPath = path.join(publicPath, "index.html");
+
+  if (existsSync(clientIndexPath)) {
+    res.sendFile(clientIndexPath);
+  } else {
+    res.sendFile(publicIndexPath);
+  }
 });
 
 httpServer.listen(SETTINGS.PORT, () => {

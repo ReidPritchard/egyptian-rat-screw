@@ -15,7 +15,7 @@ const logger = newLogger("LobbyStore");
 
 interface ILobbyStoreState {
   lobbyState: LobbyState | null;
-  lobbyPlayers: Set<PlayerInfo>;
+  lobbyPlayers: Map<string, PlayerInfo>;
 }
 
 interface ILobbyActions {
@@ -46,7 +46,7 @@ export const useLobbyStore = create<LobbyStore>()(
   devtools((set, get) => ({
     // Initial state
     lobbyState: null,
-    lobbyPlayers: new Set(),
+    lobbyPlayers: new Map(),
 
     /**
      * Initializes API event subscriptions.
@@ -81,11 +81,13 @@ export const useLobbyStore = create<LobbyStore>()(
     setLobbyState: (lobbyState: LobbyState | null) => set({ lobbyState }),
 
     /**
-     * Updates the list of lobby players.
+     * Updates the set of lobby players.
      * @param players - Array of current lobby players.
      */
     setLobbyPlayers: (players: PlayerInfo[]) =>
-      set({ lobbyPlayers: new Set(players) }),
+      set({
+        lobbyPlayers: new Map(players.map((player) => [player.id, player])),
+      }),
 
     /**
      * Processes updates for players in the lobby.
@@ -94,37 +96,28 @@ export const useLobbyStore = create<LobbyStore>()(
      */
     handleLobbyPlayerUpdate: (playerUpdates: PlayerInfoUpdate[]) => {
       logger.info("Processing lobby player updates", { data: playerUpdates });
-      // Start with a copy of the current players
-      let players = Array.from(get().lobbyPlayers);
+      // Create a new Map from the current one to avoid mutating the original
+      const newPlayers = new Map(get().lobbyPlayers);
+
       // Process each update one-by-one
       for (const update of playerUpdates) {
         switch (update.action) {
           case "join":
-            // Add new player to the list
-            players.push(update);
+            // Add new player to the map with ID as key
+            newPlayers.set(update.id, update);
             break;
           case "leave":
-            // Remove player from the list
-            players = players.filter((player) => player.id !== update.id);
+            // Remove player from the map by ID
+            newPlayers.delete(update.id);
             break;
-          case "update": {
-            const playerExists = players.find(
-              (player) => player.id === update.id
-            );
-            if (playerExists) {
-              // Update existing player info
-              players = players.map((player) =>
-                player.id === update.id ? update : player
-              );
-            } else {
-              // Add new player to the list
-              players.push(update);
-            }
+          case "update":
+            // Update or add the player info by ID
+            newPlayers.set(update.id, update);
             break;
-          }
         }
       }
-      get().setLobbyPlayers(players);
+      // Update the store with the new Map
+      set({ lobbyPlayers: newPlayers });
     },
 
     /**

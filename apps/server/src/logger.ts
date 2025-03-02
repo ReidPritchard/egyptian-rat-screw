@@ -1,6 +1,7 @@
 import pino from "pino";
 
-const defaultLevel = process.env.NODE_ENV === "production" ? "info" : "debug";
+// const defaultLevel = process.env.NODE_ENV === "production" ? "info" : "debug";
+const defaultLevel = "debug";
 
 export const logger = pino.default({
   name: "server",

@@ -367,10 +367,13 @@ export class Room {
 
   /**
    * Gets an array of all messengers in the room.
+   * @param excludeMessenger - Optional messenger to exclude from the array.
    * @returns an array of Messenger instances.
    */
-  public getMessengers(): Messenger[] {
-    return Array.from(this.messengers);
+  public getMessengers(excludeMessenger?: Messenger): Messenger[] {
+    return Array.from(this.messengers).filter(
+      (messenger) => messenger !== excludeMessenger
+    );
   }
 
   /**
@@ -422,7 +425,7 @@ export class Room {
     excludeMessengers?: Messenger[]
   ): void {
     for (const messenger of this.messengers) {
-      if (!(excludeMessengers?.includes(messenger))) {
+      if (!excludeMessengers?.includes(messenger)) {
         messenger.emit(event, data);
       }
     }

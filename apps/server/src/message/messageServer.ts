@@ -230,7 +230,6 @@ export class MessageServer implements IMessageServer {
     const messenger = new Messenger(false, socket);
 
     this.messengers.add(messenger);
-    // this.moveMessengerToGlobalRoom(messenger);
 
     const playerInfo: PlayerInfo = {
       id: messenger.id,
@@ -249,6 +248,7 @@ export class MessageServer implements IMessageServer {
 
     socket.on("close", () => {
       logger.info(`User disconnected: ${messenger.id}`);
+      messenger.notifyLocal(SocketEvents.DISCONNECT, {});
       this.unregister(messenger);
     });
 

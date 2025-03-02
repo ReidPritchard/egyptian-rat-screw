@@ -1,11 +1,11 @@
 import type { Messenger } from "@oer/message";
 import type { SlapRule } from "@oer/shared/types";
-import { GameEventType, GameStage } from "@oer/shared/types";
+import { GameActionType, GameStatus } from "@oer/shared/types";
 import { newLogger } from "../../logger.js";
 import type { GameCore } from "../GameCore.js";
 import type { GameEventLogger } from "../GameEventLogger.js";
 import type { GameNotifier } from "../GameNotifier.js";
-import type { Player } from "../Player.js";
+import type { Player } from "../models/Player.js";
 import type { RuleEngine } from "../rules/RuleEngine.js";
 
 const logger = newLogger("SlapManager");
@@ -63,12 +63,12 @@ export class SlapManager {
     centralPile.length = 0; // Clear the central pile
 
     // Reset any ongoing face card challenge
-    this.gameCore.getFaceCardChallengeManager().reset();
+    this.gameCore.getFaceCardService().reset();
 
     // Log the successful slap event
     this.eventLogger.logEvent({
       playerId: player.messenger.id,
-      eventType: GameEventType.VALID_SLAP,
+      eventType: GameActionType.VALID_SLAP,
       timestamp,
       data: { rule },
     });
@@ -77,7 +77,7 @@ export class SlapManager {
     this.gameCore.getWinConditionManager().checkForWinner();
 
     // If no winner, continue with the next player
-    if (this.gameCore.getStage() === GameStage.PLAYING) {
+    if (this.gameCore.getStatus() === GameStatus.PLAYING) {
       this.gameCore.advanceTurn();
     }
 
@@ -97,7 +97,7 @@ export class SlapManager {
       // Log the invalid slap event
       this.eventLogger.logEvent({
         playerId: player.messenger.id,
-        eventType: GameEventType.INVALID_SLAP,
+        eventType: GameActionType.INVALID_SLAP,
         timestamp,
         data: { burnedCard },
       });

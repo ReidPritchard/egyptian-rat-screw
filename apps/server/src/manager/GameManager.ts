@@ -5,9 +5,11 @@ import {
   type PlayerAction,
   PlayerActionType,
   type PlayerInfo,
+  PlayerInfoAction,
+  type PlayerInfoUpdate,
 } from "@oer/shared/types";
 import { Bot } from "../bot/index.js";
-import { Game } from "../game/Game.js";
+import { Game } from "../game/models/Game.js";
 import { defaultSlapRules } from "../game/rules/SlapRules.js";
 import { newLogger } from "../logger.js";
 import { MessageServer } from "../message/messageServer.js";
@@ -124,7 +126,7 @@ export class GameManager {
       return;
     }
 
-    this.emitLobbyUpdate();
+    this.emitToLobby(...this.lobbyGameUpdate());
   }
 
   public leaveGame(messenger: Messenger): void {
@@ -165,16 +167,17 @@ export class GameManager {
     this.emitPlayerJoinedLobby(messenger);
 
     // Update the lobby player list for the new player
-    const lobbyPlayerUpdates = GameManager.messageServer
+    const lobbyPlayers = GameManager.messageServer
       .getGlobalRoom()
-      .getMessengers()
-      .map((player) => ({
-        id: player.id,
-        name: player.getData("playerInfo").name,
-        action: "join",
-      }))
-      .filter((player) => player.id !== messenger.id);
-    messenger.emit(SocketEvents.LOBBY_PLAYER_UPDATE, lobbyPlayerUpdates);
+      .getMessengers(messenger)
+      .map((player) =>
+        this.createPlayerUpdate(player, PlayerInfoAction.UPDATE)
+      );
+
+    messenger.emit(SocketEvents.LOBBY_PLAYER_UPDATE, lobbyPlayers);
+
+    // Update the games list for the new player
+    messenger.emit(...this.lobbyGameUpdate());
   }
 
   private emitToLobby(
@@ -243,11 +246,7 @@ export class GameManager {
       if (player) {
         player.name = playerName;
         this.emitToLobby(SocketEvents.LOBBY_PLAYER_UPDATE, [
-          {
-            id: messenger.id,
-            name: playerName,
-            action: "update",
-          },
+          this.createPlayerUpdate(messenger, PlayerInfoAction.UPDATE),
         ]);
       }
     } else {
@@ -273,13 +272,6 @@ export class GameManager {
   public submitVote(messenger: Messenger, vote: boolean): void {
     this.routeGameAction(messenger, (game) =>
       game.submitVote(messenger.id, vote)
-    );
-  }
-
-  private isPlayerInGame(messenger: Messenger): boolean {
-    const currentRoom = GameManager.messageServer.getMessengerRoom(messenger);
-    return (
-      currentRoom?.getId() !== GameManager.messageServer.getGlobalRoom().getId()
     );
   }
 
@@ -328,37 +320,34 @@ export class GameManager {
 
   private emitPlayerLeftLobby(messenger: Messenger): void {
     this.emitToLobby(SocketEvents.LOBBY_PLAYER_UPDATE, [
-      {
-        id: messenger.id,
-        name: messenger.getData("playerInfo").name || generatePlayerName(),
-        action: "leave",
-      },
+      this.createPlayerUpdate(messenger, PlayerInfoAction.LEAVE),
     ]);
   }
 
   private emitPlayerJoinedLobby(messenger: Messenger): void {
     this.emitToLobby(SocketEvents.LOBBY_PLAYER_UPDATE, [
-      {
-        id: messenger.id,
-        name: messenger.getData("playerInfo").name,
-        action: "join",
-      },
+      this.createPlayerUpdate(messenger, PlayerInfoAction.JOIN),
     ]);
   }
 
-  private emitLobbyUpdate(): void {
+  private lobbyGameUpdate(): [
+    typeof SocketEvents.LOBBY_GAME_UPDATE,
+    EventData
+  ] {
     const lobbyRoomId = GameManager.messageServer.getGlobalRoom().getId();
-
-    this.emitToLobby(SocketEvents.LOBBY_GAME_UPDATE, {
-      games: Array.from(GameManager.messageServer.getRooms().values())
-        .filter((room) => room.getId() !== lobbyRoomId)
-        .map((room) => ({
-          id: room.getId(),
-          name: room.getId(),
-          playerCount: room.getMessengers().length,
-          maxPlayers: room.getSize(),
-        })),
-    });
+    return [
+      SocketEvents.LOBBY_GAME_UPDATE,
+      {
+        games: Array.from(GameManager.messageServer.getRooms().values())
+          .filter((room) => room.getId() !== lobbyRoomId)
+          .map((room) => ({
+            id: room.getId(),
+            name: room.getId(),
+            playerCount: room.getMessengers().length,
+            maxPlayers: room.getSize(),
+          })),
+      },
+    ];
   }
 
   private emitError(messenger: Messenger, message: string): void {
@@ -373,6 +362,25 @@ export class GameManager {
     }
 
     return currentRoom?.getData("game");
+  }
+
+  /**
+   * Creates a player update action object with proper error handling for missing player info
+   * @param messenger - The messenger representing the player
+   * @param action - The type of update action (join, leave, or update)
+   * @returns A standardized player update action object
+   */
+  private createPlayerUpdate(
+    messenger: Messenger,
+    action: PlayerInfoAction
+  ): PlayerInfoUpdate {
+    const playerInfo = messenger.getData("playerInfo");
+    return {
+      id: messenger.id,
+      name: playerInfo?.name || generatePlayerName(),
+      action,
+      isBot: playerInfo?.isBot,
+    };
   }
 
   private addBotPlayer(gameId: string): void {
