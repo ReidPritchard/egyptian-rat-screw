@@ -65,7 +65,6 @@ export const useGameStore = create<GameStore>()(
       api.on(
         SocketEvents.GAME_STATE_UPDATED,
         (updatedGameState: ClientGameState) => {
-          logger.info("Game state updated", { data: updatedGameState });
           useApplicationStore.getState().setUserLocation("game");
           get().setGameState(updatedGameState);
         }

@@ -21,6 +21,7 @@ interface LogOptions {
   timestamp?: boolean;
   prefix?: string;
   data?: unknown;
+  level?: LogLevel;
 }
 
 function formatTimestamp(): string {
@@ -43,7 +44,9 @@ function colorLog(
     SETTINGS.LOG_ALIGNMENT - (timestamp.length + prefix.length);
   const spaces = " ".repeat(Math.max(0, alignmentSpaces));
 
-  console.log(
+  const consoleMethod = options.level === "debug" ? console.debug : console.log;
+
+  consoleMethod(
     `${timestamp}${prefix}${spaces}%c${logMessage}%c`,
     `color: ${logColor};`,
     "color: inherit"
@@ -93,6 +96,7 @@ class Logger {
       color: COLORS[level] || "black",
       timestamp: true,
       prefix: `[${this.name}]`,
+      level: level,
       ...this.defaultOptions,
       ...options,
     };

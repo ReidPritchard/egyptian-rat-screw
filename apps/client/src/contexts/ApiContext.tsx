@@ -45,6 +45,9 @@ export const ApiProvider: React.FC<IApiProviderProps> = ({ children }) => {
         .initializeEventSubscriptions(messageClient);
       useGameStore.getState().initializeEventSubscriptions(messageClient);
       useLobbyStore.getState().initializeEventSubscriptions(messageClient);
+
+      // Once connection is established, join the lobby
+      apiInstance.joinLobby();
     };
 
     initApi().catch((error) => {

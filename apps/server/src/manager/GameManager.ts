@@ -172,7 +172,8 @@ export class GameManager {
         id: player.id,
         name: player.getData("playerInfo").name,
         action: "join",
-      }));
+      }))
+      .filter((player) => player.id !== messenger.id);
     messenger.emit(SocketEvents.LOBBY_PLAYER_UPDATE, lobbyPlayerUpdates);
   }
 

@@ -230,7 +230,7 @@ export class MessageServer implements IMessageServer {
     const messenger = new Messenger(false, socket);
 
     this.messengers.add(messenger);
-    this.moveMessengerToGlobalRoom(messenger);
+    // this.moveMessengerToGlobalRoom(messenger);
 
     const playerInfo: PlayerInfo = {
       id: messenger.id,

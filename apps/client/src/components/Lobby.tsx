@@ -101,10 +101,10 @@ export const Lobby: React.FC = () => {
       <div className="animate-fadeInUp">
         <section className="p-4 pt-0">
           <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">
-            Players ({lobbyPlayers.length})
+            Players ({Array.from(lobbyPlayers).length})
           </h3>
           <div className="flex flex-col items-start mt-4 gap-2">
-            {lobbyPlayers.map((player) => (
+            {Array.from(lobbyPlayers).map((player) => (
               <div key={player.id} className="animate-fadeInLeft">
                 <p className="flex items-center gap-3">
                   {getPlayerDisplayName(player)}

@@ -15,7 +15,7 @@ const logger = newLogger("LobbyStore");
 
 interface ILobbyStoreState {
   lobbyState: LobbyState | null;
-  lobbyPlayers: PlayerInfo[];
+  lobbyPlayers: Set<PlayerInfo>;
 }
 
 interface ILobbyActions {
@@ -46,7 +46,7 @@ export const useLobbyStore = create<LobbyStore>()(
   devtools((set, get) => ({
     // Initial state
     lobbyState: null,
-    lobbyPlayers: [],
+    lobbyPlayers: new Set(),
 
     /**
      * Initializes API event subscriptions.
@@ -84,7 +84,8 @@ export const useLobbyStore = create<LobbyStore>()(
      * Updates the list of lobby players.
      * @param players - Array of current lobby players.
      */
-    setLobbyPlayers: (players: PlayerInfo[]) => set({ lobbyPlayers: players }),
+    setLobbyPlayers: (players: PlayerInfo[]) =>
+      set({ lobbyPlayers: new Set(players) }),
 
     /**
      * Processes updates for players in the lobby.
@@ -94,7 +95,7 @@ export const useLobbyStore = create<LobbyStore>()(
     handleLobbyPlayerUpdate: (playerUpdates: PlayerInfoUpdate[]) => {
       logger.info("Processing lobby player updates", { data: playerUpdates });
       // Start with a copy of the current players
-      let players = [...get().lobbyPlayers];
+      let players = Array.from(get().lobbyPlayers);
       // Process each update one-by-one
       for (const update of playerUpdates) {
         switch (update.action) {
