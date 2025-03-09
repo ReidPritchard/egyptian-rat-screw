@@ -48,7 +48,7 @@ const PreGameReady: React.FC<{
     (player) => player.id === localPlayerId
   );
 
-  const isLocalPlayerReady = localPlayer?.isReady;
+  const isLocalPlayerReady = localPlayer?.status === "ready";
 
   const handleReadyClick = useCallback(() => {
     if (!api) {
@@ -142,7 +142,9 @@ export const PreGame: React.FC = () => {
   }, [api]);
 
   // Check if all players are ready
-  const allPlayersReady = gameState?.players.every((player) => player.isReady);
+  const allPlayersReady = gameState?.players.every(
+    (player) => player.status === "ready"
+  );
   const playerCount = gameState?.players.length || 0;
 
   // Require at least 2 players and all players must be ready

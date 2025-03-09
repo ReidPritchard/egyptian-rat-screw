@@ -3,14 +3,10 @@
   "description": "Online Egyptian Rat Screw Game Client",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev:build": "esbuild --bundle --watch --sourcemap --format=esm --jsx=automatic --tsconfig=tsconfig.json --outdir=dist src/client.tsx --loader:.ts=ts --loader:.tsx=tsx --loader:.css=css",
-    "dev:css": "tailwindcss -i ./src/index.css -o ./dist/index.css --watch",
-    "dev:html": "nodemon --watch src/index.html --exec 'pnpm run copy-html'",
-    "dev": "pnpm run clean && mkdir -p dist && pnpm run copy-html && concurrently --kill-others \"pnpm run dev:build\" \"pnpm run dev:css\" \"pnpm run dev:html\"",
-    "build": "pnpm run clean && mkdir -p dist && tailwindcss -i ./src/index.css -o ./dist/index.css && esbuild --bundle --sourcemap --format=esm --jsx=automatic --tsconfig=tsconfig.json --minify --outdir=dist src/client.tsx --loader:.ts=ts --loader:.tsx=tsx --loader:.css=css && pnpm run copy-html",
-    "copy-html": "cp src/index.html dist/",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "clean:full": "pnpm run clean && rm -rf node_modules"
@@ -23,7 +19,6 @@
     "@mantine/hooks": "^7.16.0",
     "@mantine/notifications": "^7.16.0",
     "@tabler/icons-react": "^3.17.0",
-    "@trpc/client": "^10.45.2",
     "framer-motion": "^11.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -41,6 +36,8 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.0.0",
-    "daisyui": "^3.1.1"
+    "daisyui": "^3.1.1",
+    "vite": "^4.4.5",
+    "@vitejs/plugin-react": "^4.0.3"
   }
 }

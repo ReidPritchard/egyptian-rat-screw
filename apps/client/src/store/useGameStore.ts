@@ -96,7 +96,7 @@ export const useGameStore = create<GameStore>()(
       const prevState = get().gameState;
       if (!prevState) return;
 
-      const updatedPileCards = [...prevState.topCards, payload.card];
+      const updatedPileCards = [...prevState.centralPile, payload.card];
       const updatedPlayers = prevState.players.map((player) =>
         player.id === payload.playerId
           ? { ...player, cardCount: player.cardCount - 1 }
@@ -105,7 +105,7 @@ export const useGameStore = create<GameStore>()(
 
       const newGameState = {
         ...prevState,
-        topCards: updatedPileCards,
+        centralPile: updatedPileCards,
         players: updatedPlayers,
       };
       get().setGameState(newGameState);

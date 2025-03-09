@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
 import { THEMES } from "../hooks/useLocalPlayerSettings";
 import { newLogger } from "../logger";
@@ -8,7 +8,7 @@ const logger = newLogger("ThemeToggle");
 
 export const ThemeToggle: React.FC = () => {
   const { toggleTheme, getTheme } = useLocalPlayerSettings();
-  const currentTheme = getTheme();
+  const [currentTheme, setCurrentTheme] = useState(getTheme());
 
   // Apply theme whenever it changes in settings
   useEffect(() => {
@@ -19,6 +19,7 @@ export const ThemeToggle: React.FC = () => {
   const onToggleTheme = () => {
     logger.info(`Toggling theme from ${currentTheme}`);
     toggleTheme();
+    setCurrentTheme(getTheme());
   };
 
   return (

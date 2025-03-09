@@ -104,11 +104,11 @@ export const Lobby: React.FC = () => {
             Players ({Array.from(lobbyPlayers).length})
           </h3>
           <div className="flex flex-col items-start mt-4 gap-2">
-            {Array.from(lobbyPlayers).map((player) => (
-              <div key={player.id} className="animate-fadeInLeft">
+            {Array.from(lobbyPlayers).map(([id, player]) => (
+              <div key={id} className="animate-fadeInLeft">
                 <p className="flex items-center gap-3">
                   {getPlayerDisplayName(player)}
-                  {player.id === localPlayer?.id && (
+                  {id === localPlayer?.id && (
                     <span className="badge badge-primary">You</span>
                   )}
                 </p>

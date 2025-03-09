@@ -15,12 +15,9 @@ const App: React.FC = () => {
   // Initialize theme from settings
   useEffect(() => {
     const savedSettings = useLocalPlayerSettings.getState().settings;
-    if (savedSettings.ui.theme) {
-      document.documentElement.setAttribute(
-        "data-theme",
-        savedSettings.ui.theme
-      );
-    }
+    document
+      .querySelector("html")
+      ?.setAttribute("data-theme", savedSettings.ui.theme ?? "synthwave");
   }, []);
 
   return (

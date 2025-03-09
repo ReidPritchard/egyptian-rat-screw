@@ -5,6 +5,11 @@
 import { SETTINGS } from "@oer/configuration";
 
 /**
+ * WebSocket Type (avoid errors when using server-side WebSocket)
+ */
+export type WebSocket = any;
+
+/**
  * Type for event data
  */
 export type EventData = any;

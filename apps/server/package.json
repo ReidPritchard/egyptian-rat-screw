@@ -6,17 +6,11 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
     "start": "node dist/index.js",
-    "dev:serve": "nodemon --watch dist dist/index.js",
-    "dev:build": "tsc -p tsconfig.json --watch",
-    "dev:sync-public": "nodemon --watch ../../public --exec 'pnpm run copy-public' --ext js,css,html",
-    "dev": "concurrently --kill-others \"pnpm run dev:build\" \"pnpm run dev:serve\" \"pnpm run dev:sync-public\"",
-    "pre:build": "pnpm run clean-public",
-    "build": "pnpm run pre:build && tsc -p tsconfig.json && pnpm run copy-public",
-    "copy-public": "mkdir -p public && cp -r ../../public/* public/",
-    "clean-public": "rm -rf public",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist public",
+    "clean": "rm -rf dist",
     "clean:full": "pnpm run clean && rm -rf node_modules",
     "cy:open": "cypress open",
     "test": "cypress open"
@@ -27,6 +21,8 @@
     "@oer/message": "workspace:*",
     "@oer/shared": "workspace:*",
     "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
     "uuid": "^9.0.1",
@@ -38,9 +34,13 @@
     "@types/node": "^20.0.0",
     "@types/uuid": "^9.0.7",
     "@types/ws": "^8.5.10",
+    "@types/cors": "^2.8.13",
+    "@types/compression": "^1.7.2",
     "concurrently": "^9.0.1",
     "cypress": "^14.1.0",
     "nodemon": "^3.1.7",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "tsx": "^3.12.7",
+    "http-proxy-middleware": "^2.0.6"
   }
 }

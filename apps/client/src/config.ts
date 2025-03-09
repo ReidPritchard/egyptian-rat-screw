@@ -1,5 +1,5 @@
 export const config = {
-  serverUrl: "ws://localhost:3000",
+  serverUrl: "ws://localhost:8000",
   localStoragePlayerNameKey: "playerName",
   localStoragePlayerSettingsKey: "playerSettings",
 

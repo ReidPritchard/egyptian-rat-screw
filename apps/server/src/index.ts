@@ -1,19 +1,28 @@
-import { existsSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { SETTINGS } from "@oer/configuration";
+import compression from "compression";
+import cors from "cors";
 import express from "express";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import type WebSocket from "ws";
 import { WebSocketServer } from "ws";
 import { newLogger } from "./logger.js";
 import { GameManager } from "./manager/GameManager.js";
 
 const logger = newLogger("server");
-
 GameManager.getInstance();
 
+const PORT = process.env.PORT || SETTINGS.PORT || 8000;
+const isDev = process.env.NODE_ENV !== "production";
+
 const app = express();
+
+// Middleware
+app.use(cors());
+app.use(compression());
+app.use(express.json());
+
 const httpServer = createServer(app);
 
 // Create WebSocket server attached to our HTTP server
@@ -23,54 +32,33 @@ wss.on("connection", (socket: WebSocket) => {
   GameManager.messageServer.register(socket);
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+if (isDev) {
+  logger.info("Running in development mode - proxying to Vite dev server");
 
-// Get the path to the client package's dist directory
-const clientDistPath = path.resolve(__dirname, "../../../client/dist");
-const publicPath = path.join(__dirname, "../public");
+  // In development, proxy requests to the Vite dev server for the client
+  app.use(
+    "/",
+    createProxyMiddleware({
+      target: "http://localhost:3000", // Vite dev server
+      changeOrigin: true,
+      ws: true, // Important for WebSocket connections (HMR)
+    })
+  );
+} else {
+  logger.info("Running in production mode - serving static files");
 
-// Configure static file serving for client assets
-app.use(
-  express.static(clientDistPath, {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".css")) {
-        res.setHeader("Content-Type", "text/css");
-      }
-      if (filePath.endsWith(".js")) {
-        res.setHeader("Content-Type", "application/javascript");
-      }
-    },
-  })
-);
+  // In production, serve static files from the client build
+  const clientBuildPath = path.resolve(__dirname, "../../client/dist");
+  app.use(express.static(clientBuildPath));
 
-// Serve public assets (if any)
-app.use(
-  express.static(publicPath, {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".css")) {
-        res.setHeader("Content-Type", "text/css");
-      }
-      if (filePath.endsWith(".js")) {
-        res.setHeader("Content-Type", "application/javascript");
-      }
-    },
-  })
-);
+  // Serve index.html for any non-API routes (SPA client-side routing)
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(clientBuildPath, "index.html"));
+    }
+  });
+}
 
-// Always serve index.html for any route (SPA support)
-app.get("*", (_req, res) => {
-  // Try client index.html first, fall back to public if needed
-  const clientIndexPath = path.join(clientDistPath, "index.html");
-  const publicIndexPath = path.join(publicPath, "index.html");
-
-  if (existsSync(clientIndexPath)) {
-    res.sendFile(clientIndexPath);
-  } else {
-    res.sendFile(publicIndexPath);
-  }
-});
-
-httpServer.listen(SETTINGS.PORT, () => {
-  logger.info(`Server running on port ${SETTINGS.PORT}`);
+httpServer.listen(PORT, () => {
+  logger.info(`Server running on http://localhost:${PORT}`);
 });
