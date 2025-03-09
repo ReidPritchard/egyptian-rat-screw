@@ -53,11 +53,13 @@ export const Lobby: React.FC = () => {
   };
 
   return (
-    <section className="flex flex-col md:flex-row items-start justify-around h-full w-full">
-      <div className="animate-fadeInScale flex flex-col items-stretch justify-between gap-4">
+    <section className="flex flex-col sm:flex-row items-start flex-wrap px-6 h-full w-full">
+      {/* Lobby Controls */}
+      <div className="animate-fadeInScale flex flex-col justify-between gap-4">
         <label className="input input-bordered flex items-center gap-2">
           <IconUser size="1.1rem" />
           <input
+            id="player-name"
             type="text"
             className="grow"
             placeholder="Username"
@@ -65,27 +67,17 @@ export const Lobby: React.FC = () => {
             onChange={handleNameInputChange}
           />
         </label>
-        <label className="input input-bordered flex items-center gap-2">
-          <IconId size="1.1rem" />
-          <input
-            type="text"
-            className="grow"
-            placeholder="Join Game Code"
-            value={joinGameCode}
-            onChange={handleJoinGameCodeChange}
-          />
-        </label>
-
         <div className="join">
-          <button
-            type="button"
-            className="btn btn-primary join-item"
-            onClick={() => api && handleCreateGame(api, playerName)}
-            disabled={!playerName}
-          >
-            <IconPlus size="1.1rem" />
-            Create Game
-          </button>
+          <label className="input input-bordered flex items-center gap-2 join-item">
+            <IconId size="1.1rem" />
+            <input
+              type="text"
+              className="grow"
+              placeholder="Join Game Code"
+              value={joinGameCode}
+              onChange={handleJoinGameCodeChange}
+            />
+          </label>
           <button
             type="button"
             className="btn btn-secondary join-item"
@@ -98,6 +90,7 @@ export const Lobby: React.FC = () => {
         </div>
       </div>
 
+      {/* Lobby Players */}
       <div className="animate-fadeInUp">
         <section className="p-4 pt-0">
           <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">
@@ -118,6 +111,7 @@ export const Lobby: React.FC = () => {
         </section>
       </div>
 
+      {/* Lobby Games */}
       <div className="animate-fadeInUp">
         <section className="p-4 pt-0">
           <h3 className="text-2xl font-bold border-b-2 border-secondary pb-2">
@@ -147,6 +141,17 @@ export const Lobby: React.FC = () => {
               </div>
             ))}
           </div>
+
+          <button
+            id="create-game-button"
+            type="button"
+            className="btn btn-primary"
+            onClick={() => api && handleCreateGame(api, playerName)}
+            disabled={!playerName}
+          >
+            <IconPlus size="1.1rem" />
+            Create Game
+          </button>
         </section>
       </div>
     </section>

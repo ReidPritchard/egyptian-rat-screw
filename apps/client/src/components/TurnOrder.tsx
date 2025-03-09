@@ -15,7 +15,7 @@ export const TurnOrder: React.FC<TurnOrderProps> = ({
   const players = gameState.players;
 
   return (
-    <div className="w-full">
+    <div id="turn-order" className="w-full">
       <AnimatePresence>
         <ul className="steps">
           {gameState.players.map((player, _index) => (

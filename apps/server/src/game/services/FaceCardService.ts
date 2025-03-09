@@ -85,6 +85,9 @@ export class FaceCardService {
       return true;
     }
 
+    // If not, advance the turn
+    this.gameCore.advanceTurn();
+
     return false;
   }
 
@@ -121,6 +124,9 @@ export class FaceCardService {
       cardsToPlay: faceCardCount,
       cardsPlayed: 0,
     };
+
+    // Set the current player to the active player
+    this.gameCore.setCurrentPlayerId(nextPlayerId);
 
     // Log the face card challenge start event
     this.logChallengeEvent(
@@ -274,6 +280,9 @@ export class FaceCardService {
     this.activeChallenge.faceCardRank = card.rank;
     this.activeChallenge.cardsToPlay = newChallengeCount;
     this.activeChallenge.cardsPlayed = 0;
+
+    // Set the current player to the active player
+    this.gameCore.setCurrentPlayerId(nextPlayerId);
 
     // Log the face card challenge counter event
     this.logChallengeEvent(

@@ -126,7 +126,7 @@ export const PlayerActions: React.FC = () => {
   };
 
   return (
-    <div className="navbar bg-base-100">
+    <div id="player-actions" className="navbar bg-base-100">
       <div className="navbar-start flex-1" />
       <div className="navbar-center gap-2">
         {renderGameSettingsAction()}

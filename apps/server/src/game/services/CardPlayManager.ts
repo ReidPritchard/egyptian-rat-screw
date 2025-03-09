@@ -72,6 +72,9 @@ export class CardPlayManager {
       return;
     }
 
+    // Add the card to the central pile
+    this.gameCore.getCentralPile().push(card);
+
     // Handle the card play
     fcService.handleCardPlay(player, card);
 

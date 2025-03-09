@@ -182,7 +182,7 @@ export class GameCore {
     if (this.players.length === 0) return;
 
     if (this.status === GameStatus.PRE_GAME) {
-      this.status = GameStatus.CANCELLED;
+      this.status = GameStatus.PRE_GAME; // TODO: Handle this more gracefully
     } else if (this.status === GameStatus.PLAYING) {
       this.winConditionManager.checkForWinner();
     }
@@ -296,6 +296,10 @@ export class GameCore {
     this.notifier.emitGameUpdate(this.getGameState());
   }
 
+  public setCurrentPlayerId(playerId: string): void {
+    this.turnIndex = this.players.findIndex((p) => p.messenger.id === playerId);
+  }
+
   private checkForStart(): void {
     if (
       this.status === GameStatus.PRE_GAME &&
@@ -386,7 +390,7 @@ export class GameCore {
       })),
       currentPlayerId: this.getCurrentPlayerId(),
       centralPileCount: this.centralPile.length,
-      centralPile: this.centralPile.slice(-3).reverse(),
+      centralPile: this.centralPile.reverse(),
       faceCardChallenge: this.faceCardService.getChallengeState(),
       winner: this.winner,
       voteState: this.votingSystem.getVoteState(),

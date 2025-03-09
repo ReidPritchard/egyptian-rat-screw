@@ -3,6 +3,7 @@
   "description": "Online Egyptian Rat Screw Game Client",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

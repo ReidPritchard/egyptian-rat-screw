@@ -1,5 +1,8 @@
+import { SETTINGS } from "@oer/configuration";
+
 export const config = {
-  serverUrl: "ws://localhost:8000",
+  serverUrl: SETTINGS.SERVER_WS_URL,
+
   localStoragePlayerNameKey: "playerName",
   localStoragePlayerSettingsKey: "playerSettings",
 

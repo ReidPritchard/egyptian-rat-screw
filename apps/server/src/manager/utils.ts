@@ -23,7 +23,12 @@ export function generateGameId(messageServer: MessageServer): string {
 export function generatePlayerName(): string {
   const adjectives = SETTINGS.GENERATORS.PLAYER_NAME.ADJECTIVES;
   const names = SETTINGS.GENERATORS.PLAYER_NAME.NOUNS;
-  return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${
+  const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${
     names[Math.floor(Math.random() * names.length)]
   }`;
+
+  return name
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }

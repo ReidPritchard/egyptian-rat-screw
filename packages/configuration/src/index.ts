@@ -1,7 +1,14 @@
 const LOG_LEVELS = new Set(["error", "warn", "info", "debug"]);
 
+const SERVER_PORT = 8000;
+const CLIENT_PORT = 3000;
+const SERVER_WS_URL = `ws://localhost:${SERVER_PORT}`;
+
 export const SETTINGS = {
-  PORT: 8000,
+  SERVER_PORT,
+  CLIENT_PORT,
+  SERVER_WS_URL,
+
   LOG_LEVEL: "info",
   LOG_ALIGNMENT: 25,
   LOBBY_ROOM: "lobby",

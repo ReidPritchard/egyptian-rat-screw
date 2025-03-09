@@ -32,11 +32,11 @@ export const GameBoard: React.FC = () => {
 
   return (
     <Suspense fallback={<LoadingState message="Loading game..." />}>
-      <div className="h-full w-full">
+      <div id="game-board" className="h-full w-full">
         <div className="flex flex-col h-full max-w-screen-lg m-auto">
           <TurnOrder gameState={gameState} localPlayerId={localPlayer.id} />
           <div className="flex-1 flex flex-col justify-center p-4">
-            <p className="text-center text-sm mb-2">
+            <p id="pile-size" className="text-center text-sm mb-2">
               Pile Size: {gameState.centralPileCount}
             </p>
             <CardStack pile={gameState.centralPile} />
