@@ -11,7 +11,7 @@ export const CardStack = forwardRef<HTMLDivElement, CardStackProps>(
     if (!pile) return null;
 
     return (
-      <div className="flex-1 stack max-w-screen m-auto max-h-screen">
+      <div className="stack max-w-screen m-auto max-h-screen">
         {pile.map((card, _index) => (
           <div
             key={card.id}

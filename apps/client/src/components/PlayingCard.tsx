@@ -36,7 +36,20 @@ export const PlayingCard = forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         className={`${faceUp ? "bg-white" : "bg-gray-300"} ${color} ${
           faceUp ? "border-2 border-black" : "border-2 border-gray-300"
-        } rounded-lg p-2 flex flex-col justify-between aspect-playing-card min-w-24 min-h-36`}
+        } 
+        rounded-lg 
+        p-2 
+        flex flex-col 
+        justify-between 
+        aspect-playing-card 
+        min-w-24
+        min-h-36
+        sm:min-w-36
+        sm:min-h-54
+        md:min-w-48
+        md:min-h-72
+        lg:min-w-72
+        lg:min-h-108`}
       >
         {faceUp ? (
           <>

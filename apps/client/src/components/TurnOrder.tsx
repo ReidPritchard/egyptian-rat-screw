@@ -33,12 +33,14 @@ export const TurnOrder: React.FC<TurnOrderProps> = ({
               transition={{ duration: 0.5, ease: "easeInOut" }}
             >
               <p
-                className={`text-sm flex flex-row justify-between ${
+                className={`text-sm flex flex-row items-baseline justify-between ${
                   player.id === localPlayerId ? "font-bold" : ""
                 }`}
               >
                 {player.name}
-                <p className="text-xs text-gray-500">({player.cardCount})</p>
+                <p className="text-xs text-gray-500 p-1">
+                  ({player.cardCount})
+                </p>
               </p>
             </motion.li>
           ))}

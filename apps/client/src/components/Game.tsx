@@ -1,6 +1,6 @@
 import { isGameStatusInCategory } from "@/utils/categories";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { newLogger } from "../logger";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
@@ -15,26 +15,13 @@ export const Game: React.FC = () => {
   const { isGameStarting, gameState } = useGameStore();
   const { localPlayer } = useApplicationStore();
 
-  // UI for card challenges
-  const [cardChallengeStyle, setCardChallengeStyle] = useState<string>("");
-
   useEffect(() => {
     if (gameState?.faceCardChallenge) {
       logger.info("Card challenge", {
         data: { cardChallenge: gameState.faceCardChallenge },
       });
-
-      const isChallenger =
-        gameState.faceCardChallenge.initiator.id === localPlayer?.id;
-      setCardChallengeStyle(
-        `border-2 border-${isChallenger ? "pink" : "green"} text-${
-          isChallenger ? "white" : "black"
-        }`
-      );
-    } else {
-      setCardChallengeStyle("");
     }
-  }, [gameState?.faceCardChallenge, localPlayer?.id]);
+  }, [gameState?.faceCardChallenge]);
 
   // If game state is not yet loaded, show a loading indicator
   if (!gameState) {
@@ -46,9 +33,17 @@ export const Game: React.FC = () => {
     );
   }
 
+  const activeCardChallenge = gameState.faceCardChallenge;
+  const isChallenger = activeCardChallenge?.initiator.id === localPlayer?.id;
+
   return (
     <div
-      className={`h-full w-full p-4 rounded-lg flex-1 flex flex-col ${cardChallengeStyle}`}
+      className={`
+        h-full w-full p-4 rounded-lg flex-1 flex flex-col
+        border-2 border-${
+          activeCardChallenge ? (isChallenger ? "success" : "warning") : "gray"
+        }
+      `}
     >
       <GameHeader />
       <div className="flex-grow">
