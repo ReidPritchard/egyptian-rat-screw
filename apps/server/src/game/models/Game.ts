@@ -55,6 +55,7 @@ export class Game {
   // Actions and game state
 
   public performPlayerAction(action: PlayerAction): void {
+    logger.info(`Performing player action: ${action.actionType}`);
     this.gameCore.performPlayerAction(action);
   }
 

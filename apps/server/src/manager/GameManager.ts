@@ -1,4 +1,4 @@
-import { type EventData, Messenger, type Room } from "@oer/message";
+import type { EventData, Messenger, Room } from "@oer/message";
 import { SocketEvents } from "@oer/shared/socketEvents";
 import {
   type GameSettings,
@@ -157,6 +157,24 @@ export class GameManager {
     this.addPlayerToLobby(messenger);
   }
 
+  public addBot(messenger: Messenger): void {
+    if (!this.inGameRoom(messenger)) {
+      this.handleJoinError(messenger, "Player is not in a game.");
+      return;
+    }
+    const bot = new Bot();
+
+    const gameRoom = this.getCurrentRoom(messenger);
+    const gameRoomId = gameRoom?.getId();
+
+    if (!gameRoomId) {
+      this.handleJoinError(messenger, "Failed to find game room.");
+      return;
+    }
+
+    this.joinGame(gameRoomId, bot.messenger);
+  }
+
   public addPlayerToLobby(messenger: Messenger): void {
     GameManager.messageServer.moveMessengerToRoom(
       messenger,
@@ -198,12 +216,12 @@ export class GameManager {
   private routeGameAction(
     messenger: Messenger,
     action: (game: Game) => void,
-    shouldLog = false
+    shouldLog = true
   ): void {
     const game = this.getGameForMessenger(messenger);
     if (game) {
       if (shouldLog) {
-        logger.info("Performing game action on game", game.gameId);
+        logger.info(`Performing game action on game: ${game.gameId}`);
       }
       action(game);
     }
@@ -381,15 +399,5 @@ export class GameManager {
       action,
       isBot: playerInfo?.isBot,
     };
-  }
-
-  private addBotPlayer(gameId: string): void {
-    logger.info(`Adding bot player to game: ${gameId}`);
-    const bot = new Bot(Messenger.createBot());
-    const { game, gameRoom } = this.getOrCreateGame(gameId);
-    if (bot.messenger) {
-      game.addPlayer(bot.messenger, bot.playerInfo);
-      gameRoom.addMessenger(bot.messenger);
-    }
   }
 }

@@ -116,7 +116,7 @@ export class Messenger {
       throw new Error("Cannot emit to disconnected messenger");
     }
 
-    if (!this.isBot && this.socket) {
+    if (this.socket) {
       this.socket.send(JSON.stringify({ event, data }));
     } else {
       this.notifyLocal(event, data);

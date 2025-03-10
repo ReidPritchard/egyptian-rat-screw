@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { LocalPlayerSettings } from "../clientTypes";
 
 interface SettingsDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
   gameSettings: GameSettings;
   allSlapRules: SlapRule[];
   localPlayerSettings: LocalPlayerSettings;
@@ -12,11 +14,12 @@ interface SettingsDrawerProps {
 }
 
 export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
+  isOpen,
+  onClose,
   gameSettings,
   allSlapRules,
   handleGameSettingsChange,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const [maxPlayers, setMaxPlayers] = useState(gameSettings.maximumPlayers);
   const [selectedRules, setSelectedRules] = useState<string[]>(
     gameSettings.slapRules.map((rule) => rule.name)
@@ -30,7 +33,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
         drawerRef.current &&
         !drawerRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        onClose();
       }
     };
 
@@ -41,7 +44,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   // Update game settings when saving
   const handleSave = () => {
@@ -56,7 +59,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
         return foundRule;
       }),
     });
-    setIsOpen(false);
+    onClose();
   };
 
   // Toggle rule selection
@@ -70,15 +73,6 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
 
   return (
     <>
-      {/* Drawer toggle button */}
-      <button
-        className="btn btn-primary"
-        onClick={() => setIsOpen(true)}
-        type="button"
-      >
-        Settings
-      </button>
-
       {/* Drawer */}
       <div
         className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${
@@ -96,7 +90,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
               <h2 className="text-xl font-bold">Game Settings</h2>
               <button
                 className="btn btn-sm btn-circle btn-ghost"
-                onClick={() => setIsOpen(false)}
+                onClick={() => onClose()}
                 type="button"
               >
                 ✕

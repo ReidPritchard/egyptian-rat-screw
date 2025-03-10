@@ -97,6 +97,10 @@ export class Api {
     this.messageClient.notifyServer(SocketEvents.VOTE_UPDATED, payload);
   }
 
+  addBot() {
+    this.messageClient.notifyServer(SocketEvents.ADD_BOT, {});
+  }
+
   on(event: EventName, callback: (data: EventData) => void): void {
     this.logger.debug("Adding event listener", { data: { event } });
     this.messageClient.on(event, callback);

@@ -73,6 +73,8 @@ export enum SocketEvents {
   PLAYER_READY = "playerReady",
   PLAYER_NOT_READY = "playerNotReady",
 
+  ADD_BOT = "addBot",
+
   // Player Actions (Client to Server)
   CHANGE_NAME = "changeName",
   JOIN_GAME = "joinGame",
@@ -125,6 +127,7 @@ export interface ISocketPayloads {
   [SocketEvents.PLAYER_LEFT_GAME]: PlayerInfo;
   [SocketEvents.PLAYER_READY]: PlayerInfo;
   [SocketEvents.PLAYER_NOT_READY]: PlayerInfo;
+  [SocketEvents.ADD_BOT]: undefined;
 
   // Player Actions
   [SocketEvents.CHANGE_NAME]: IChangeNamePayload;

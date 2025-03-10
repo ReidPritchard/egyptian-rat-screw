@@ -41,6 +41,10 @@ export const setupMessageHandlers = (messenger: Messenger) => {
     gameManager.leaveGame(messenger);
   });
 
+  messenger.on(SocketEvents.ADD_BOT, () => {
+    gameManager.addBot(messenger);
+  });
+
   messenger.on(SocketEvents.PLAY_CARD, () => {
     gameManager.handlePlayCard(messenger);
   });

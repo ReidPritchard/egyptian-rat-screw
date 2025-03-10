@@ -212,6 +212,7 @@ export class GameCore {
         break;
 
       case PlayerActionType.SET_READY:
+        logger.info(`Setting ready status for player ${action.playerId}`);
         typeof data.ready === "boolean"
           ? this.setReady(action.playerId, data.ready)
           : player.messenger.emit(SocketEvents.ERROR, "Invalid ready status.");
