@@ -295,7 +295,7 @@ export class GameManager {
 
   private getOrCreateGame(roomId: string): { game: Game; gameRoom: Room } {
     let gameRoom = GameManager.messageServer.getRoom(roomId);
-    let game = gameRoom?.getData("game");
+    let game = gameRoom?.getData("game") as Game | undefined;
 
     if (!(game && gameRoom)) {
       if (!gameRoom) {
@@ -317,7 +317,7 @@ export class GameManager {
 
       // Add hooks for the game room to automatically add and remove players from the game
       gameRoom.addHook("addMessenger", (messenger) => {
-        const playerAdditionResult = game.addPlayer(
+        const playerAdditionResult = game?.addPlayer(
           messenger,
           messenger.getData("playerInfo")
         );
@@ -329,7 +329,14 @@ export class GameManager {
         }
       });
       gameRoom.addHook("removeMessenger", (messenger) => {
-        game.removePlayer(messenger);
+        game?.removePlayer(messenger);
+        const realPlayers = game?.getPlayerCount(true);
+        // If there are no real players, destroy the game
+        if (realPlayers === 0) {
+          logger.info("No real players left in game, destroying game");
+          gameRoom?.setData("game", undefined);
+          game = undefined;
+        }
       });
     }
 

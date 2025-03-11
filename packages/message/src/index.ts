@@ -373,11 +373,16 @@ export class Room {
   /**
    * Gets an array of all messengers in the room.
    * @param excludeMessenger - Optional messenger to exclude from the array.
+   * @param excludeBots - Optional flag to exclude bots from the array.
    * @returns an array of Messenger instances.
    */
-  public getMessengers(excludeMessenger?: Messenger): Messenger[] {
+  public getMessengers(
+    excludeMessenger?: Messenger,
+    excludeBots = false
+  ): Messenger[] {
     return Array.from(this.messengers).filter(
-      (messenger) => messenger !== excludeMessenger
+      (messenger) =>
+        messenger !== excludeMessenger && !(excludeBots && messenger.isBot)
     );
   }
 

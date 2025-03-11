@@ -48,8 +48,8 @@ export class Game {
     return this.gameCore.hasPlayer(playerId);
   }
 
-  public getPlayerCount(): number {
-    return this.gameCore.getPlayerCount();
+  public getPlayerCount(excludeBots = false): number {
+    return this.gameCore.getPlayerCount(excludeBots);
   }
 
   // Actions and game state

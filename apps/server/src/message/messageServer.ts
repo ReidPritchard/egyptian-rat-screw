@@ -201,7 +201,7 @@ export class MessageServer implements IMessageServer {
       // If the room is empty, remove it (except for the lobby)
       if (
         currentRoom.getId() !== this.lobbyRoomId &&
-        currentRoom.getMessengers().length === 0
+        currentRoom.getMessengers(undefined, true).length === 0
       ) {
         this.rooms.delete(currentRoom.getId());
       }

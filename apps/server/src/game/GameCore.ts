@@ -413,8 +413,9 @@ export class GameCore {
     return this.players.some((p) => p.messenger.id === playerId);
   }
 
-  public getPlayerCount(): number {
-    return this.players.length;
+  public getPlayerCount(excludeBots = false): number {
+    return this.players.filter((p) => !(excludeBots && p.messenger.isBot))
+      .length;
   }
 
   public advanceTurn(overrideTurnIndex?: number): void {
