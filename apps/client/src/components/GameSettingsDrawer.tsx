@@ -1,19 +1,16 @@
 import type { GameSettings, SlapRule } from "@oer/shared/types";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import type { LocalPlayerSettings } from "../clientTypes";
 
-interface SettingsDrawerProps {
+interface GameSettingsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   gameSettings: GameSettings;
   allSlapRules: SlapRule[];
-  localPlayerSettings: LocalPlayerSettings;
   handleGameSettingsChange: (settings: GameSettings) => void;
-  handleLocalPlayerSettingsChange: (settings: LocalPlayerSettings) => void;
 }
 
-export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
+export const GameSettingsDrawer: React.FC<GameSettingsDrawerProps> = ({
   isOpen,
   onClose,
   gameSettings,
@@ -139,16 +136,6 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div className="mt-4">
-                <h3 className="text-lg font-medium mb-2">
-                  Local Player Settings
-                </h3>
-                {/* 
-                  TODO: Implement local player settings
-                  mostly to allow for changing Hotkeys
-                */}
               </div>
             </div>
 

@@ -3,14 +3,21 @@ import type React from "react";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useLobbyStore } from "../store/useLobbyStore";
 import { ThemeToggle } from "./ThemeToggle";
+import { PlayerSettingsModal } from "./PlayerSettingsModal";
+import { useState } from "react";
 
 const logo = "./assets/rat.png";
 const title = "./assets/title.png";
 
-export const NavBar: React.FC = () => {
+export const NavBar: React.FC<{
+  onPlayerSettingsModalOpen: () => void;
+}> = ({ onPlayerSettingsModalOpen }) => {
   const { handleJoinLobby } = useLobbyStore();
   const { userLocation } = useApplicationStore();
   const api = useApi();
+
+  const [isPlayerSettingsModalOpen, setIsPlayerSettingsModalOpen] =
+    useState(false);
 
   return (
     <div className="navbar bg-base-100 rounded-b-lg">
@@ -38,15 +45,12 @@ export const NavBar: React.FC = () => {
             </div>
           </button>
           <ul className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-            {/* <li>
-              <a className="justify-between">
-                Profile
-                <span className="badge badge-primary">New</span>
-              </a>
-            </li> */}
             <li>
-              {/* <a href="/settings">Settings</a> */}
-              <button type="button" className="btn btn-ghost btn-sm">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={onPlayerSettingsModalOpen}
+              >
                 Settings
               </button>
             </li>

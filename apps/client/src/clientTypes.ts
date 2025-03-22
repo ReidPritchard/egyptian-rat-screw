@@ -19,3 +19,5 @@ export interface LocalPlayerSettings {
     theme: string;
   };
 }
+
+export type Hotkeys = LocalPlayerSettings["hotkeys"];

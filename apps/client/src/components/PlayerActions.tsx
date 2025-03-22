@@ -13,7 +13,7 @@ import { useHotkeys } from "../hooks/useHotkeys";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
-import { SettingsDrawer } from "./SettingsDrawer";
+import { GameSettingsDrawer } from "./GameSettingsDrawer";
 
 export const PlayerActions: React.FC = () => {
   const { localPlayer } = useApplicationStore();
@@ -144,14 +144,12 @@ export const PlayerActions: React.FC = () => {
         </div>
         <div className="navbar-end flex-1">{renderGameSettingsAction()}</div>
       </div>
-      <SettingsDrawer
+      <GameSettingsDrawer
         isOpen={isSettingsDrawerOpen}
         onClose={() => setIsSettingsDrawerOpen(false)}
         gameSettings={gameState?.settings as GameSettings}
         allSlapRules={gameState?.settings.slapRules as SlapRule[]}
-        localPlayerSettings={localPlayerSettings}
         handleGameSettingsChange={() => {}}
-        handleLocalPlayerSettingsChange={() => {}}
       />
     </>
   );

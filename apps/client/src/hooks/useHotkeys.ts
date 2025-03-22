@@ -1,8 +1,11 @@
 import { useEffect } from "react";
+import { newLogger } from "../logger";
 
 type HotkeyCallback = () => void;
 type HotkeyPair = [string, HotkeyCallback];
 type IgnoreElement = "INPUT" | "TEXTAREA" | string;
+
+const logger = newLogger("useHotkeys");
 
 /**
  * Hook to handle keyboard shortcuts while ignoring specified elements
@@ -28,6 +31,13 @@ export const useHotkeys = (
         const keyLower = key.toLowerCase();
         const eventKeyLower = event.key.toLowerCase();
         return keyLower === eventKeyLower;
+      });
+
+      logger.debug("Matching hotkey", {
+        data: {
+          matchingHotkey: matchingHotkey?.[0],
+          eventKey: event.key,
+        },
       });
 
       if (matchingHotkey) {

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
 import type { Api } from "../api";
-import type { LocalPlayerSettings } from "../clientTypes";
+import type { Hotkeys, LocalPlayerSettings } from "../clientTypes";
 import { newLogger } from "../logger";
 
 const logger = newLogger("LocalPlayerSettings");
@@ -73,6 +73,7 @@ interface ILocalPlayerSettingsState {
 
 interface ILocalPlayerSettingsGetters {
   getTheme: () => string;
+  getHotkeys: () => Hotkeys;
 }
 
 interface ILocalPlayerSettingsActions {
@@ -82,6 +83,7 @@ interface ILocalPlayerSettingsActions {
   ) => void;
   changeName: (name: string, api: Api | null) => void;
   toggleTheme: () => void;
+  saveHotkeys: (hotkeys: Hotkeys) => void;
 }
 
 type LocalPlayerSettingsStore = ILocalPlayerSettingsState &
@@ -97,6 +99,7 @@ export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
 
         // Getters
         getTheme: () => get().settings.ui.theme,
+        getHotkeys: () => get().settings.hotkeys,
 
         // Actions
         updateSettings: (
@@ -145,6 +148,12 @@ export const useLocalPlayerSettings = create<LocalPlayerSettingsStore>()(
                     : THEMES.LIGHT,
               },
             },
+          }));
+        },
+
+        saveHotkeys: (hotkeys: Hotkeys) => {
+          set((state) => ({
+            settings: { ...state.settings, hotkeys },
           }));
         },
       }),
