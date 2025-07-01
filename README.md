@@ -4,6 +4,7 @@
 
 ![Current In-Game](https://github.com/user-attachments/assets/a767c5d1-40fd-4613-be59-7c6bf2692726)
 
+Screenshots are out of date; I will update them soon!
 
 ## Project Structure
 
