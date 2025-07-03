@@ -1,7 +1,15 @@
 import { SETTINGS } from "@oer/configuration";
 
+// Get env type
+const env = process.env.NODE_ENV;
+
+const PROD_URL = process.env.WS_URL;
+
 export const config = {
-	serverUrl: SETTINGS.SERVER_WS_URL,
+	serverUrl:
+		env !== "production"
+			? SETTINGS.SERVER_WS_URL
+			: `${PROD_URL}:${SETTINGS.SERVER_PORT}`,
 
 	localStoragePlayerNameKey: "playerName",
 	localStoragePlayerSettingsKey: "playerSettings",
