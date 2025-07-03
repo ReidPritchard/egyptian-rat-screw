@@ -11,29 +11,32 @@ import { PlayerSettingsModal } from "./PlayerSettingsModal";
 const logger = newLogger("AppContainer");
 
 export const AppContainer: React.FC = () => {
-  const userLocation = useApplicationStore((state) => state.userLocation);
-  const [isPlayerSettingsModalOpen, setIsPlayerSettingsModalOpen] =
-    useState(false);
+	const userLocation = useApplicationStore((state) => state.userLocation);
+	const [isPlayerSettingsModalOpen, setIsPlayerSettingsModalOpen] =
+		useState(false);
 
-  useEffect(() => {
-    logger.debug(`userLocation: ${userLocation}`);
-  }, [userLocation]);
+	useEffect(() => {
+		logger.debug(`userLocation: ${userLocation}`);
+	}, [userLocation]);
 
-  return (
-    <>
-      <div className="flex flex-col h-screen w-screen bg-base-300 gap-8">
-        <NavBar
-          onPlayerSettingsModalOpen={() => setIsPlayerSettingsModalOpen(true)}
-        />
+	function handlePlayerSettingsModalOpen() {
+		logger.debug("Settings nav item clicked");
+		setIsPlayerSettingsModalOpen(true);
+	}
 
-        <div className="flex-grow">
-          {userLocation === "lobby" ? <Lobby /> : <Game />}
-        </div>
-      </div>
-      <PlayerSettingsModal
-        isOpen={isPlayerSettingsModalOpen}
-        onClose={() => setIsPlayerSettingsModalOpen(false)}
-      />
-    </>
-  );
+	return (
+		<>
+			<div className="flex flex-col h-screen w-screen bg-base-300 gap-8">
+				<NavBar onPlayerSettingsModalOpen={handlePlayerSettingsModalOpen} />
+
+				<div className="flex-grow">
+					{userLocation === "lobby" ? <Lobby /> : <Game />}
+				</div>
+			</div>
+			<PlayerSettingsModal
+				isOpen={isPlayerSettingsModalOpen}
+				onClose={() => setIsPlayerSettingsModalOpen(false)}
+			/>
+		</>
+	);
 };

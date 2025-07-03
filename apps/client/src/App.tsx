@@ -6,24 +6,24 @@ import useApplicationStore from "./store/useApplicationStore";
 import "./index.css";
 
 const App: React.FC = () => {
-  // Initialize app connection
-  useEffect(() => {
-    useApplicationStore.getState().handleConnection();
-  }, []);
+	// Initialize app connection
+	useEffect(() => {
+		useApplicationStore.getState().handleConnection();
+	}, []);
 
-  return (
-    <ApiProvider>
-      <StrictMode>
-        <div className="h-screen w-screen p-0 m-0 transition-all duration-150">
-          <Suspense
-            fallback={<span className="loading loading-infinity loading-lg" />}
-          >
-            <AppContainer />
-          </Suspense>
-        </div>
-      </StrictMode>
-    </ApiProvider>
-  );
+	return (
+		<ApiProvider>
+			<StrictMode>
+				<div className="h-screen w-screen p-0 m-0 transition-all duration-150">
+					<Suspense
+						fallback={<span className="loading loading-infinity loading-lg" />}
+					>
+						<AppContainer />
+					</Suspense>
+				</div>
+			</StrictMode>
+		</ApiProvider>
+	);
 };
 
 export default App;

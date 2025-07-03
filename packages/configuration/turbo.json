@@ -1,4 +1,4 @@
 {
-  "extends": ["//"],
-  "tags": ["internal"]
+	"extends": ["//"],
+	"tags": ["internal"]
 }

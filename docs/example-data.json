@@ -1,66 +1,65 @@
 {
-  "games": {
-    "game1": {
-      "gameId": "game1",
-      "players": ["player1", "player2"],
-      "currentPlayer": 0,
-      "currentChances": 2,
-      "centralPile": [
-        {
-          "cardId": "card1",
-          "rank": 10,
-          "suit": 0
-        },
-        {
-          "cardId": "card2",
-          "rank": 11,
-          "suit": 1
-        }
-      ],
-      "playerHands": {
-        "player1": [
-          {
-            "cardId": "card3",
-            "rank": 2,
-            "suit": 2
-          },
-          {
-            "cardId": "card4",
-            "rank": 3,
-            "suit": 3
-          }
-        ],
-        "player2": [
-          {
-            "cardId": "card5",
-            "rank": 4,
-            "suit": 0
-          },
-          {
-            "cardId": "card6",
-            "rank": 5,
-            "suit": 1
-          }
-        ]
-      },
-      "slapRules": ["rule1", "rule2"],
-      "slapPenalty": "penalty1",
-      "gameState": "playing"
-    }
-  },
-  "players": {
-    "player1": {
-      "playerId": "player1",
-      "username": "Alice",
-      "connected": true,
-      "ready": true
-    },
-    "player2": {
-      "playerId": "player2",
-      "username": "Bob",
-      "connected": true,
-      "ready": true
-    }
-  }
+	"games": {
+		"game1": {
+			"gameId": "game1",
+			"players": ["player1", "player2"],
+			"currentPlayer": 0,
+			"currentChances": 2,
+			"centralPile": [
+				{
+					"cardId": "card1",
+					"rank": 10,
+					"suit": 0
+				},
+				{
+					"cardId": "card2",
+					"rank": 11,
+					"suit": 1
+				}
+			],
+			"playerHands": {
+				"player1": [
+					{
+						"cardId": "card3",
+						"rank": 2,
+						"suit": 2
+					},
+					{
+						"cardId": "card4",
+						"rank": 3,
+						"suit": 3
+					}
+				],
+				"player2": [
+					{
+						"cardId": "card5",
+						"rank": 4,
+						"suit": 0
+					},
+					{
+						"cardId": "card6",
+						"rank": 5,
+						"suit": 1
+					}
+				]
+			},
+			"slapRules": ["rule1", "rule2"],
+			"slapPenalty": "penalty1",
+			"gameState": "playing"
+		}
+	},
+	"players": {
+		"player1": {
+			"playerId": "player1",
+			"username": "Alice",
+			"connected": true,
+			"ready": true
+		},
+		"player2": {
+			"playerId": "player2",
+			"username": "Bob",
+			"connected": true,
+			"ready": true
+		}
+	}
 }
-

@@ -12,48 +12,48 @@ import { PreGame } from "./PreGame";
 const logger = newLogger("Game");
 
 export const Game: React.FC = () => {
-  const { isGameStarting, gameState } = useGameStore();
-  const { localPlayer } = useApplicationStore();
+	const { isGameStarting, gameState } = useGameStore();
+	const { localPlayer } = useApplicationStore();
 
-  useEffect(() => {
-    if (gameState?.faceCardChallenge) {
-      logger.info("Card challenge", {
-        data: { cardChallenge: gameState.faceCardChallenge },
-      });
-    }
-  }, [gameState?.faceCardChallenge]);
+	useEffect(() => {
+		if (gameState?.faceCardChallenge) {
+			logger.info("Card challenge", {
+				data: { cardChallenge: gameState.faceCardChallenge },
+			});
+		}
+	}, [gameState?.faceCardChallenge]);
 
-  // If game state is not yet loaded, show a loading indicator
-  if (!gameState) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <span className="loading loading-infinity loading-lg" />
-        <p className="ml-2">Loading game...</p>
-      </div>
-    );
-  }
+	// If game state is not yet loaded, show a loading indicator
+	if (!gameState) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<span className="loading loading-infinity loading-lg" />
+				<p className="ml-2">Loading game...</p>
+			</div>
+		);
+	}
 
-  const activeCardChallenge = gameState.faceCardChallenge;
-  const isChallenger = activeCardChallenge?.initiator.id === localPlayer?.id;
+	const activeCardChallenge = gameState.faceCardChallenge;
+	const isChallenger = activeCardChallenge?.initiator.id === localPlayer?.id;
 
-  return (
-    <div
-      className={`
+	return (
+		<div
+			className={`
         h-full w-full p-4 rounded-lg flex-1 flex flex-col
         border-2 border-${
-          activeCardChallenge ? (isChallenger ? "success" : "warning") : "gray"
-        }
+					activeCardChallenge ? (isChallenger ? "success" : "warning") : "gray"
+				}
       `}
-    >
-      <GameHeader />
-      <div className="flex-grow">
-        {isGameStatusInCategory(gameState.status, "PRE_GAME") ? (
-          <PreGame />
-        ) : (
-          <GameBoard />
-        )}
-      </div>
-      <PlayerActions />
-    </div>
-  );
+		>
+			<GameHeader />
+			<div className="flex-grow">
+				{isGameStatusInCategory(gameState.status, "PRE_GAME") ? (
+					<PreGame />
+				) : (
+					<GameBoard />
+				)}
+			</div>
+			<PlayerActions />
+		</div>
+	);
 };

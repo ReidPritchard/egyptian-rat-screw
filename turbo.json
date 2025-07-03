@@ -1,29 +1,29 @@
 {
-  "globalDependencies": ["**/.env"],
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "build/**"]
-    },
-    "dev": {
-      "dependsOn": ["^build"],
-      "cache": false,
-      "persistent": true
-    },
-    "clean": {
-      "cache": false
-    },
-    "clean:full": {
-      "cache": false
-    }
-  },
-  "boundaries": {
-    "tags": {
-      "public": {
-        "dependencies": {
-          "deny": ["internal"]
-        }
-      }
-    }
-  }
+	"globalDependencies": ["**/.env"],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["dist/**", "build/**"]
+		},
+		"dev": {
+			"dependsOn": ["^build"],
+			"cache": false,
+			"persistent": true
+		},
+		"clean": {
+			"cache": false
+		},
+		"clean:full": {
+			"cache": false
+		}
+	},
+	"boundaries": {
+		"tags": {
+			"public": {
+				"dependencies": {
+					"deny": ["internal"]
+				}
+			}
+		}
+	}
 }

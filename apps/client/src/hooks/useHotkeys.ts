@@ -1,8 +1,9 @@
+import type { Hotkey } from "@/clientTypes";
 import { useEffect } from "react";
 import { newLogger } from "../logger";
 
 type HotkeyCallback = () => void;
-type HotkeyPair = [string, HotkeyCallback];
+type HotkeyPair = [Hotkey, HotkeyCallback];
 type IgnoreElement = "INPUT" | "TEXTAREA" | string;
 
 const logger = newLogger("useHotkeys");
@@ -13,40 +14,52 @@ const logger = newLogger("useHotkeys");
  * @param ignoreElements Array of element types to ignore (e.g. ["INPUT", "TEXTAREA"])
  */
 export const useHotkeys = (
-  hotkeys: HotkeyPair[],
-  ignoreElements: Array<IgnoreElement> = []
+	hotkeys: HotkeyPair[],
+	ignoreElements: Array<IgnoreElement> = [],
 ) => {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if target is one of the specified elements
-      if (
-        event.target instanceof Element &&
-        ignoreElements.includes(event.target.tagName)
-      ) {
-        return;
-      }
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			// Ignore if target is one of the specified elements
+			if (
+				event.target instanceof Element &&
+				ignoreElements.includes(event.target.tagName)
+			) {
+				return;
+			}
 
-      // Find matching hotkey and execute callback
-      const matchingHotkey = hotkeys.find(([key]) => {
-        const keyLower = key.toLowerCase();
-        const eventKeyLower = event.key.toLowerCase();
-        return keyLower === eventKeyLower;
-      });
+			// Find matching hotkey and execute callback
+			const matchingHotkey = hotkeys.find(([hotkey]) => {
+				const { key, ctrl, shift, alt, meta } = hotkey;
 
-      logger.debug("Matching hotkey", {
-        data: {
-          matchingHotkey: matchingHotkey?.[0],
-          eventKey: event.key,
-        },
-      });
+				// Check if the key matches and modifiers are correct
+				return (
+					event.key.toLocaleLowerCase() === key.toLocaleLowerCase() &&
+					event.ctrlKey === ctrl &&
+					event.shiftKey === shift &&
+					event.altKey === alt &&
+					event.metaKey === meta
+				);
+			});
 
-      if (matchingHotkey) {
-        event.preventDefault();
-        matchingHotkey[1]();
-      }
-    };
+			logger.debug("Matching hotkey", {
+				data: {
+					matchingHotkey: matchingHotkey?.[0],
+					eventKey: event.key,
+				},
+			});
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [hotkeys, ignoreElements]);
+			if (event.key === "?") {
+				logger.info(`Hotkeys: ${hotkeys.map(([key]) => key).join(", ")}`);
+				return;
+			}
+
+			if (matchingHotkey) {
+				event.preventDefault();
+				matchingHotkey[1]();
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [hotkeys, ignoreElements]);
 };

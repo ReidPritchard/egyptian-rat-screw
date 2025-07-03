@@ -1,10 +1,10 @@
 import { isGameStatusInCategory } from "@/utils/categories";
 import type { GameSettings, SlapRule } from "@oer/shared/types";
 import {
-  IconHandStop,
-  IconPlayCard,
-  IconRobot,
-  IconSettings,
+	IconHandStop,
+	IconPlayCard,
+	IconRobot,
+	IconSettings,
 } from "@tabler/icons-react";
 import type React from "react";
 import { useState } from "react";
@@ -16,141 +16,150 @@ import { useGameStore } from "../store/useGameStore";
 import { GameSettingsDrawer } from "./GameSettingsDrawer";
 
 export const PlayerActions: React.FC = () => {
-  const { localPlayer } = useApplicationStore();
-  const { isLocalPlayerTurn, gameState } = useGameStore();
-  const { settings: localPlayerSettings } = useLocalPlayerSettings();
-  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
-  const api = useApi();
-  const gameOver =
-    gameState?.status && isGameStatusInCategory(gameState?.status, "POST_GAME");
+	const { localPlayer } = useApplicationStore();
+	const { isLocalPlayerTurn, gameState } = useGameStore();
+	const { settings: localPlayerSettings } = useLocalPlayerSettings();
+	const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
+	const api = useApi();
+	const gameOver =
+		gameState?.status && isGameStatusInCategory(gameState?.status, "POST_GAME");
 
-  useHotkeys(
-    [
-      [
-        localPlayerSettings.hotkeys.slap,
-        () => {
-          if (!gameOver && localPlayer) {
-            api?.slapPile({
-              playerId: localPlayer.id,
-            });
-          }
-        },
-      ],
-      [
-        localPlayerSettings.hotkeys.playCard,
-        () => {
-          if (!gameOver && isLocalPlayerTurn) {
-            api?.playCard({});
-          }
-        },
-      ],
-    ],
-    ["INPUT", "TEXTAREA"]
-  );
+	useHotkeys(
+		[
+			[
+				localPlayerSettings.hotkeys.slap,
+				() => {
+					if (!gameOver && localPlayer) {
+						api?.slapPile({
+							playerId: localPlayer.id,
+						});
+					}
+				},
+			],
+			[
+				localPlayerSettings.hotkeys.playCard,
+				() => {
+					if (!gameOver && isLocalPlayerTurn) {
+						api?.playCard({});
+					}
+				},
+			],
+		],
+		["INPUT", "TEXTAREA"],
+	);
 
-  const renderGameSettingsAction = () => {
-    if (
-      gameState?.status &&
-      isGameStatusInCategory(gameState?.status, "PRE_GAME")
-    ) {
-      return (
-        <div
-          className="tooltip tooltip-neutral tooltip-left"
-          data-tip="Game Settings"
-        >
-          <button
-            type="button"
-            className="btn btn-outline btn-md"
-            onClick={() => {
-              setIsSettingsDrawerOpen(true);
-            }}
-          >
-            <IconSettings size="1.5rem" />
-          </button>
-        </div>
-      );
-    }
-  };
+	const renderGameSettingsAction = () => {
+		if (
+			gameState?.status &&
+			isGameStatusInCategory(gameState?.status, "PRE_GAME")
+		) {
+			return (
+				<div
+					className="tooltip tooltip-neutral tooltip-left"
+					data-tip={`Game settings (${localPlayerSettings.hotkeys.settings.key})`}
+				>
+					<button
+						type="button"
+						className="btn btn-outline btn-md"
+						onClick={() => {
+							setIsSettingsDrawerOpen(true);
+						}}
+					>
+						<IconSettings size="1.5rem" />
+					</button>
+				</div>
+			);
+		}
+	};
 
-  const renderPlayCardAction = () => {
-    if (
-      gameState?.status &&
-      isGameStatusInCategory(gameState?.status, "IN_GAME")
-    ) {
-      return (
-        <div className="tooltip tooltip-primary" data-tip="Play a card (n)">
-          <button
-            type="button"
-            className="btn btn-outline btn-lg"
-            onClick={() => api?.playCard({})}
-            disabled={!isLocalPlayerTurn}
-          >
-            <IconPlayCard size="1.5rem" />
-          </button>
-        </div>
-      );
-    }
-  };
+	const renderPlayCardAction = () => {
+		if (
+			gameState?.status &&
+			isGameStatusInCategory(gameState?.status, "IN_GAME")
+		) {
+			return (
+				<div
+					className="tooltip tooltip-primary"
+					data-tip={`Play a card (${localPlayerSettings.hotkeys.playCard.key})`}
+				>
+					<button
+						type="button"
+						className="btn btn-outline btn-lg"
+						onClick={() => api?.playCard({})}
+						disabled={!isLocalPlayerTurn}
+					>
+						<IconPlayCard size="1.5rem" />
+					</button>
+				</div>
+			);
+		}
+	};
 
-  const renderSlapPileAction = () => {
-    if (
-      gameState?.status &&
-      isGameStatusInCategory(gameState?.status, "IN_GAME")
-    ) {
-      return (
-        <div
-          className="tooltip tooltip-primary"
-          data-tip="Slap the pile if you think it's a valid slap (space)"
-        >
-          <button
-            type="button"
-            className="btn btn-outline btn-lg"
-            onClick={() => api?.slapPile({ playerId: localPlayer?.id })}
-          >
-            <IconHandStop size="1.5rem" />
-          </button>
-        </div>
-      );
-    }
-  };
+	const renderSlapPileAction = () => {
+		if (
+			gameState?.status &&
+			isGameStatusInCategory(gameState?.status, "IN_GAME")
+		) {
+			return (
+				<div
+					className="tooltip tooltip-primary"
+					data-tip={`Slap the pile (${localPlayerSettings.hotkeys.slap.key})`}
+				>
+					<button
+						type="button"
+						className="btn btn-outline btn-lg"
+						onClick={() => api?.slapPile({ playerId: localPlayer?.id })}
+					>
+						<IconHandStop size="1.5rem" />
+					</button>
+				</div>
+			);
+		}
+	};
 
-  const renderAddBotAction = () => {
-    if (
-      gameState?.status &&
-      isGameStatusInCategory(gameState?.status, "PRE_GAME")
-    ) {
-      return (
-        <div className="tooltip tooltip-primary" data-tip="Add a bot">
-          <button
-            type="button"
-            className="btn btn-outline btn-lg"
-            onClick={() => api?.addBot()}
-          >
-            <IconRobot size="1.5rem" />
-          </button>
-        </div>
-      );
-    }
-  };
+	const renderAddBotAction = () => {
+		if (
+			gameState?.status &&
+			isGameStatusInCategory(gameState?.status, "PRE_GAME")
+		) {
+			return (
+				<div
+					className="tooltip tooltip-primary"
+					data-tip="Add a bot"
+				>
+					<button
+						type="button"
+						className="btn btn-outline btn-lg"
+						onClick={() => api?.addBot()}
+					>
+						<IconRobot size="1.5rem" />
+					</button>
+				</div>
+			);
+		}
+	};
 
-  return (
-    <>
-      <div id="player-actions" className="navbar bg-base-100">
-        <div className="navbar-start flex-1" />
-        <div className="navbar-center gap-2">
-          {renderPlayCardAction()}
-          {renderSlapPileAction()}
-          {renderAddBotAction()}
-        </div>
-        <div className="navbar-end flex-1">{renderGameSettingsAction()}</div>
-      </div>
-      <GameSettingsDrawer
-        isOpen={isSettingsDrawerOpen}
-        onClose={() => setIsSettingsDrawerOpen(false)}
-        gameSettings={gameState?.settings as GameSettings}
-        allSlapRules={gameState?.settings.slapRules as SlapRule[]}
-        handleGameSettingsChange={() => {}}
-      />
-    </>
-  );
+	return (
+		<>
+			<div
+				id="player-actions"
+				className="navbar bg-base-100"
+			>
+				<div className="navbar-start flex-1" />
+				<div className="navbar-center gap-2">
+					{renderPlayCardAction()}
+					{renderSlapPileAction()}
+					{renderAddBotAction()}
+				</div>
+				<div className="navbar-end flex-1">{renderGameSettingsAction()}</div>
+			</div>
+			<GameSettingsDrawer
+				isOpen={isSettingsDrawerOpen}
+				onClose={() => setIsSettingsDrawerOpen(false)}
+				gameSettings={gameState?.settings as GameSettings}
+				allSlapRules={gameState?.settings.slapRules as SlapRule[]}
+				handleGameSettingsChange={() => {}}
+			/>
+		</>
+	);
 };

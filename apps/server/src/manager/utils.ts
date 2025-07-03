@@ -6,29 +6,29 @@ import type { MessageServer } from "../message/messageServer.js";
 //////////////////
 
 export function generateGameId(messageServer: MessageServer): string {
-  const nouns = SETTINGS.GENERATORS.GAME_ID.NOUNS;
-  const adjectives = SETTINGS.GENERATORS.GAME_ID.ADJECTIVES;
+	const nouns = SETTINGS.GENERATORS.GAME_ID.NOUNS;
+	const adjectives = SETTINGS.GENERATORS.GAME_ID.ADJECTIVES;
 
-  let gameId: string;
-  do {
-    // Generate a random game ID
-    gameId = `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${
-      nouns[Math.floor(Math.random() * nouns.length)]
-    }`;
-  } while (messageServer.getRoom(gameId) !== undefined); // Check if the ID already exists
+	let gameId: string;
+	do {
+		// Generate a random game ID
+		gameId = `${adjectives[Math.floor(Math.random() * adjectives.length)]}-${
+			nouns[Math.floor(Math.random() * nouns.length)]
+		}`;
+	} while (messageServer.getRoom(gameId) !== undefined); // Check if the ID already exists
 
-  return gameId;
+	return gameId;
 }
 
 export function generatePlayerName(): string {
-  const adjectives = SETTINGS.GENERATORS.PLAYER_NAME.ADJECTIVES;
-  const names = SETTINGS.GENERATORS.PLAYER_NAME.NOUNS;
-  const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${
-    names[Math.floor(Math.random() * names.length)]
-  }`;
+	const adjectives = SETTINGS.GENERATORS.PLAYER_NAME.ADJECTIVES;
+	const names = SETTINGS.GENERATORS.PLAYER_NAME.NOUNS;
+	const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${
+		names[Math.floor(Math.random() * names.length)]
+	}`;
 
-  return name
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+	return name
+		.split(" ")
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(" ");
 }

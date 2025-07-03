@@ -7,34 +7,34 @@ import { useDebugValue, useState } from "react";
  * @returns A tuple containing the current value and a setter function
  */
 export const useLocalStorage = <T>(
-  key: string,
-  defaultValue: T
+	key: string,
+	defaultValue: T,
 ): [T, (value: T | ((prevValue: T) => T)) => void] => {
-  useDebugValue(key, (key) => `useLocalStorage(${key})`);
+	useDebugValue(key, (key) => `useLocalStorage(${key})`);
 
-  // Initialize state with stored value or default
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
-      return defaultValue;
-    }
-  });
+	// Initialize state with stored value or default
+	const [value, setValue] = useState<T>(() => {
+		try {
+			const item = localStorage.getItem(key);
+			return item ? JSON.parse(item) : defaultValue;
+		} catch (error) {
+			console.warn(`Error reading localStorage key "${key}":`, error);
+			return defaultValue;
+		}
+	});
 
-  // Update localStorage when value changes
-  const updateValue = (newValue: T | ((prevValue: T) => T)) => {
-    try {
-      // Handle function updates
-      const valueToStore =
-        newValue instanceof Function ? newValue(value) : newValue;
-      setValue(valueToStore);
-      localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.warn(`Error saving to localStorage key "${key}":`, error);
-    }
-  };
+	// Update localStorage when value changes
+	const updateValue = (newValue: T | ((prevValue: T) => T)) => {
+		try {
+			// Handle function updates
+			const valueToStore =
+				newValue instanceof Function ? newValue(value) : newValue;
+			setValue(valueToStore);
+			localStorage.setItem(key, JSON.stringify(valueToStore));
+		} catch (error) {
+			console.warn(`Error saving to localStorage key "${key}":`, error);
+		}
+	};
 
-  return [value, updateValue];
+	return [value, updateValue];
 };

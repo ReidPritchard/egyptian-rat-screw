@@ -1,29 +1,29 @@
 {
-  "name": "@oer/message",
-  "version": "0.0.1",
-  "type": "module",
-  "scripts": {
-    "dev": "tsc --watch",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist",
-    "clean:full": "pnpm run clean && rm -rf node_modules"
-  },
-  "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "dependencies": {
-    "@oer/configuration": "workspace:*"
-  },
-  "optionalDependencies": {
-    "ws": "^8.18.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/ws": "^8.5.10",
-    "typescript": "^5.0.0"
-  }
+	"name": "@oer/message",
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "tsc --watch",
+		"build": "tsc",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist",
+		"clean:full": "pnpm run clean && rm -rf node_modules"
+	},
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"dependencies": {
+		"@oer/configuration": "workspace:*"
+	},
+	"optionalDependencies": {
+		"ws": "^8.18.0"
+	},
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"@types/ws": "^8.5.10",
+		"typescript": "^5.0.0"
+	}
 }
