@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { SETTINGS } from "@oer/configuration";
 import compression from "compression";
 import cors from "cors";
@@ -14,6 +15,10 @@ GameManager.getInstance();
 
 const PORT = process.env.PORT || SETTINGS.SERVER_PORT || 8000;
 const isDev = process.env.NODE_ENV !== "production";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
