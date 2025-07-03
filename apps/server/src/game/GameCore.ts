@@ -1,5 +1,4 @@
-import type { Messenger } from "@oer/message";
-import type { Room } from "@oer/message";
+import type { Messenger, Room } from "@oer/message";
 import { SocketEvents } from "@oer/shared/socketEvents";
 import {
 	type Card,
@@ -16,7 +15,6 @@ import {
 import { newLogger } from "../logger.js";
 import { GameEventLogger } from "./GameEventLogger.js";
 import { GameNotifier } from "./GameNotifier.js";
-import { VotingSystem } from "./VotingSystem.js";
 import { Deck } from "./models/Deck.js";
 import { Player } from "./models/Player.js";
 import { RuleEngine } from "./rules/RuleEngine.js";
@@ -25,6 +23,7 @@ import { CardPlayManager } from "./services/CardPlayManager.js";
 import { FaceCardService } from "./services/FaceCardService.js";
 import { SlapManager } from "./services/SlappingService.js";
 import { WinConditionManager } from "./services/WinConditionManager.js";
+import { VotingSystem } from "./VotingSystem.js";
 
 const logger = newLogger("GameCore");
 

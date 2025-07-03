@@ -1,69 +1,65 @@
-import { IconCheck, IconX } from "@tabler/icons-react";
+import { type GameAction, GameActionType } from "@oer/shared/types";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { SlapResultDisplay } from "./SlapResultDisplay";
+import {
+	type EventNotificationConfig,
+	TemporaryEventNotification,
+} from "./TemporaryEventNotification";
 
-// TODO: Remove the slap result prop. Instead, this will watch
-// the game event log. If a valid slap event is added, it will
-// create a temporary alert element that will auto hide after 3 seconds.
-//
-// We could also expand this to handle any other game event!
+/**
+ * Configuration for invalid slap result notifications
+ */
+const invalidSlapNotificationConfig: EventNotificationConfig<{
+	result: boolean;
+	event: GameAction;
+}> = {
+	eventTypes: [GameActionType.INVALID_SLAP],
+	filterFn: (event, localPlayer) => event.playerId === localPlayer?.id,
+	showDuration: 500,
+	fadeDuration: 400,
+	extractProps: (event) => ({
+		result: false,
+		event: event,
+	}),
+};
 
-interface SlapResultProps {
-	lastSlapResult: boolean | null;
-}
+const validSlapNotificationConfig: EventNotificationConfig<{
+	result: boolean;
+	event: GameAction;
+}> = {
+	eventTypes: [GameActionType.VALID_SLAP],
+	filterFn: (event, localPlayer) =>
+		event.playerId === localPlayer?.id ||
+		event.data?.rule?.targetPlayerName === localPlayer?.name,
+	showDuration: 2000, // Show the notification for longer
+	fadeDuration: 400,
+	extractProps: (event) => ({
+		result: true,
+		event: event,
+	}),
+};
 
-export const SlapResult: React.FC<SlapResultProps> = ({ lastSlapResult }) => {
-	const [show, setShow] = useState(false);
-
-	useEffect(() => {
-		if (lastSlapResult !== null) {
-			setShow(true);
-
-			// Auto-hide after 3 seconds
-			const timer = setTimeout(() => {
-				setShow(false);
-			}, 3000);
-
-			return () => clearTimeout(timer);
-		}
-	}, [lastSlapResult]);
-
-	if (lastSlapResult === null) return null;
-
+/**
+ * Component that displays temporary notifications for slap results.
+ * Uses the TemporaryEventNotification system to monitor slap events
+ * involving the local player and show success/failure notifications.
+ *
+ * This component has been refactored to use the generic event notification
+ * system, separating event detection logic from display logic.
+ */
+export const SlapResult: React.FC = () => {
 	return (
-		<div
-			className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 transition-all duration-400 ease-in-out ${
-				show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-			}`}
-		>
-			<div
-				className={`alert ${
-					lastSlapResult ? "alert-success" : "alert-error"
-				} shadow-lg w-full max-w-md`}
-			>
-				<div>
-					{lastSlapResult ? <IconCheck size={20} /> : <IconX size={20} />}
-					<div>
-						<h3 className="font-bold">
-							{lastSlapResult ? "Valid slap!" : "Invalid slap!"}
-						</h3>
-						<div className="text-xs">
-							{lastSlapResult
-								? "You successfully slapped the pile!"
-								: "Oops! That was an invalid slap."}
-						</div>
-					</div>
-				</div>
-				<div className="flex-none">
-					<div
-						className={`badge ${
-							lastSlapResult ? "badge-success" : "badge-error"
-						} badge-sm`}
-					>
-						{lastSlapResult ? "Success" : "Failure"}
-					</div>
-				</div>
-			</div>
-		</div>
+		<>
+			<TemporaryEventNotification
+				config={invalidSlapNotificationConfig}
+				renderComponent={SlapResultDisplay}
+				className="absolute z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+			/>
+			<TemporaryEventNotification
+				config={validSlapNotificationConfig}
+				renderComponent={SlapResultDisplay}
+				className="absolute z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+			/>
+		</>
 	);
 };

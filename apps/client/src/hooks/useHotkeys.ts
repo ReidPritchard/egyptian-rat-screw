@@ -1,5 +1,5 @@
-import type { Hotkey } from "@/clientTypes";
 import { useEffect } from "react";
+import type { Hotkey } from "@/clientTypes";
 import { newLogger } from "../logger";
 
 type HotkeyCallback = () => void;

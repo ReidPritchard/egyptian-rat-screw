@@ -1,4 +1,3 @@
-import type { MessageClient } from "@/message/client";
 import { SocketEvents } from "@oer/shared/socketEvents";
 import type {
 	LobbyState,
@@ -7,6 +6,7 @@ import type {
 } from "@oer/shared/types";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import type { MessageClient } from "@/message/client";
 import type { useApi } from "../contexts/ApiContext";
 import { newLogger } from "../logger";
 import useApplicationStore from "./useApplicationStore";

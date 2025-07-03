@@ -12,9 +12,9 @@ import type { GameSettings, PlayerAction, PlayerInfo } from "@oer/shared/types";
 import { config } from "./config";
 import { newLogger } from "./logger";
 import {
+	connectMessageClient,
 	type EventName,
 	type MessageClient,
-	connectMessageClient,
 } from "./message/client";
 
 export class Api {

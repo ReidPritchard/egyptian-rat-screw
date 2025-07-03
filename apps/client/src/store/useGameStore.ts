@@ -1,4 +1,3 @@
-import type { MessageClient } from "@/message/client";
 import {
 	type ICardPlayedPayload,
 	SocketEvents,
@@ -11,6 +10,7 @@ import type {
 } from "@oer/shared/types";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import type { MessageClient } from "@/message/client";
 import { useApi } from "../contexts/ApiContext";
 import { newLogger } from "../logger";
 import useApplicationStore from "./useApplicationStore";

@@ -5,8 +5,7 @@ import compression from "compression";
 import cors from "cors";
 import express from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import WebSocket from "ws";
-import { WebSocketServer } from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 import { newLogger } from "./logger.js";
 import { GameManager } from "./manager/GameManager.js";
 

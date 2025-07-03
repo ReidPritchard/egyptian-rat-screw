@@ -1,5 +1,4 @@
-import type { Messenger } from "@oer/message";
-import type { Room } from "@oer/message";
+import type { Messenger, Room } from "@oer/message";
 import type {
 	ClientGameState,
 	GameSettings,

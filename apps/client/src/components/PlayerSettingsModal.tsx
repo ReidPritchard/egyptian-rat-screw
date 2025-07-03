@@ -1,7 +1,7 @@
-import type { Hotkey } from "@/clientTypes";
-import { useLocalPlayerSettings } from "@/hooks/useLocalPlayerSettings";
 import type React from "react";
 import { useEffect, useState } from "react";
+import type { Hotkey } from "@/clientTypes";
+import { useLocalPlayerSettings } from "@/hooks/useLocalPlayerSettings";
 
 interface PlayerSettingsModalProps {
 	isOpen: boolean;
@@ -48,26 +48,26 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 		)
 			return;
 
-    setHotkeys((prevHotkeys) => {
-      return prevHotkeys.map((hotkey) => {
-        if (hotkey.id === editingHotkey) {
-          return {
-            ...hotkey,
-            key: e.key,
-            ctrl: e.ctrlKey,
-            shift: e.shiftKey,
-            alt: e.altKey,
-            meta: e.metaKey,
-          };
-        }
-        return hotkey;
-      });
-    });
+		setHotkeys((prevHotkeys) => {
+			return prevHotkeys.map((hotkey) => {
+				if (hotkey.id === editingHotkey) {
+					return {
+						...hotkey,
+						key: e.key,
+						ctrl: e.ctrlKey,
+						shift: e.shiftKey,
+						alt: e.altKey,
+						meta: e.metaKey,
+					};
+				}
+				return hotkey;
+			});
+		});
 
 		stopEditing();
 	};
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	// biome-ignore lint/correctness/useExhaustiveDependencies: handleKeyPress changes every render
 	useEffect(() => {
 		if (editingHotkey) {
 			document.addEventListener("keydown", handleKeyPress);
@@ -76,10 +76,8 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 	}, [editingHotkey]);
 
 	const resetToDefaults = () => {
-    localPlayerSettings.resetSettings();
-    setHotkeys(
-      Object.values(localPlayerSettings.settings.hotkeys),
-    )
+		localPlayerSettings.resetSettings();
+		setHotkeys(Object.values(localPlayerSettings.settings.hotkeys));
 	};
 
 	if (!isOpen) return null;
@@ -148,9 +146,11 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 																	<span> + </span>
 																</>
 															)}
-															<kbd className="kbd kbd-sm">{
-															  hotkey.key === " " ? "<Space>" : hotkey.key.toLocaleUpperCase()
-															}</kbd>
+															<kbd className="kbd kbd-sm">
+																{hotkey.key === " "
+																	? "<Space>"
+																	: hotkey.key.toLocaleUpperCase()}
+															</kbd>
 														</>
 													)}
 												</div>
@@ -187,7 +187,7 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 					/>
 
 					<div className="tab-content border-base-300 bg-base-100 p-10">
-							<sub>Additional settings will be added here</sub>
+						<sub>Additional settings will be added here</sub>
 					</div>
 				</div>
 

@@ -1,6 +1,6 @@
-import { isGameStatusInCategory } from "@/utils/categories";
 import type React from "react";
 import { useEffect } from "react";
+import { isGameStatusInCategory } from "@/utils/categories";
 import { newLogger } from "../logger";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";

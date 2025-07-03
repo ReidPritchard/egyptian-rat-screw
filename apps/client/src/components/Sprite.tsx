@@ -1,5 +1,5 @@
-import { useSprite } from "@/hooks/useSprite";
 import type React from "react";
+import { useSprite } from "@/hooks/useSprite";
 
 interface ISpriteProps {
 	/**

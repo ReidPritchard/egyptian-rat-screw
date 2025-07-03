@@ -1,9 +1,9 @@
-import type { MessageClient } from "@/message/client";
 import { MessengerEvents } from "@oer/message";
 import { SocketEvents } from "@oer/shared/socketEvents";
 import type { PlayerInfo } from "@oer/shared/types";
 import { create } from "zustand";
 import { createJSONStorage, devtools, persist } from "zustand/middleware";
+import type { MessageClient } from "@/message/client";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings.js";
 import { newLogger } from "../logger";
 

@@ -1,5 +1,5 @@
-import { useApi } from "@/contexts/ApiContext";
 import type React from "react";
+import { useApi } from "@/contexts/ApiContext";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useLobbyStore } from "../store/useLobbyStore";
 import { ThemeToggle } from "./ThemeToggle";

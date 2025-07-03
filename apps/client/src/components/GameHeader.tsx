@@ -1,5 +1,5 @@
-import { isGameStatusInCategory } from "@/utils/categories";
 import type React from "react";
+import { isGameStatusInCategory } from "@/utils/categories";
 import { useGameStore } from "../store/useGameStore";
 
 export const GameHeader: React.FC = () => {

@@ -1,11 +1,10 @@
 import type React from "react";
+import { useEffect, useState } from "react";
+import { newLogger } from "../logger";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { Game } from "./Game";
 import { Lobby } from "./Lobby";
 import { NavBar } from "./NavBar";
-
-import { useEffect, useState } from "react";
-import { newLogger } from "../logger";
 import { PlayerSettingsModal } from "./PlayerSettingsModal";
 
 const logger = newLogger("AppContainer");

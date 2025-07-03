@@ -1,7 +1,6 @@
-import { newLogger } from "@/logger";
-import { GameActionType } from "@oer/shared/types";
 import type React from "react";
-import { Suspense } from "react";
+import { Suspense, useId } from "react";
+import { newLogger } from "@/logger";
 import useApplicationStore from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
 import { CardStack } from "./CardStack";
@@ -23,6 +22,9 @@ export const GameBoard: React.FC = () => {
 	const { localPlayer } = useApplicationStore();
 	const { gameState } = useGameStore();
 
+	const gameBoardId = useId();
+	const pileSizeId = useId();
+
 	// Early return for loading states
 	if (!gameState) {
 		return <LoadingState message="Waiting for game initialization..." />;
@@ -32,13 +34,10 @@ export const GameBoard: React.FC = () => {
 		return <LoadingState message="Waiting for player to join..." />;
 	}
 
-	const lastEvent = gameState.eventLog[gameState.eventLog.length - 1];
-	const lastSlapResult = lastEvent.eventType === GameActionType.VALID_SLAP;
-
 	return (
 		<Suspense fallback={<LoadingState message="Loading game..." />}>
 			<div
-				id="game-board"
+				id={gameBoardId}
 				className="h-full w-full"
 			>
 				<div className="flex flex-col h-full max-w-(--breakpoint-lg) m-auto">
@@ -48,13 +47,13 @@ export const GameBoard: React.FC = () => {
 					/>
 					<div className="flex-1 flex flex-col justify-center p-4">
 						<p
-							id="pile-size"
+							id={pileSizeId}
 							className="text-center text-sm mb-2"
 						>
 							Pile Size: {gameState.centralPileCount}
 						</p>
 						<CardStack pile={gameState.centralPile} />
-						<SlapResult lastSlapResult={lastSlapResult} />
+						<SlapResult />
 					</div>
 				</div>
 			</div>

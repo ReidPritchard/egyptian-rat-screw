@@ -1,4 +1,3 @@
-import { isGameStatusInCategory } from "@/utils/categories";
 import type { GameSettings, SlapRule } from "@oer/shared/types";
 import {
 	IconHandStop,
@@ -8,6 +7,7 @@ import {
 } from "@tabler/icons-react";
 import type React from "react";
 import { useState } from "react";
+import { isGameStatusInCategory } from "@/utils/categories";
 import { useApi } from "../contexts/ApiContext";
 import { useHotkeys } from "../hooks/useHotkeys";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";

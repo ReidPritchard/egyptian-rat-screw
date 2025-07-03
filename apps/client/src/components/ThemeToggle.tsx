@@ -1,7 +1,9 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
-import { THEMES } from "../hooks/useLocalPlayerSettings";
+import {
+	THEMES,
+	useLocalPlayerSettings,
+} from "../hooks/useLocalPlayerSettings";
 import { newLogger } from "../logger";
 
 const logger = newLogger("ThemeToggle");

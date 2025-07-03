@@ -1,6 +1,6 @@
-import { newLogger } from "@/logger";
 import type React from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { newLogger } from "@/logger";
 import { type Api, initializeApi } from "../api";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";

@@ -1,7 +1,10 @@
 {
 	"name": "oers-monorepo",
 	"private": true,
-	"workspaces": ["apps/*", "packages/*"],
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
 	"scripts": {
 		"dev": "turbo run dev",
 		"build": "turbo run build",
@@ -13,7 +16,7 @@
 		"test": "pnpm --filter @oer/server run test"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
+		"@biomejs/biome": "2.0.0",
 		"turbo": "^2.4.4"
 	},
 	"packageManager": "pnpm@9.1.0"

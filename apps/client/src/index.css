@@ -1,54 +1,54 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 @plugin "daisyui" {
-  themes: all;
+	themes: all;
 }
 
 @theme {
-  --aspect-playing-card: 60 / 90;
+	--aspect-playing-card: 60 / 90;
 
-  --animate-appear: appear 0.5s ease-in-out;
-  --animate-fade-in-left: fadeInLeft 0.3s ease-out;
-  --animate-fade-in-up: fadeInUp 0.5s ease-out;
-  --animate-fade-in-scale: fadeInScale 0.3s ease-out;
+	--animate-appear: appear 0.5s ease-in-out;
+	--animate-fade-in-left: fadeInLeft 0.3s ease-out;
+	--animate-fade-in-up: fadeInUp 0.5s ease-out;
+	--animate-fade-in-scale: fadeInScale 0.3s ease-out;
 
-  @keyframes appear {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-  @keyframes fadeInLeft {
-    0% {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-  @keyframes fadeInUp {
-    0% {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  @keyframes fadeInScale {
-    0% {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
+	@keyframes appear {
+		0% {
+			opacity: 0;
+		}
+		100% {
+			opacity: 1;
+		}
+	}
+	@keyframes fadeInLeft {
+		0% {
+			opacity: 0;
+			transform: translateX(-20px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+	@keyframes fadeInUp {
+		0% {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes fadeInScale {
+		0% {
+			opacity: 0;
+			transform: scale(0.9);
+		}
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
 }
 
 /*
@@ -60,11 +60,11 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-gray-200, currentcolor);
+	}
 }

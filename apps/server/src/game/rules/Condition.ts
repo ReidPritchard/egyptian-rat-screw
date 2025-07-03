@@ -34,7 +34,7 @@ export class Condition {
 		console.log("Parsing value:", input);
 
 		// Split the input string into parts, considering both dot notation and bracket notation
-		const parts = input.match(/[^\.\[\]]+|\[(?:\\.|[^\[\]\\])*\]/g) || [];
+		const parts = input.match(/[^.[\]]+|\[(?:\\.|[^[\]\\])*\]/g) || [];
 
 		let value: any = { pile, slapper };
 

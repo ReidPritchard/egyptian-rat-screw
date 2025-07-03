@@ -1,6 +1,6 @@
+import { useCallback } from "react";
 import { useApi } from "@/contexts/ApiContext";
 import { newLogger } from "@/logger";
-import { useCallback } from "react";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
 import { Sprite } from "./Sprite";

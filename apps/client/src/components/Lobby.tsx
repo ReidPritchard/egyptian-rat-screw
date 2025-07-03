@@ -4,7 +4,7 @@ import {
 	IconPlus,
 	IconUser,
 } from "@tabler/icons-react";
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useId, useState } from "react";
 import { config } from "../config";
 import { useApi } from "../contexts/ApiContext";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
@@ -21,6 +21,9 @@ export const Lobby = () => {
 		useLobbyStore();
 	const { localPlayer } = useApplicationStore();
 	const api = useApi();
+
+	const playerNameInputID = useId();
+	const createGameButtonID = useId();
 
 	const [playerName, setPlayerName] = useLocalStorage<string>(
 		config.localStoragePlayerNameKey,
@@ -75,7 +78,7 @@ export const Lobby = () => {
 							<div className="input input-bordered flex items-center gap-2">
 								<IconUser size="1rem" />
 								<input
-									id="player-name"
+									id={playerNameInputID}
 									type="text"
 									className="w-full"
 									placeholder="Enter username"
@@ -113,8 +116,9 @@ export const Lobby = () => {
 							</div>
 						</label>
 
+						{/* Create Game Button */}
 						<button
-							id="create-game-button"
+							id={createGameButtonID}
 							type="button"
 							className="btn btn-primary btn-block mt-3"
 							onClick={handleCreateClick}

@@ -1,6 +1,6 @@
-import { newLogger } from "@/logger";
 import { type EventData, Messenger, MessengerEvents } from "@oer/message";
 import { SocketEvents } from "@oer/shared/socketEvents";
+import { newLogger } from "@/logger";
 
 export type EventName = SocketEvents | keyof typeof MessengerEvents | string;
 
