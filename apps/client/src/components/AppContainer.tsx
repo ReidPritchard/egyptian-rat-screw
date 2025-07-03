@@ -29,7 +29,7 @@ export const AppContainer: React.FC = () => {
 			<div className="flex flex-col h-screen w-screen bg-base-300 gap-8">
 				<NavBar onPlayerSettingsModalOpen={handlePlayerSettingsModalOpen} />
 
-				<div className="flex-grow">
+				<div className="grow">
 					{userLocation === "lobby" ? <Lobby /> : <Game />}
 				</div>
 			</div>

@@ -94,7 +94,7 @@ export const GameSettingsDrawer: React.FC<GameSettingsDrawerProps> = ({
 							</button>
 						</div>
 
-						<div className="flex flex-col gap-4 flex-grow overflow-y-auto">
+						<div className="flex flex-col gap-4 grow overflow-y-auto">
 							{/* Max Players */}
 							<div className="form-control">
 								<label

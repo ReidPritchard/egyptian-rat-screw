@@ -4,7 +4,7 @@ import {
 	IconPlus,
 	IconUser,
 } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { config } from "../config";
 import { useApi } from "../contexts/ApiContext";
 import { useLocalPlayerSettings } from "../hooks/useLocalPlayerSettings";
@@ -36,11 +36,11 @@ export const Lobby = () => {
 	}, [playerName, changeName, api]);
 
 	// Simplified handlers
-	const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
 		setPlayerName(e.target.value);
 	};
 
-	const handleGameCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleGameCodeChange = (e: ChangeEvent<HTMLInputElement>) => {
 		setJoinGameCode(e.target.value);
 	};
 
@@ -140,9 +140,9 @@ export const Lobby = () => {
 							{Array.from(lobbyPlayers).map(([id, player]) => (
 								<li
 									key={id}
-									className="flex items-center gap-2 p-2 rounded hover:bg-base-200"
+									className="flex items-center gap-2 p-2 rounded-sm hover:bg-base-200"
 								>
-									<div className="avatar placeholder">
+									<div className="avatar avatar-placeholder">
 										<div className="bg-neutral text-neutral-content rounded-full w-8">
 											<span>{(player.name || "?")[0]?.toUpperCase()}</span>
 										</div>

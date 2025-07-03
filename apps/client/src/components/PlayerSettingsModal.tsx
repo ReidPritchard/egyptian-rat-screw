@@ -18,34 +18,13 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 		Object.values(localPlayerSettings.settings.hotkeys),
 	);
 
-	const [isDarkMode, setIsDarkMode] = useState(false);
-	const [selectedTheme, setSelectedTheme] = useState("default");
-	const [defaultLightTheme, setDefaultLightTheme] = useState("light");
-	const [defaultDarkTheme, setDefaultDarkTheme] = useState("dark");
 	const [editingHotkey, setEditingHotkey] = useState<string | null>(null);
-	const [activeTab, setActiveTab] = useState<"ui" | "shortcuts">("ui");
-
-	// Mock theme data - replace with actual theme imports
-	const lightUIThemes = [
-		"light",
-		"cupcake",
-		"bumblebee",
-		"emerald",
-		"corporate",
-	];
-	const darkUIThemes = ["dark", "synthwave", "retro", "cyberpunk", "valentine"];
-
-	const availableThemes = isDarkMode ? darkUIThemes : lightUIThemes;
+	const [activeTab, setActiveTab] = useState<"ui" | "shortcuts">("shortcuts");
 
 	const handleClose = () => {
 		// Save settings
 		localPlayerSettings.saveHotkeys(hotkeys);
 		onClose();
-	};
-
-	const toggleTheme = () => {
-		setIsDarkMode(!isDarkMode);
-		setSelectedTheme(isDarkMode ? defaultLightTheme : defaultDarkTheme);
 	};
 
 	const startEditing = (hotkeyId: string) => {
@@ -69,14 +48,21 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 		)
 			return;
 
-		// Update the hotkey - implement your update logic here
-		console.log("Updating hotkey:", editingHotkey, {
-			key: e.key,
-			ctrl: e.ctrlKey,
-			shift: e.shiftKey,
-			alt: e.altKey,
-			meta: e.metaKey,
-		});
+    setHotkeys((prevHotkeys) => {
+      return prevHotkeys.map((hotkey) => {
+        if (hotkey.id === editingHotkey) {
+          return {
+            ...hotkey,
+            key: e.key,
+            ctrl: e.ctrlKey,
+            shift: e.shiftKey,
+            alt: e.altKey,
+            meta: e.metaKey,
+          };
+        }
+        return hotkey;
+      });
+    });
 
 		stopEditing();
 	};
@@ -90,8 +76,10 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 	}, [editingHotkey]);
 
 	const resetToDefaults = () => {
-		// Implement reset logic
-		console.log("Resetting to defaults");
+    localPlayerSettings.resetSettings();
+    setHotkeys(
+      Object.values(localPlayerSettings.settings.hotkeys),
+    )
 	};
 
 	if (!isOpen) return null;
@@ -105,101 +93,6 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 					role="tablist"
 					className="tabs tabs-border"
 				>
-					<input
-						type="radio"
-						name="settings"
-						className="tab"
-						aria-label="UI"
-						checked={activeTab === "ui"}
-						onChange={() => setActiveTab("ui")}
-					/>
-
-					<div className="tab-content border-base-300 bg-base-100 p-10">
-						<fieldset className="fieldset">
-							<legend className="fieldset-legend">Light/Dark Mode</legend>
-
-							<div className="form-control">
-								<label className="label cursor-pointer">
-									<label className="flex cursor-pointer gap-2">
-										<span>☀️</span>
-										<input
-											type="checkbox"
-											className="toggle theme-controller"
-											checked={isDarkMode}
-											onChange={toggleTheme}
-										/>
-										<span>🌙</span>
-									</label>
-								</label>
-							</div>
-
-							<legend className="fieldset-legend">Current Theme</legend>
-
-							<div className="form-control">
-								<label className="label cursor-pointer">
-									<select
-										className="select"
-										value={selectedTheme}
-										onChange={(e) => setSelectedTheme(e.target.value)}
-									>
-										{availableThemes.map((theme) => (
-											<option
-												key={theme}
-												value={theme}
-											>
-												{theme}
-											</option>
-										))}
-									</select>
-								</label>
-							</div>
-
-							<legend className="fieldset-legend">Default Light Theme</legend>
-
-							<div className="form-control">
-								<label className="label cursor-pointer">
-									<select
-										className="select"
-										value={defaultLightTheme}
-										onChange={(e) => setDefaultLightTheme(e.target.value)}
-									>
-										{lightUIThemes.map((theme) => (
-											<option
-												key={theme}
-												value={theme}
-											>
-												{theme}
-											</option>
-										))}
-									</select>
-								</label>
-							</div>
-						</fieldset>
-
-						<fieldset className="fieldset">
-							<legend className="fieldset-legend">Default Dark Theme</legend>
-
-							<div className="form-control">
-								<label className="label cursor-pointer">
-									<select
-										className="select"
-										value={defaultDarkTheme}
-										onChange={(e) => setDefaultDarkTheme(e.target.value)}
-									>
-										{darkUIThemes.map((theme) => (
-											<option
-												key={theme}
-												value={theme}
-											>
-												{theme}
-											</option>
-										))}
-									</select>
-								</label>
-							</div>
-						</fieldset>
-					</div>
-
 					<input
 						type="radio"
 						name="settings"
@@ -222,7 +115,7 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 								<tbody>
 									{hotkeys.map((hotkey) => (
 										<tr key={hotkey.id}>
-											<td>{hotkey.description}</td>
+											<td>{hotkey.description || hotkey.id}</td>
 											<td>
 												<div className="flex gap-1 items-center">
 													{editingHotkey === hotkey.id ? (
@@ -255,7 +148,9 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 																	<span> + </span>
 																</>
 															)}
-															<kbd className="kbd kbd-sm">{hotkey.key}</kbd>
+															<kbd className="kbd kbd-sm">{
+															  hotkey.key === " " ? "<Space>" : hotkey.key.toLocaleUpperCase()
+															}</kbd>
 														</>
 													)}
 												</div>
@@ -280,6 +175,19 @@ export const PlayerSettingsModal: React.FC<PlayerSettingsModalProps> = ({
 								</tbody>
 							</table>
 						</div>
+					</div>
+
+					<input
+						type="radio"
+						name="settings"
+						className="tab"
+						aria-label="UI"
+						checked={activeTab === "ui"}
+						onChange={() => setActiveTab("ui")}
+					/>
+
+					<div className="tab-content border-base-300 bg-base-100 p-10">
+							<sub>Additional settings will be added here</sub>
 					</div>
 				</div>
 

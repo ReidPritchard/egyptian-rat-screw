@@ -46,7 +46,7 @@ export const Game: React.FC = () => {
       `}
 		>
 			<GameHeader />
-			<div className="flex-grow">
+			<div className="grow">
 				{isGameStatusInCategory(gameState.status, "PRE_GAME") ? (
 					<PreGame />
 				) : (

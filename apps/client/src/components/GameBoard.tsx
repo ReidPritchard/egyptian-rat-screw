@@ -41,7 +41,7 @@ export const GameBoard: React.FC = () => {
 				id="game-board"
 				className="h-full w-full"
 			>
-				<div className="flex flex-col h-full max-w-screen-lg m-auto">
+				<div className="flex flex-col h-full max-w-(--breakpoint-lg) m-auto">
 					<TurnOrder
 						gameState={gameState}
 						localPlayerId={localPlayer.id}
