@@ -15,13 +15,13 @@ export const TurnOrder: React.FC<TurnOrderProps> = ({
 	const players = gameState.players;
 
 	return (
-		<div className="w-full">
+		<div className="w-full min-w-fit overflow-x-auto">
 			<AnimatePresence>
-				<ul className="steps">
+				<ul className="steps min-w-fit">
 					{players.map((player, _index) => (
 						<motion.li
 							key={player.id}
-							className={`step ${
+							className={`step flex-shrink-0 ${
 								player.id === currentPlayerIndex
 									? "step-primary"
 									: "step-neutral"
@@ -32,16 +32,18 @@ export const TurnOrder: React.FC<TurnOrderProps> = ({
 							exit={{ opacity: 0 }}
 							transition={{ duration: 0.5, ease: "easeInOut" }}
 						>
-							<p
-								className={`text-sm flex flex-row items-baseline justify-between ${
+							<div
+								className={`text-xs sm:text-sm flex flex-col items-center gap-1 min-w-0 ${
 									player.id === localPlayerId ? "font-bold" : ""
 								}`}
 							>
-								{player.name}
-								<p className="text-xs text-gray-500 p-1">
+								<span className="truncate max-w-16 sm:max-w-24 md:max-w-32 lg:max-w-none">
+									{player.name}
+								</span>
+								<span className="text-xs text-base-content/60">
 									({player.cardCount})
-								</p>
-							</p>
+								</span>
+							</div>
 						</motion.li>
 					))}
 				</ul>

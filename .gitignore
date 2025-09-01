@@ -30,3 +30,4 @@ public/dist
 
 # Ignore client files copied to server's public folder
 apps/server/public
+.idx

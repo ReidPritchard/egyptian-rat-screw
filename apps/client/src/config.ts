@@ -16,13 +16,13 @@ if (typeof process === "undefined" || !process.env) {
 } else {
   env = process.env.NODE_ENV || "development";
 
-  PROD_URL = process.env.WS_URL || SETTINGS.SERVER_WS_URL || "ws://localhost";
+  PROD_URL = process.env.WS_URL || SETTINGS.WS_SERVER_URL || "ws://localhost";
   PROD_PORT = process.env.PORT || SETTINGS.SERVER_PORT || 8000;
 }
 
 export const config = {
   serverUrl:
-    env !== "production" ? SETTINGS.SERVER_WS_URL : `${PROD_URL}:${PROD_PORT}`,
+    env !== "production" ? SETTINGS.WS_SERVER_URL : `${PROD_URL}:${PROD_PORT}`,
 
   localStoragePlayerNameKey: "playerName",
   localStoragePlayerSettingsKey: "playerSettings",

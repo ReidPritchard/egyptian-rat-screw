@@ -19,7 +19,10 @@
 		"baseUrl": "./src",
 		"paths": {
 			"@/*": ["./*"]
-		}
+		},
+    "types": [
+      "vite-plugin-terminal/client"
+    ],
 	},
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", "dist"]

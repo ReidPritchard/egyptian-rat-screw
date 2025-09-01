@@ -1,39 +1,31 @@
-import type { GameAction, GameActionType, PlayerInfo } from "@oer/shared/types";
 import type React from "react";
-import {
-	Component,
-	useCallback,
-	useEffect,
-	useMemo,
-	useReducer,
-	useRef,
-} from "react";
+import { Component, useCallback, useEffect, useReducer, useRef } from "react";
+import type { GameAction } from "@oer/shared/types";
 import { newLogger } from "@/logger";
 import { useApplicationStore } from "../store/useApplicationStore";
 import { useGameStore } from "../store/useGameStore";
+import {
+	useEventMonitor,
+	type EventMonitorConfig,
+} from "../hooks/useEventMonitor";
 
 const logger = newLogger("TemporaryEventNotification");
 
 /**
  * Configuration for event-triggered notifications
  */
-export interface EventNotificationConfig<TProps = any> {
-	/** Array of event types to monitor */
-	eventTypes: GameActionType[];
-	/** Optional filter function to determine if an event should trigger a notification */
-	filterFn?: (event: GameAction, localPlayer: PlayerInfo | null) => boolean;
+export interface EventNotificationConfig<TProps = Record<string, unknown>>
+	extends EventMonitorConfig<TProps> {
 	/** Duration to show the notification in milliseconds (default: 3000) */
 	showDuration?: number;
 	/** Duration of fade out animation in milliseconds (default: 400) */
 	fadeDuration?: number;
-	/** Function to extract custom props from the event for the rendered component */
-	extractProps: (event: GameAction) => TProps;
 }
 
 /**
  * Props passed to the rendered notification component
  */
-export interface EventNotificationProps<TProps = any> {
+export interface EventNotificationProps<TProps = Record<string, unknown>> {
 	/** The game event that triggered this notification */
 	event: GameAction;
 	/** Whether the notification is currently showing (for animation) */
@@ -47,7 +39,7 @@ export interface EventNotificationProps<TProps = any> {
 /**
  * Props for the TemporaryEventNotification component
  */
-interface TemporaryEventNotificationProps<TProps = any> {
+interface TemporaryEventNotificationProps<TProps = Record<string, unknown>> {
 	/** Configuration for event monitoring and behavior */
 	config: EventNotificationConfig<TProps>;
 	/** Component to render when an event is triggered */
@@ -162,64 +154,6 @@ function useNotificationTimer() {
 }
 
 /**
- * Custom hook for monitoring game events
- */
-function useEventMonitor<TProps>(
-	eventLog: GameAction[] | undefined,
-	config: EventNotificationConfig<TProps>,
-	localPlayer: PlayerInfo | null,
-	lastProcessedIndex: number,
-) {
-	const { eventTypes, filterFn, extractProps } = config;
-
-	return useMemo(() => {
-		if (!(eventLog?.length && eventTypes.length)) {
-			return { relevantEvent: null, newLastIndex: lastProcessedIndex };
-		}
-
-		// Get all new events since the last processed index
-		const newEvents = eventLog.slice(lastProcessedIndex + 1);
-		if (newEvents.length === 0) {
-			return { relevantEvent: null, newLastIndex: lastProcessedIndex };
-		}
-
-		// Find the most recent event that matches our criteria
-		const relevantEvents = newEvents.filter((event) => {
-			try {
-				const isMonitoredEvent = eventTypes.includes(event.eventType);
-				const passesFilter = !filterFn || filterFn(event, localPlayer);
-				return isMonitoredEvent && passesFilter;
-			} catch (error) {
-				logger.error("Error filtering event", {
-					data: { error, event },
-				});
-				return false;
-			}
-		});
-
-		const latestRelevantEvent =
-			relevantEvents[relevantEvents.length - 1] || null;
-		const customProps = latestRelevantEvent
-			? extractProps(latestRelevantEvent)
-			: null;
-
-		return {
-			relevantEvent: latestRelevantEvent
-				? { event: latestRelevantEvent, customProps }
-				: null,
-			newLastIndex: eventLog.length - 1,
-		};
-	}, [
-		eventLog,
-		eventTypes,
-		filterFn,
-		extractProps,
-		localPlayer,
-		lastProcessedIndex,
-	]);
-}
-
-/**
  * Generic component for managing temporary event-triggered notifications.
  * Monitors the game event log for specified events and renders a provided component
  * with automatic cleanup and animation support.
@@ -239,7 +173,7 @@ function useEventMonitor<TProps>(
  * />
  * ```
  */
-export const TemporaryEventNotification = <TProps = any>({
+export const TemporaryEventNotification = <TProps = Record<string, unknown>>({
 	config,
 	renderComponent: RenderComponent,
 	className = "",
@@ -382,9 +316,9 @@ export class NotificationErrorBoundary extends Component<
 /**
  * Type-safe wrapper for TemporaryEventNotification with error boundary
  */
-export function SafeTemporaryEventNotification<TProps = any>(
-	props: TemporaryEventNotificationProps<TProps>,
-): JSX.Element {
+export function SafeTemporaryEventNotification<
+	TProps = Record<string, unknown>,
+>(props: TemporaryEventNotificationProps<TProps>): JSX.Element {
 	return (
 		<NotificationErrorBoundary>
 			<TemporaryEventNotification {...props} />

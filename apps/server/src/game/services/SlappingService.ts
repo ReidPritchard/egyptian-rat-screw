@@ -91,8 +91,8 @@ export class SlapManager {
 		// Burn a card for invalid slap
 		const burnedCard = player.playCard();
 		if (burnedCard) {
-			const centralPile = this.gameCore.getCentralPile();
-			centralPile.push(burnedCard);
+			// Burned cards are placed at the bottom of the central pile
+			this.gameCore.getCentralPile().unshift(burnedCard);
 
 			// Log the invalid slap event
 			this.eventLogger.logEvent({

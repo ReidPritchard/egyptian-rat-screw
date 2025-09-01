@@ -132,7 +132,14 @@ export class FaceCardService {
 		this.logChallengeEvent(
 			challenger.messenger.id,
 			GameActionType.START_CHALLENGE,
-			{ card, faceCardCount },
+			{
+				card,
+				initiator: challengerInfo,
+				activePlayerId: nextPlayerId,
+				faceCardRank: card.rank,
+				cardsToPlay: faceCardCount,
+				cardsPlayed: 0,
+			},
 		);
 
 		// Notify players about the new challenge

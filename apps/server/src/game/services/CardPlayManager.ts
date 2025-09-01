@@ -5,6 +5,7 @@ import type { GameEventLogger } from "../GameEventLogger.js";
 import type { GameNotifier } from "../GameNotifier.js";
 import type { Player } from "../models/Player.js";
 import type { RuleEngine } from "../rules/RuleEngine.js";
+import { GameActionType } from "@oer/shared/types";
 
 const logger = newLogger("CardPlayManager");
 
@@ -74,6 +75,13 @@ export class CardPlayManager {
 
 		// Add the card to the central pile
 		this.gameCore.getCentralPile().push(card);
+
+		this.eventLogger.logEvent({
+			eventType: GameActionType.PLAY_CARD,
+			playerId: player.messenger.id,
+			timestamp: Date.now(),
+			data: { card },
+		});
 
 		// Handle the card play
 		fcService.handleCardPlay(player, card);
